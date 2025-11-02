@@ -1,0 +1,136 @@
+using System.Diagnostics;
+
+namespace eln.Backend.Webapi;
+
+public static class SqlServerContainerExtensions
+{
+    public static async Task<WebApplication> UseSqlServerContainer(
+        this WebApplication app,
+        string containerName,
+        string version,
+        string? connectionString,
+        bool deleteAfterShutdown = false)
+    {
+        if (string.IsNullOrEmpty(connectionString))
+        {
+            throw new ArgumentException("Connection string cannot be null or empty");
+        }
+
+        // Parse connection string to get password
+        var password = ParsePasswordFromConnectionString(connectionString);
+        
+        // Check if container already exists
+        var existingContainer = await GetContainerIdAsync(containerName);
+        if (!string.IsNullOrEmpty(existingContainer))
+        {
+            app.Logger.LogInformation($"SQL Server container '{containerName}' already exists. Removing...");
+            await RemoveContainerAsync(containerName);
+        }
+
+        // Start new SQL Server container
+        app.Logger.LogInformation($"Starting SQL Server container '{containerName}'...");
+
+        var dockerArgs = $"run -d --name {containerName} " +
+                        $"-e \"ACCEPT_EULA=Y\" " +
+                        $"-e \"SA_PASSWORD={password}\" " +
+                        $"-p 1433:1433 " +
+                        $"mcr.microsoft.com/mssql/server:{version}";
+
+        var process = new Process
+        {
+            StartInfo = new ProcessStartInfo
+            {
+                FileName = "docker",
+                Arguments = dockerArgs,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            }
+        };
+
+        process.Start();
+        var output = await process.StandardOutput.ReadToEndAsync();
+        var error = await process.StandardError.ReadToEndAsync();
+        await process.WaitForExitAsync();
+
+        if (process.ExitCode != 0)
+        {
+            throw new Exception($"Failed to start SQL Server container: {error}");
+        }
+
+        app.Logger.LogInformation($"SQL Server container '{containerName}' started successfully");
+
+        // Wait for SQL Server to be ready
+        app.Logger.LogInformation("Waiting for SQL Server to be ready...");
+        await Task.Delay(10000); // Wait 10 seconds for SQL Server to start
+
+        // Register shutdown handler if needed
+        if (deleteAfterShutdown)
+        {
+            var lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
+            lifetime.ApplicationStopping.Register(async () =>
+            {
+                app.Logger.LogInformation($"Stopping and removing SQL Server container '{containerName}'...");
+                await RemoveContainerAsync(containerName);
+            });
+        }
+
+        return app;
+    }
+
+    private static string ParsePasswordFromConnectionString(string connectionString)
+    {
+        var parts = connectionString.Split(';');
+        var passwordPart = parts.FirstOrDefault(p => 
+            p.Trim().StartsWith("Password=", StringComparison.OrdinalIgnoreCase) ||
+            p.Trim().StartsWith("Pwd=", StringComparison.OrdinalIgnoreCase));
+
+        if (passwordPart == null)
+        {
+            throw new ArgumentException("Password not found in connection string");
+        }
+
+        return passwordPart.Split('=')[1].Trim();
+    }
+
+    private static async Task<string?> GetContainerIdAsync(string containerName)
+    {
+        var process = new Process
+        {
+            StartInfo = new ProcessStartInfo
+            {
+                FileName = "docker",
+                Arguments = $"ps -aq -f name={containerName}",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                CreateNoWindow = true
+            }
+        };
+
+        process.Start();
+        var output = await process.StandardOutput.ReadToEndAsync();
+        await process.WaitForExitAsync();
+
+        return string.IsNullOrWhiteSpace(output) ? null : output.Trim();
+    }
+
+    private static async Task RemoveContainerAsync(string containerName)
+    {
+        var process = new Process
+        {
+            StartInfo = new ProcessStartInfo
+            {
+                FileName = "docker",
+                Arguments = $"rm -f {containerName}",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            }
+        };
+
+        process.Start();
+        await process.WaitForExitAsync();
+    }
+}
