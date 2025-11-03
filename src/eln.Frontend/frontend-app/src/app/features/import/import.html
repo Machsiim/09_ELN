@@ -1,0 +1,66 @@
+<div class="page-container">
+  <app-header></app-header>
+
+  <main class="main-content">
+    <div class="import-container">
+      <div class="import-card">
+        <h1 class="import-title">Datei importieren</h1>
+        <div class="step-indicator">Schritt 1 von 7</div>
+
+        <div class="progress-bar">
+          <div class="progress-fill" [style.width]="'14.28%'"></div>
+        </div>
+
+        <div class="form-section">
+          <label for="template" class="form-label">Template</label>
+          <select id="template" class="form-select" [(ngModel)]="selectedTemplate" (change)="onTemplateChange()">
+            <option value="">Bitte wählen...</option>
+            <option value="lungenmessung">Lungenmessung</option>
+            <option value="partikelmessung">Partikelmessung</option>
+          </select>
+        </div>
+
+        <div class="form-section">
+          <label class="form-label">Dokument anhängen</label>
+          <div class="upload-area" [class.drag-over]="isDragOver()" (click)="triggerFileInput()"
+            (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)" (drop)="onDrop($event)">
+
+            <svg class="upload-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+
+            <p class="upload-text">Drag and Drop here</p>
+            <p class="upload-subtext">or</p>
+            <button type="button" class="browse-button" (click)="triggerFileInput(); $event.stopPropagation()">
+              Browse Files
+            </button>
+
+            <input id="fileInput" type="file" accept=".csv,.xlsx" (change)="onFileSelected($event)"
+              style="display: none">
+          </div>
+          <p class="file-info">Akzeptierte Dateitypen: .csv, .xlsx</p>
+
+          @if (selectedFile()) {
+          <div class="selected-file">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" />
+              <polyline points="14 2 14 8 20 8" />
+            </svg>
+            <span>{{ selectedFile()?.name }}</span>
+            <button type="button" class="remove-file" (click)="removeFile(); $event.stopPropagation()">×</button>
+          </div>
+          }
+        </div>
+
+        <div class="button-group">
+          <button type="button" class="btn btn-primary" [disabled]="!canProceed()" (click)="onUpload()">
+            Upload
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <app-footer></app-footer>
+</div>
