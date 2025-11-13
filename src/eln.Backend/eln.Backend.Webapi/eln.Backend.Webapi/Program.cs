@@ -1,5 +1,6 @@
 using eln.Backend.Webapi;
 using eln.Backend.Application.Infrastructure;
+using eln.Backend.Application.Auth;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -35,6 +36,16 @@ builder.Services.Configure<CookiePolicyOptions>(options =>
         cookieContext.CookieOptions.SameSite = builder.Environment.IsDevelopment() ? SameSiteMode.None : SameSiteMode.Strict;
     };
 });
+
+// JwtSettings für IOptions<JwtSettings> im AuthController (falls du die Klasse nutzt)
+builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
+
+// LdapSettings aus appsettings binden
+builder.Services.Configure<LdapSettings>(builder.Configuration.GetSection("Ldap"));
+
+// LDAP-Service registrieren
+// Für Entwicklung mit Fake-Usern:
+builder.Services.AddScoped<ILdapService, FakeLdapService>();
 
 // Read JWT Settings from appsettings
 var jwtSecret = builder.Configuration["JwtSettings:Secret"] 
