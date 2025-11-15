@@ -35,3 +35,4 @@ src/lookappweb.Application/obj/
 src/lookappweb.Webapi/obj/
 
 .DS_Store
+*.user
