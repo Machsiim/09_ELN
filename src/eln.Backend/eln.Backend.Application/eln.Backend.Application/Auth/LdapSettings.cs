@@ -8,14 +8,11 @@ namespace eln.Backend.Application.Auth
 {
     public class LdapSettings
     {
-        public string Server { get; set; } = "";
-        public int Port { get; set; } = 389;
-        public bool UseSsl { get; set; } = false;
-        public string BaseDn { get; set; } = "";
-        public string UserAttribute { get; set; } = "uid";
+        public string Server { get; set; } = string.Empty;
+        public int Port { get; set; } = 636;
+        public bool UseSsl { get; set; } = true;
 
-        //Falls technischer Service-User 
-        public string? ServiceUserDn { get; set; }
-        public string? ServiceUserPassword { get; set; }
+        public string BaseDn { get; set; } = string.Empty;      
+        public string UserAttribute { get; set; } = "uid";      
     }
 }

@@ -45,7 +45,7 @@ builder.Services.Configure<LdapSettings>(builder.Configuration.GetSection("Ldap"
 
 // LDAP-Service registrieren
 // Für Entwicklung mit Fake-Usern:
-builder.Services.AddScoped<ILdapService, FakeLdapService>();
+builder.Services.AddScoped<ILdapService, LdapService>();
 
 // Read JWT Settings from appsettings
 var jwtSecret = builder.Configuration["JwtSettings:Secret"] 
