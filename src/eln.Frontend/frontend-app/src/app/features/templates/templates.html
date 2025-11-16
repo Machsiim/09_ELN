@@ -1,0 +1,185 @@
+<div class="page-container">
+  <app-header />
+
+  <main class="main-content template-workspace">
+    <section class="card builder-controls">
+      <header class="card-heading">
+        <div>
+          <p class="eyebrow">Template-Baukasten</p>
+          <h1>Messlayouts visuell gestalten</h1>
+        </div>
+        <div class="status-pills">
+          @if (successMessage()) {
+          <span class="status success">{{ successMessage() }}</span>
+          } @if (error()) {
+          <span class="status error">{{ error() }}</span>
+          }
+        </div>
+      </header>
+      <p class="card-subtitle">
+        Legen Sie Abschnitte, Karten undxaxaa Felder wie in Word/PowerPoint an. Der Builder erzeugt daraus automatisch das
+        benötigte Schema für das Backend.
+      </p>
+
+      <form class="template-name" [formGroup]="templateForm">
+        <label class="form-label" for="template-name">Template-Name</label>
+        <input id="template-name" type="text" formControlName="name" placeholder="z. B. Lungenmessung 2025" />
+        @if (templateForm.controls.name.touched && templateForm.controls.name.invalid) {
+        <small class="helper-text">Name ist erforderlich (max. 200 Zeichen).</small>
+        }
+      </form>
+
+      <div class="controls-grid">
+        <div class="control-block">
+          <h3>Sektion hinzufügen</h3>
+          <form [formGroup]="sectionForm" (ngSubmit)="addSection()">
+            <input type="text" formControlName="title" placeholder="Beispiel: Settings" />
+            <button class="btn btn-primary" type="submit">Sektion anlegen</button>
+          </form>
+        </div>
+
+        <div class="control-block">
+          <h3>Karte hinzufügen</h3>
+          <form [formGroup]="cardForm" (ngSubmit)="addCard()">
+            <select formControlName="sectionId">
+              <option value="">Sektion auswählen</option>
+              @for (section of sections(); track section.id) {
+              <option [value]="section.id">{{ section.title }}</option>
+              }
+            </select>
+            <input type="text" formControlName="title" placeholder="Titel der Karte" />
+            <input type="text" formControlName="subtitle" placeholder="Optional: Untertitel" />
+            <button class="btn btn-secondary" type="submit">Karte anlegen</button>
+          </form>
+        </div>
+
+        <div class="control-block">
+          <h3>Feld hinzufügen</h3>
+          <form [formGroup]="fieldForm" (ngSubmit)="addField()">
+            <select formControlName="sectionId" (change)="handleFieldSectionChange()">
+              <option value="">Sektion auswählen</option>
+              @for (section of sections(); track section.id) {
+              <option [value]="section.id">{{ section.title }}</option>
+              }
+            </select>
+            <select formControlName="cardId">
+              <option value="">Karte auswählen</option>
+              @for (card of getCardsForSection(fieldForm.controls.sectionId.value); track card.id) {
+              <option [value]="card.id">{{ card.title }}</option>
+              }
+            </select>
+            <input type="text" formControlName="label" placeholder="Feldname (z. B. Frequency)" />
+            <select formControlName="type">
+              @for (option of fieldTypeOptions; track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+              }
+            </select>
+            <input type="text" formControlName="hint" placeholder="Optional: Hilfetext oder Einheit" />
+            <button class="btn btn-outline" type="submit">Feld hinzufügen</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="builder-actions">
+        <button class="btn btn-primary" type="button" (click)="saveTemplate()" [disabled]="loading()">Template
+          speichern</button>
+        <button class="btn btn-secondary" type="button" (click)="resetBuilder()">Builder leeren</button>
+      </div>
+    </section>
+
+    <section class="card builder-preview">
+      <header class="card-heading">
+        <div>
+          <p class="eyebrow">Live-Vorschau</p>
+          <h2>So sieht das Template später aus</h2>
+        </div>
+      </header>
+
+      @if (sections().length === 0) {
+      <p class="empty-state">Noch keine Elemente vorhanden. Legen Sie links Sektionen, Karten und Felder an.</p>
+      } @else {
+      <div class="preview-sections">
+        @for (section of sections(); track section.id) {
+        <article class="preview-section">
+          <header class="preview-section-header">
+            <h3>{{ section.title }}</h3>
+            <button class="btn btn-icon" type="button" (click)="removeSection(section.id)" title="Sektion entfernen">
+              ×
+            </button>
+          </header>
+
+          <div class="preview-cards">
+            @for (card of section.cards; track card.id) {
+            <div class="preview-card">
+              <header class="preview-card-header">
+                <div>
+                  <h4>{{ card.title }}</h4>
+                  @if (card.subtitle) {
+                  <small>{{ card.subtitle }}</small>
+                  }
+                </div>
+                <button class="btn btn-icon" type="button" (click)="removeCard(section.id, card.id)"
+                  title="Karte entfernen">×</button>
+              </header>
+
+              <ul class="preview-fields">
+                @if (card.fields.length === 0) {
+                <li class="field-placeholder">Noch keine Felder</li>
+                } @else {
+                @for (field of card.fields; track field.id) {
+                <li>
+                  <div>
+                    <span class="field-label">{{ field.label }}</span>
+                    <span class="field-type">{{ getFieldTypeLabel(field.type) }}</span>
+                  </div>
+                  @if (field.hint) {
+                  <small>{{ field.hint }}</small>
+                  }
+                  <button class="btn btn-icon small" type="button"
+                    (click)="removeField(section.id, card.id, field.id)" title="Feld entfernen">×</button>
+                </li>
+                }
+                }
+              </ul>
+            </div>
+            }
+          </div>
+        </article>
+        }
+      </div>
+      }
+    </section>
+
+    <section class="card template-list-card">
+      <div class="card-heading">
+        <div>
+          <p class="eyebrow">Gespeicherte Vorlagen</p>
+          <h2>Bibliothek</h2>
+        </div>
+        <button class="btn btn-text" type="button" (click)="fetchTemplates()" [disabled]="loading()">Aktualisieren</button>
+      </div>
+
+      @if (loading()) {
+      <p class="empty-state">Lade Templates...</p>
+      } @else if (templates().length === 0) {
+      <p class="empty-state">Noch keine Templates vorhanden. Speichern Sie rechts Ihr erstes Layout.</p>
+      } @else {
+      <div class="templates-table">
+        @for (template of templates(); track template.id) {
+        <article class="template-row">
+          <div>
+            <h3>{{ template.name }}</h3>
+            <small>ID: {{ template.id }}</small>
+          </div>
+          <div class="template-row-actions">
+            <button class="btn btn-secondary" type="button" (click)="loadTemplateIntoBuilder(template)">In Builder laden</button>
+          </div>
+        </article>
+        }
+      </div>
+      }
+    </section>
+  </main>
+
+  <app-footer />
+</div>
