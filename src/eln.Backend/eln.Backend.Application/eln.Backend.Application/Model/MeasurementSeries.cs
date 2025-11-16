@@ -1,4 +1,5 @@
 using System;
+using System.Text.Json;
 
 namespace eln.Backend.Application.Model;
 
@@ -8,27 +9,21 @@ public class MeasurementSeries
     protected MeasurementSeries() { }
     #pragma warning restore CS8618
 
-    public MeasurementSeries(int lungId, string name, int createdBy, string? importedFrom = null, int? fileId = null)
+    public MeasurementSeries(string name, int createdBy, string? description = null)
     {
-        LungId = lungId;
         Name = name;
+        Description = description;
         CreatedBy = createdBy;
-        ImportedFrom = importedFrom;
-        FileId = fileId;
         CreatedAt = DateTime.UtcNow;
     }
 
     public int Id { get; set; }
-    public int LungId { get; set; }
     public string Name { get; set; }
-    public string? ImportedFrom { get; set; }
+    public string? Description { get; set; }
     public int CreatedBy { get; set; }
     public DateTime CreatedAt { get; set; }
-    public int? FileId { get; set; }
 
     // Navigation Properties
-    public Lung? Lung { get; set; }
     public User? Creator { get; set; }
-    public File? File { get; set; }
     public List<Measurement> Measurements { get; set; } = new();
 }

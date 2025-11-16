@@ -21,8 +21,7 @@ public class User
     public DateTime CreatedAt { get; set; }
 
     // Navigation Properties
-    public List<Animal> Animals { get; set; } = new();
+    public List<Template> Templates { get; set; } = new();
     public List<MeasurementSeries> MeasurementSeries { get; set; } = new();
     public List<Measurement> Measurements { get; set; } = new();
-    public List<File> Files { get; set; } = new();
 }

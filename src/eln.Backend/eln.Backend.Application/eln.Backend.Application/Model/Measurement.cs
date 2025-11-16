@@ -1,4 +1,5 @@
 using System;
+using System.Text.Json;
 
 namespace eln.Backend.Application.Model;
 
@@ -8,19 +9,19 @@ public class Measurement
     protected Measurement() { }
     #pragma warning restore CS8618
 
-    public Measurement(int seriesId, int createdBy, string? data = null, int? templateId = null)
+    public Measurement(int seriesId, int templateId, JsonDocument data, int createdBy)
     {
         SeriesId = seriesId;
-        CreatedBy = createdBy;
-        Data = data;
         TemplateId = templateId;
+        Data = data;
+        CreatedBy = createdBy;
         CreatedAt = DateTime.UtcNow;
     }
 
     public int Id { get; set; }
     public int SeriesId { get; set; }
-    public int? TemplateId { get; set; }
-    public string? Data { get; set; } // JSONB wird im Context konfiguriert
+    public int TemplateId { get; set; }
+    public JsonDocument Data { get; set; } // Actual measurement values
     public int CreatedBy { get; set; }
     public DateTime CreatedAt { get; set; }
 
