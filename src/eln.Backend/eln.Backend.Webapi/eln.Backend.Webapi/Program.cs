@@ -19,6 +19,9 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Register application services
+builder.Services.AddScoped<eln.Backend.Application.Services.TemplateService>();
+
 // Database Context - PostgreSQL
 builder.Services.AddDbContext<ElnContext>(opt =>
 {
@@ -78,13 +81,9 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("CorsPolicy", builder =>
     {
-        builder.WithOrigins(
-                "http://localhost:4200",
-                "https://localhost:4200"
-               )
+        builder.AllowAnyOrigin()
                .AllowAnyHeader()
-               .AllowAnyMethod()
-               .AllowCredentials();
+               .AllowAnyMethod();
     });
 });
 
@@ -114,6 +113,11 @@ if (app.Environment.IsDevelopment())
             using (var db = scope.ServiceProvider.GetRequiredService<ElnContext>())
             {
                 db.CreateDatabase(isDevelopment: true);
+                
+                // Seed dummy user for testing (since we don't have auth yet)
+                var dummyUser = new eln.Backend.Application.Model.User("testuser", "admin");
+                db.Users.Add(dummyUser);
+                db.SaveChanges();
             }
         }
     }
