@@ -12,6 +12,10 @@ export class Header {
     window.location.href = '/import';
   }
 
+  onTemplates(): void {
+    window.location.href = '/templates';
+  }
+
   onExport(): void {
     console.log('Export clicked');
   }

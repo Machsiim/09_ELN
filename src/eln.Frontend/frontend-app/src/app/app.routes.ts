@@ -27,6 +27,11 @@ export const routes: Routes = [
     title: 'Messungen - Biomedical Research Notebook'
   },
   {
+    path: 'templates',
+    loadComponent: () => import('./features/templates/templates').then(m => m.Templates),
+    title: 'Templates - Biomedical Research Notebook'
+  },
+  {
     path: '**',
     redirectTo: '/startseite'
   }

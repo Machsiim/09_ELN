@@ -26,7 +26,7 @@ For a complete list of available schematics (such as `components`, `directives`,
 ng generate --help
 ```
 
-## Building
+## Production build
 
 To build the project run:
 
@@ -35,6 +35,17 @@ ng build
 ```
 
 This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+
+### Build & run via Docker
+
+You can package and run the Angular app without installing Node locally by using the included multi-stage Dockerfile:
+
+```bash
+docker build -t eln-frontend .
+docker run --rm -p 8080:80 eln-frontend
+```
+
+After the container starts, the compiled frontend is served via NGINX on http://localhost:8080.
 
 ## Running unit tests
 
