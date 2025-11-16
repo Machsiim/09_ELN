@@ -25,8 +25,12 @@ builder.Services.AddScoped<eln.Backend.Application.Services.TemplateService>();
 // Database Context - PostgreSQL
 builder.Services.AddDbContext<ElnContext>(opt =>
 {
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
+        ?? builder.Configuration.GetConnectionString("Default")
+        ?? throw new InvalidOperationException("No connection string configured");
+    
     opt.UseNpgsql(
-        builder.Configuration.GetConnectionString("Default"),
+        connectionString,
         o => o.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery));
 });
 
@@ -40,14 +44,14 @@ builder.Services.Configure<CookiePolicyOptions>(options =>
     };
 });
 
-// JwtSettings für IOptions<JwtSettings> im AuthController (falls du die Klasse nutzt)
+// JwtSettings fï¿½r IOptions<JwtSettings> im AuthController (falls du die Klasse nutzt)
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 
 // LdapSettings aus appsettings binden
 builder.Services.Configure<LdapSettings>(builder.Configuration.GetSection("Ldap"));
 
 // LDAP-Service registrieren
-// Für Entwicklung mit Fake-Usern:
+// Fï¿½r Entwicklung mit Fake-Usern:
 builder.Services.AddScoped<ILdapService, LdapService>();
 
 // Read JWT Settings from appsettings
@@ -96,8 +100,10 @@ app.UseCors("CorsPolicy");
 app.UseSwagger();
 app.UseSwaggerUI();
 
-// PostgreSQL Container Setup (runs in Development mode)
-if (app.Environment.IsDevelopment())
+// PostgreSQL Container Setup (only when running locally, not in Docker)
+var runningInDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
+
+if (app.Environment.IsDevelopment() && !runningInDocker)
 {
     try
     {
@@ -125,6 +131,25 @@ if (app.Environment.IsDevelopment())
     {
         app.Logger.LogError(e, "Failed to setup PostgreSQL container or initialize database");
         return;
+    }
+}
+else if (runningInDocker)
+{
+    // Running in Docker - just initialize the database
+    using (var scope = app.Services.CreateScope())
+    {
+        using (var db = scope.ServiceProvider.GetRequiredService<ElnContext>())
+        {
+            db.CreateDatabase(isDevelopment: true);
+            
+            // Seed dummy user for testing
+            if (!db.Users.Any())
+            {
+                var dummyUser = new eln.Backend.Application.Model.User("testuser", "admin");
+                db.Users.Add(dummyUser);
+                db.SaveChanges();
+            }
+        }
     }
 }
 

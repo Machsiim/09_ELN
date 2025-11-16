@@ -23,7 +23,7 @@ public class TemplatesController : ControllerBase
     {
         var templates = await _context.Templates
             .OrderBy(t => t.Name)
-            .Select(t => new TemplateResponse(t.Id, t.Name, t.Schema))
+            .Select(t => new TemplateResponse(t.Id, t.Name, t.Schema.RootElement.GetRawText()))
             .ToListAsync(cancellationToken);
 
         return Ok(templates);
@@ -34,7 +34,7 @@ public class TemplatesController : ControllerBase
     {
         var template = await _context.Templates
             .Where(t => t.Id == id)
-            .Select(t => new TemplateResponse(t.Id, t.Name, t.Schema))
+            .Select(t => new TemplateResponse(t.Id, t.Name, t.Schema.RootElement.GetRawText()))
             .FirstOrDefaultAsync(cancellationToken);
 
         if (template is null)
@@ -55,13 +55,14 @@ public class TemplatesController : ControllerBase
             return ValidationProblem(ModelState);
         }
 
-        var schema = ExtractSchema(request.Schema);
-
-        var template = new Template(request.Name, schema);
+        var schema = request.Schema ?? JsonDocument.Parse("{}");
+        
+        // TODO: Replace hardcoded createdBy with actual user ID from authentication
+        var template = new Template(request.Name, schema, createdBy: 1);
         _context.Templates.Add(template);
         await _context.SaveChangesAsync(cancellationToken);
 
-        var response = new TemplateResponse(template.Id, template.Name, template.Schema);
+        var response = new TemplateResponse(template.Id, template.Name, template.Schema.RootElement.GetRawText());
         return CreatedAtAction(nameof(GetTemplate), new { id = template.Id }, response);
     }
 
@@ -83,21 +84,11 @@ public class TemplatesController : ControllerBase
         }
 
         template.Name = request.Name;
-        template.Schema = ExtractSchema(request.Schema);
+        template.Schema = request.Schema ?? JsonDocument.Parse("{}");
 
         await _context.SaveChangesAsync(cancellationToken);
 
-        return Ok(new TemplateResponse(template.Id, template.Name, template.Schema));
-    }
-
-    private static string ExtractSchema(JsonDocument? schema)
-    {
-        if (schema is null)
-        {
-            return "{}";
-        }
-
-        return schema.RootElement.GetRawText();
+        return Ok(new TemplateResponse(template.Id, template.Name, template.Schema.RootElement.GetRawText()));
     }
 
     public record TemplateResponse(int Id, string Name, string Schema);
