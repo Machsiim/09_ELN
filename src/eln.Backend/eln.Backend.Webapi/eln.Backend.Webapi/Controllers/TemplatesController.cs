@@ -23,10 +23,13 @@ public class TemplatesController : ControllerBase
     {
         var templates = await _context.Templates
             .OrderBy(t => t.Name)
-            .Select(t => new TemplateResponse(t.Id, t.Name, t.Schema.RootElement.GetRawText()))
+            .Select(t => new { t.Id, t.Name, t.Schema })
             .ToListAsync(cancellationToken);
 
-        return Ok(templates);
+        var response = templates
+            .Select(t => new TemplateResponse(t.Id, t.Name, t.Schema.RootElement.GetRawText()));
+
+        return Ok(response);
     }
 
     [HttpGet("{id:int}")]
@@ -34,7 +37,7 @@ public class TemplatesController : ControllerBase
     {
         var template = await _context.Templates
             .Where(t => t.Id == id)
-            .Select(t => new TemplateResponse(t.Id, t.Name, t.Schema.RootElement.GetRawText()))
+            .Select(t => new { t.Id, t.Name, t.Schema })
             .FirstOrDefaultAsync(cancellationToken);
 
         if (template is null)
@@ -42,7 +45,7 @@ public class TemplatesController : ControllerBase
             return NotFound();
         }
 
-        return Ok(template);
+        return Ok(new TemplateResponse(template.Id, template.Name, template.Schema.RootElement.GetRawText()));
     }
 
     [HttpPost]

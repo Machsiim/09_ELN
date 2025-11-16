@@ -3,10 +3,22 @@ const runtimeApiUrl =
     ? (window as typeof window & { __elnApiUrl?: string }).__elnApiUrl
     : undefined;
 
-const defaultApiUrl =
-  typeof window !== 'undefined'
-    ? `${window.location.origin}/api`
-    : 'http://localhost:5080/api';
+const defaultApiUrl = (() => {
+  if (typeof window === 'undefined') {
+    return 'http://localhost:5100/api';
+  }
+
+  const { hostname, port, protocol } = window.location;
+  const isDevPort = port === '4200' || port === '8080';
+
+  if (isDevPort) {
+    const targetHost = hostname || 'localhost';
+    const scheme = protocol.startsWith('https') ? 'https' : 'http';
+    return `${scheme}://${targetHost}:5100/api`;
+  }
+
+  return `${window.location.origin}/api`;
+})();
 
 export const environment = {
   production: false,
