@@ -17,7 +17,7 @@
         </div>
       </header>
       <p class="card-subtitle">
-        Legen Sie Abschnitte, Karten undxaxaa Felder wie in Word/PowerPoint an. Der Builder erzeugt daraus automatisch das
+        Legen Sie Abschnitte, Karten und Felder wie in Excel an. Der Builder erzeugt daraus automatisch das
         benötigte Schema für das Backend.
       </p>
 
@@ -34,7 +34,7 @@
           <h3>Sektion hinzufügen</h3>
           <form [formGroup]="sectionForm" (ngSubmit)="addSection()">
             <input type="text" formControlName="title" placeholder="Beispiel: Settings" />
-            <button class="btn btn-primary" type="submit">Sektion anlegen</button>
+            <button class="btn btn-primary" type="submit" [disabled]="sectionForm.invalid">Sektion anlegen</button>
           </form>
         </div>
 
@@ -81,7 +81,7 @@
       </div>
 
       <div class="builder-actions">
-        <button class="btn btn-primary" type="button" (click)="saveTemplate()" [disabled]="loading()">Template
+        <button class="btn btn-primary" type="button" (click)="saveTemplate()" [disabled]="loading() || templateForm.invalid || !builderHasFields()">Template
           speichern</button>
         <button class="btn btn-secondary" type="button" (click)="resetBuilder()">Builder leeren</button>
       </div>

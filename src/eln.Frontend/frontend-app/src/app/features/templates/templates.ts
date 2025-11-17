@@ -339,7 +339,7 @@ export class Templates implements OnInit {
     this.sections.set(builderSections);
   }
 
-  private builderHasFields(): boolean {
+  builderHasFields(): boolean {
     return this.sections().some((section) =>
       section.cards.some((card) => card.fields && card.fields.length > 0)
     );

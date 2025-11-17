@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: eln-postgres
+    environment:
+      POSTGRES_DB: elndb
+      POSTGRES_USER: elnuser
+      POSTGRES_PASSWORD: elnpassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U elnuser -d elndb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - eln-network
+
+  backend:
+    build:
+      context: ./src/eln.Backend
+      dockerfile: Dockerfile
+    container_name: eln-backend
+    ports:
+      - "5100:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=elndb;Username=elnuser;Password=elnpassword
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - eln-network
+
+  frontend:
+    build:
+      context: ./src/eln.Frontend/frontend-app
+      dockerfile: Dockerfile
+    container_name: eln-frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      - backend
+    networks:
+      - eln-network
+
+networks:
+  eln-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
