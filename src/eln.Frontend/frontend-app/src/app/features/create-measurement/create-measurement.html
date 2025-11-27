@@ -1,0 +1,125 @@
+<div class="page-container">
+  <app-header />
+
+  <main class="main-content">
+    <section class="create-measurement-card">
+      <div class="intro">
+        <h1>Messung erstellen</h1>
+        <p>
+          Wähle ein vorhandenes Template aus, um die passenden Eingabefelder automatisch zu laden.
+          Das Speichern der Messung folgt, sobald das Backend-Endpunkt verfügbar ist.
+        </p>
+      </div>
+
+      <div class="form-group">
+        <label for="templateSelect">Template auswählen</label>
+        <select id="templateSelect"
+                class="form-control"
+                [disabled]="loading()"
+                #templateSelect
+                (change)="onTemplateChange(templateSelect.value)">
+          <option value="">Bitte wählen</option>
+          <option *ngFor="let template of templates(); trackBy: trackById"
+                  [value]="template.id"
+                  [selected]="template.id === selectedTemplateId()">
+            {{ template.name }}
+          </option>
+        </select>
+      </div>
+
+      @if (loading()) {
+        <div class="status info">
+          Templates werden geladen ...
+        </div>
+      }
+      @if (error(); as message) {
+        <div class="status error">
+          {{ message }}
+        </div>
+      }
+
+      @if (activeSchema(); as schema) {
+        @if (measurementForm; as form) {
+          <form [formGroup]="form"
+                (ngSubmit)="onSubmit()">
+            <div class="schema-sections">
+              <section *ngFor="let section of schema.sections; trackBy: trackById"
+                       class="schema-section">
+                <h2>{{ section.title }}</h2>
+
+                <article *ngFor="let card of section.cards; trackBy: trackById"
+                         class="schema-card">
+                  <header>
+                    <h3>{{ card.title }}</h3>
+                    @if (card.subtitle) {
+                      <p>{{ card.subtitle }}</p>
+                    }
+                  </header>
+
+                  <div class="schema-fields">
+                    <div *ngFor="let field of card.fields; trackBy: trackById"
+                         class="schema-field">
+                      <label [attr.for]="getControlName(section.id, card.id, field.id, field.label)">
+                        {{ field.label }}
+                      </label>
+
+                      @switch (field.type) {
+                        @case ('multiline') {
+                          <textarea rows="3"
+                                    [id]="getControlName(section.id, card.id, field.id, field.label)"
+                                    [formControlName]="getControlName(section.id, card.id, field.id, field.label)"></textarea>
+                        }
+                        @case ('table') {
+                          <textarea rows="3"
+                                    placeholder="Tabellendaten (CSV oder Markdown)"
+                                    [id]="getControlName(section.id, card.id, field.id, field.label)"
+                                    [formControlName]="getControlName(section.id, card.id, field.id, field.label)"></textarea>
+                        }
+                        @case ('number') {
+                          <input type="number"
+                                 [id]="getControlName(section.id, card.id, field.id, field.label)"
+                                 [formControlName]="getControlName(section.id, card.id, field.id, field.label)" />
+                        }
+                        @case ('media') {
+                          <input type="text"
+                                 placeholder="Pfad oder Referenz zu Medien"
+                                 [id]="getControlName(section.id, card.id, field.id, field.label)"
+                                 [formControlName]="getControlName(section.id, card.id, field.id, field.label)" />
+                        }
+                        @default {
+                          <input type="text"
+                                 [id]="getControlName(section.id, card.id, field.id, field.label)"
+                                 [formControlName]="getControlName(section.id, card.id, field.id, field.label)" />
+                        }
+                      }
+
+                      @if (field.hint) {
+                        <small>{{ field.hint }}</small>
+                      }
+                    </div>
+                  </div>
+                </article>
+              </section>
+            </div>
+
+            <div class="actions">
+              <button type="submit" class="btn btn-primary" [disabled]="!form.valid">
+                Messung vorbereiten
+              </button>
+            </div>
+          </form>
+        } @else {
+          <p class="status hint">
+            Das ausgewählte Template enthält aktuell keine Felder.
+          </p>
+        }
+      } @else {
+        <p class="status hint">
+          Wähle ein Template aus der Liste, um die Messfelder zu sehen.
+        </p>
+      }
+    </section>
+  </main>
+
+  <app-footer />
+</div>

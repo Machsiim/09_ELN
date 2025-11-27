@@ -8,6 +8,10 @@ import { RouterModule } from '@angular/router';
   styleUrl: './header.scss',
 })
 export class Header {
+  onCreateMeasurement(): void {
+    window.location.href = '/erstellen';
+  }
+
   onImport(): void {
     window.location.href = '/import';
   }

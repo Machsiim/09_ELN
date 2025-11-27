@@ -17,6 +17,11 @@ export const routes: Routes = [
     title: 'Datei importieren - Biomedical Research Notebook'
   },
   {
+    path: 'erstellen',
+    loadComponent: () => import('./features/create-measurement/create-measurement').then(m => m.CreateMeasurement),
+    title: 'Messung erstellen - Biomedical Research Notebook'
+  },
+  {
     path: 'dashboard',
     loadComponent: () => import('./features/dashboard/dashboard').then(m => m.Dashboard),
     title: 'Dashboard - Biomedical Research Notebook'
