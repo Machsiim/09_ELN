@@ -1,10 +1,16 @@
-﻿using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
-using eln.Backend.Application.Auth;
+﻿using eln.Backend.Application.Auth;
+using eln.Backend.Application.Infrastructure;
+using eln.Backend.Application.Model;
+using eln.Backend.Application.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Net;
+using System.Security.Claims;
+using System.Text;
 namespace eln.Backend.Webapi.Controllers
 {
     [ApiController]
@@ -13,33 +19,86 @@ namespace eln.Backend.Webapi.Controllers
     {
         private readonly ILdapService _ldapService;
         private readonly JwtSettings _jwtSettings;
+        private readonly ElnContext _context;
 
-        public AuthController(ILdapService ldapService, IOptions<JwtSettings> jwtOptions)
+        public AuthController(ILdapService ldapService, IOptions<JwtSettings> jwtOptions, ElnContext context)
         {
             _ldapService = ldapService;
             _jwtSettings = jwtOptions.Value;
+            _context = context;
         }
 
         [HttpPost("login")]
-        public ActionResult<LoginResponse> Login([FromBody] LoginRequest request)
+        public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginRequest request)
         {
             if (!_ldapService.ValidateUser(request.Username, request.Password))
                 return Unauthorized();
+            var user = await _context.Users.SingleOrDefaultAsync(u => u.Username == request.Username);
+            if (user == null)
+            {
+                user = new User(request.Username, GetRoleFromUsername(request.Username));
+
+                _context.Users.Add(user);
+                await _context.SaveChangesAsync();
+            }
 
             var token = GenerateJwtToken(request.Username, out var expiresAt);
 
             return Ok(new LoginResponse { Token = token, ExpiresAt = expiresAt });
         }
 
+        [HttpGet("debug-users")]
+        public async Task<ActionResult<IEnumerable<User>>> GetUsers()
+        {
+            var users = await _context.Users.ToListAsync();
+            return Ok(users);
+        }
+
+        [HttpGet("GetUser")]
+        [Authorize] // nur mit gültigem JWT erreichbar
+        public async Task<ActionResult<UserDto>> GetUser()
+        {
+            // Username aus dem JWT holen
+            var username = User.FindFirst(ClaimTypes.Name)?.Value;
+
+            if (string.IsNullOrEmpty(username))
+                return Unauthorized();
+
+            // User aus der DB laden
+            var user = await _context.Users
+                .SingleOrDefaultAsync(u => u.Username == username);
+
+            if (user == null)
+                return NotFound();
+
+            // Antwort zusammenbauen
+            var response = new UserDto
+            {
+                Id = user.Id,
+                Username = user.Username,
+                Role = user.Role ?? "User"
+            };
+
+            return Ok(response);
+        }
+
+
         private string GenerateJwtToken(string username, out DateTime expiresAt)
         {
+            // Rolle aus dem Usernamen ableiten:
+            // beginnt die UID mit "if" => Student, sonst Mitarbeiter
+            var role = username.StartsWith("if", StringComparison.OrdinalIgnoreCase)
+                ? "Student"
+                : "Staff";
+
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Secret));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var claims = new[]
             {
-            new Claim(ClaimTypes.Name, username)
-        };
+        new Claim(ClaimTypes.Name, username),
+        new Claim(ClaimTypes.Role, role)
+    };
 
             expiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpirationInMinutes);
 
@@ -51,6 +110,17 @@ namespace eln.Backend.Webapi.Controllers
                 signingCredentials: creds);
 
             return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        private string GetRoleFromUsername(string username)
+        {
+            if (string.IsNullOrWhiteSpace(username))
+                return "User";
+
+            // if… = Studierende, sonst Mitarbeiter
+            return username.StartsWith("if", StringComparison.OrdinalIgnoreCase)
+                ? "Student"
+                : "Staff";
         }
     }
 }
