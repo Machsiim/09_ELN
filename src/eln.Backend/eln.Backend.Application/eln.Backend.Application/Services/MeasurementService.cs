@@ -54,6 +54,17 @@ public class MeasurementService
         _context.Measurements.Add(measurement);
         await _context.SaveChangesAsync();
 
+        // Create initial history entry for "Created"
+        var historyEntry = new MeasurementHistory(
+            measurementId: measurement.Id,
+            changeType: "Created",
+            dataSnapshot: jsonDocument,
+            changedBy: userId,
+            changeDescription: "Measurement created"
+        );
+        _context.MeasurementHistories.Add(historyEntry);
+        await _context.SaveChangesAsync();
+
         return await GetMeasurementByIdAsync(measurement.Id);
     }
 
@@ -178,6 +189,87 @@ public class MeasurementService
             TemplateName = m.Template?.Name ?? "Unknown",
             CreatedByUsername = m.Creator?.Username ?? "Unknown",
             CreatedAt = m.CreatedAt
+        }).ToList();
+    }
+
+    /// <summary>
+    /// Update an existing measurement and track history
+    /// </summary>
+    public async Task<MeasurementResponseDto> UpdateMeasurementAsync(int id, UpdateMeasurementDto dto, int userId)
+    {
+        var measurement = await _context.Measurements
+            .Include(m => m.Template)
+            .FirstOrDefaultAsync(m => m.Id == id);
+        
+        if (measurement == null)
+            throw new Exception($"Measurement with ID {id} not found");
+
+        // Get template for validation
+        var template = measurement.Template;
+        if (template == null)
+            throw new Exception($"Template for measurement {id} not found");
+
+        // Parse template schema
+        var schemaJson = template.Schema.RootElement.GetProperty("sections").GetRawText();
+        var sections = JsonSerializer.Deserialize<List<TemplateSectionDto>>(schemaJson) ?? new();
+
+        // Validate new measurement data
+        var validationResult = _validationService.ValidateMeasurementData(sections, dto.Data);
+        if (!validationResult.IsValid)
+        {
+            var errorMessages = string.Join(", ", validationResult.Errors.Select(e => 
+                $"{e.Section}.{e.Field}: {e.Error}"));
+            throw new Exception($"Validation failed: {errorMessages}");
+        }
+
+        // Create history entry with OLD data before updating
+        var oldDataSnapshot = measurement.Data;
+        var historyEntry = new MeasurementHistory(
+            measurementId: measurement.Id,
+            changeType: "Updated",
+            dataSnapshot: oldDataSnapshot,
+            changedBy: userId,
+            changeDescription: "Measurement data updated"
+        );
+        _context.MeasurementHistories.Add(historyEntry);
+
+        // Update measurement with new data
+        var newDataJson = JsonSerializer.Serialize(dto.Data);
+        measurement.Data = JsonDocument.Parse(newDataJson);
+
+        await _context.SaveChangesAsync();
+
+        return await GetMeasurementByIdAsync(id);
+    }
+
+    /// <summary>
+    /// Get history for a specific measurement
+    /// </summary>
+    public async Task<List<MeasurementHistoryDto>> GetMeasurementHistoryAsync(int measurementId)
+    {
+        var history = await _context.MeasurementHistories
+            .Include(mh => mh.Changer)
+            .Where(mh => mh.MeasurementId == measurementId)
+            .OrderByDescending(mh => mh.ChangedAt)
+            .ToListAsync();
+
+        return history.Select(h =>
+        {
+            var dataJson = h.DataSnapshot.RootElement.GetRawText();
+            var data = JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, object?>>>(dataJson) 
+                       ?? new();
+
+            return new MeasurementHistoryDto
+            {
+                Id = h.Id,
+                MeasurementId = h.MeasurementId,
+                ChangeType = h.ChangeType,
+                DataSnapshot = data,
+                ChangedBy = h.ChangedBy,
+                ChangedByUsername = h.Changer?.Username ?? "Unknown",
+                ChangedAt = h.ChangedAt,
+                ChangeDescription = h.ChangeDescription
+            };
         }).ToList();
     }
 }

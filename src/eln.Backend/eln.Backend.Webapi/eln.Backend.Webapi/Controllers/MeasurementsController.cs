@@ -119,4 +119,44 @@ public class MeasurementsController : ControllerBase
             return NotFound(new { error = ex.Message });
         }
     }
+
+
+    /// <summary>
+    /// Update an existing measurement
+    /// </summary>
+    [HttpPut("{id:int}")]
+    public async Task<ActionResult<MeasurementResponseDto>> UpdateMeasurement(
+        int id,
+        [FromBody] UpdateMeasurementDto dto)
+    {
+        try
+        {
+            // TODO: Get actual user ID from JWT token
+            int userId = 1; // Placeholder
+            
+            var result = await _measurementService.UpdateMeasurementAsync(id, dto, userId);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Get history of changes for a measurement
+    /// </summary>
+    [HttpGet("{id:int}/history")]
+    public async Task<ActionResult<List<MeasurementHistoryDto>>> GetMeasurementHistory(int id)
+    {
+        try
+        {
+            var history = await _measurementService.GetMeasurementHistoryAsync(id);
+            return Ok(history);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
 }
