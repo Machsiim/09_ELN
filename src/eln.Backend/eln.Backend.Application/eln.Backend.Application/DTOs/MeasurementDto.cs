@@ -1,3 +1,5 @@
+using System;
+
 namespace eln.Backend.Application.DTOs;
 
 /// <summary>
@@ -38,4 +40,36 @@ public class MeasurementListDto
     public string TemplateName { get; set; } = string.Empty;
     public string CreatedByUsername { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
+}
+
+
+/// <summary>
+/// Filter parameters for searching measurements
+/// </summary>
+public class MeasurementFilterDto
+{
+    /// <summary>
+    /// Filter by template ID (optional)
+    /// </summary>
+    public int? TemplateId { get; set; }
+
+    /// <summary>
+    /// Filter by series ID (optional)
+    /// </summary>
+    public int? SeriesId { get; set; }
+
+    /// <summary>
+    /// Filter measurements created from this date (optional)
+    /// </summary>
+    public DateTime? DateFrom { get; set; }
+
+    /// <summary>
+    /// Filter measurements created until this date (optional)
+    /// </summary>
+    public DateTime? DateTo { get; set; }
+
+    /// <summary>
+    /// Search text in series name, template name, or creator username (optional)
+    /// </summary>
+    public string? SearchText { get; set; }
 }
