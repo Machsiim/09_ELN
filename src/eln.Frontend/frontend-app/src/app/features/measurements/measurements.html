@@ -2,10 +2,37 @@
   <app-header />
 
   <main class="main-content">
-    <div>
-      <h1>Messungen</h1>
-      <p>Übersicht aller Messserien.</p>
-    </div>
+    <section class="measurements-card">
+      <header class="measurements-header">
+        <div>
+          <p class="subtitle">Messungen</p>
+          <h1>Letzte Messungen</h1>
+        </div>
+        <p class="hint">
+          Hier erscheinen demnächst alle Messserien, sobald Daten erfasst wurden.
+        </p>
+      </header>
+
+      <div class="toolbar">
+        <div class="search-wrapper">
+          <span class="search-icon">🔍</span>
+          <input type="text" placeholder="Suche ..." disabled>
+        </div>
+        <div class="toolbar-buttons">
+          <button type="button" class="icon-button" disabled title="Suche starten">🔎</button>
+          <button type="button" class="icon-button" disabled title="Filter">⚙️</button>
+          <button type="button" class="icon-button" disabled title="Sortierung">↕️</button>
+          <button type="button" class="icon-button danger" disabled title="Filter zurücksetzen">✕</button>
+        </div>
+      </div>
+
+      <div class="empty-state">
+        <p class="empty-title">Noch keine Messungen vorhanden</p>
+        <p class="empty-text">
+          Sobald Messdaten importiert oder erstellt werden, sehen Sie sie hier in der Übersicht.
+        </p>
+      </div>
+    </section>
   </main>
 
   <app-footer />

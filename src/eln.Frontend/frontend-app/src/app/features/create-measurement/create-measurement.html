@@ -38,6 +38,94 @@
         </div>
       }
 
+      @if (seriesLoading()) {
+        <div class="status info">
+          Messreihen werden geladen ...
+        </div>
+      }
+      @if (seriesError(); as seriesMessage) {
+        <div class="status error">
+          {{ seriesMessage }}
+        </div>
+      }
+
+      <div class="form-group series-select">
+        <div class="label-row">
+          <label for="seriesSelect">Messreihe auswählen</label>
+          @if (!showSeriesForm()) {
+            <button type="button" class="ghost-button" (click)="startCreateSeries()">
+              Neue Messreihe erstellen
+            </button>
+          }
+        </div>
+        <select id="seriesSelect"
+                class="form-control"
+                [disabled]="seriesLoading() || measurementSeries().length === 0"
+                #seriesSelect
+                (change)="onSeriesChange(seriesSelect.value)">
+          <option value="">Bitte wählen</option>
+          <option *ngFor="let series of measurementSeries(); trackBy: trackById"
+                  [value]="series.id"
+                  [selected]="series.id === selectedSeriesId()">
+            {{ series.name }}
+          </option>
+        </select>
+      </div>
+
+      @if (!seriesLoading() && measurementSeries().length === 0) {
+        <div class="status hint">
+          Es wurde noch keine Messreihe angelegt. Bitte zuerst eine Serie erstellen.
+        </div>
+      }
+
+      @if (showSeriesForm()) {
+        <div class="series-create-card">
+          <h2>Neue Messreihe</h2>
+          <form [formGroup]="seriesForm" (ngSubmit)="submitSeries()">
+            <div class="form-group">
+              <label for="seriesName">Name</label>
+              <input id="seriesName" type="text" class="form-control" formControlName="name">
+              @if (seriesForm.controls.name.invalid && seriesForm.controls.name.touched) {
+                <small class="status error">Name ist erforderlich.</small>
+              }
+            </div>
+            <div class="form-group">
+              <label for="seriesDescription">Beschreibung</label>
+              <textarea id="seriesDescription"
+                        rows="3"
+                        class="form-control"
+                        formControlName="description"
+                        placeholder="optional"></textarea>
+            </div>
+            <div class="series-create-actions">
+              <button type="submit" class="btn btn-primary" [disabled]="createSeriesLoading()">
+                Speichern
+              </button>
+              @if (measurementSeries().length > 0) {
+                <button type="button"
+                        class="btn btn-secondary"
+                        (click)="cancelCreateSeries()"
+                        [disabled]="createSeriesLoading()">
+                  Abbrechen
+                </button>
+              }
+            </div>
+          </form>
+          @if (createSeriesLoading()) {
+            <p class="status info">Messreihe wird gespeichert ...</p>
+          }
+          @if (createSeriesError(); as createError) {
+            <p class="status error">{{ createError }}</p>
+          }
+        </div>
+      }
+
+      @if (createSeriesSuccess(); as createSuccess) {
+        <div class="status success">
+          {{ createSuccess }}
+        </div>
+      }
+
       @if (activeSchema(); as schema) {
         @if (measurementForm; as form) {
           <form [formGroup]="form"
@@ -103,7 +191,9 @@
             </div>
 
             <div class="actions">
-              <button type="submit" class="btn btn-primary" [disabled]="!form.valid">
+              <button type="submit"
+                      class="btn btn-primary"
+                      [disabled]="!form.valid || submitting() || !selectedSeriesId()">
                 Messung vorbereiten
               </button>
             </div>
@@ -117,6 +207,18 @@
         <p class="status hint">
           Wähle ein Template aus der Liste, um die Messfelder zu sehen.
         </p>
+      }
+
+      @if (submitError(); as submitMessage) {
+        <div class="status error">
+          {{ submitMessage }}
+        </div>
+      }
+
+      @if (submitSuccess(); as successMessage) {
+        <div class="status success">
+          {{ successMessage }}
+        </div>
       }
     </section>
   </main>

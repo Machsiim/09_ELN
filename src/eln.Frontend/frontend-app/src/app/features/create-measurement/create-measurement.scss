@@ -46,6 +46,24 @@
   }
 }
 
+.series-select .label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ghost-button {
+  border: none;
+  background: transparent;
+  color: #2563eb;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
 .form-control {
   appearance: none;
   padding: 0.75rem 1rem;
@@ -82,11 +100,37 @@
     color: #b91c1c;
   }
 
+  &.success {
+    background: #dcfce7;
+    color: #15803d;
+  }
+
   &.hint {
     background: #f8fafc;
     color: #475569;
     border: 1px dashed #cbd5f5;
   }
+}
+
+.series-create-card {
+  border: 1px solid #dbeafe;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  background: #f8fafc;
+  margin-bottom: 1.5rem;
+
+  h2 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    font-size: 1.4rem;
+  }
+}
+
+.series-create-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-start;
+  margin-top: 1rem;
 }
 
 .schema-sections {
@@ -172,29 +216,46 @@
   }
 }
 
+.btn {
+  padding: 0.85rem 1.5rem;
+  border: none;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn-primary {
+  background: #2563eb;
+  color: #fff;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  &:not(:disabled):hover {
+    background: #1d4ed8;
+    box-shadow: 0 5px 15px rgba(37, 99, 235, 0.35);
+  }
+}
+
+.btn-secondary {
+  background: #e2e8f0;
+  color: #0f172a;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  &:not(:disabled):hover {
+    background: #cdd6e3;
+  }
+}
+
 .actions {
   display: flex;
   justify-content: flex-end;
   margin-top: 1.5rem;
-
-  .btn {
-    padding: 0.85rem 1.5rem;
-    border: none;
-    border-radius: 0.75rem;
-    background: #2563eb;
-    color: #fff;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.2s ease, box-shadow 0.2s ease;
-
-    &:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-
-    &:not(:disabled):hover {
-      background: #1d4ed8;
-      box-shadow: 0 5px 15px rgba(37, 99, 235, 0.35);
-    }
-  }
 }
