@@ -13,7 +13,7 @@
         </p>
       </header>
 
-      <form class="toolbar" (ngSubmit)="onSearch()">
+      <div class="toolbar">
         <div class="search-wrapper">
           <span class="search-icon">🔍</span>
           <input type="text"
@@ -23,12 +23,6 @@
                  [disabled]="loading()" />
         </div>
         <div class="toolbar-buttons">
-          <button type="submit"
-                  class="icon-button"
-                  title="Suche starten"
-                  [disabled]="loading()">
-            🔎
-          </button>
           <button type="button"
                   class="icon-button"
                   title="Filter anzeigen"
@@ -43,13 +37,20 @@
             ✕
           </button>
         </div>
-      </form>
+      </div>
 
       @if (filterPanelOpen()) {
         <div class="filter-panel" [formGroup]="filterForm">
           <div class="form-group">
-            <label for="seriesFilter">Serien-ID</label>
-            <input id="seriesFilter" type="number" formControlName="seriesId">
+            <label for="templateFilter">Template</label>
+            <select id="templateFilter" formControlName="templateId">
+              <option value="">Alle Templates</option>
+              @for (template of availableTemplates(); track template.id) {
+                <option [value]="template.id">
+                  {{ template.name }}
+                </option>
+              }
+            </select>
           </div>
           <div class="form-group">
             <label for="dateFrom">Datum von</label>

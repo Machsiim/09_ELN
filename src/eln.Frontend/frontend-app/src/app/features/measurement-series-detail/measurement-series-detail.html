@@ -27,56 +27,57 @@
       }
 
       @if (!loading() && measurements().length > 0) {
-        <div class="results-meta">
-          {{ measurements().length }} Messung{{ measurements().length !== 1 ? 'en' : '' }}
+        <div class="search-container">
+          <div class="search-input-wrapper">
+            <input
+              type="text"
+              class="search-input"
+              placeholder="Suche nach ID, Werten, Feldern..."
+              [value]="searchQuery()"
+              (input)="onSearchChange($event)"
+            />
+            @if (searchQuery()) {
+              <button type="button" class="clear-button" (click)="clearSearch()" title="Suche löschen">
+                ✕
+              </button>
+            }
+          </div>
+          <div class="results-meta">
+            {{ filteredMeasurements().length }} von {{ measurements().length }} Messung{{ measurements().length !== 1 ? 'en' : '' }}
+          </div>
         </div>
 
-        <div class="table-container">
-          <table class="measurements-table">
-            <thead>
-              <tr>
-                <th class="col-expand"></th>
-                <th>Mess-ID</th>
-                <th>Template</th>
-                <th>Erstellt von</th>
-                <th>Erstellt am</th>
-              </tr>
-            </thead>
-            <tbody>
-              <ng-container *ngFor="let measurement of measurements(); trackBy: trackById">
-                <tr class="measurement-row-main" (click)="toggleRow(measurement.id)">
-                  <td class="cell-expand">
-                    <span class="expand-icon" [class.expanded]="isRowExpanded(measurement.id)">
-                      {{ isRowExpanded(measurement.id) ? '▼' : '▶' }}
-                    </span>
-                  </td>
+        @if (filteredMeasurements().length > 0) {
+          <div class="table-container">
+            <table class="measurements-table">
+              <thead>
+                <tr>
+                  <th>Mess-ID</th>
+                  <th>Erstellt von</th>
+                  <th>Erstellt am</th>
+                  <th *ngFor="let column of getAllColumns()">{{ column }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let measurement of filteredMeasurements(); trackBy: trackById">
                   <td class="cell-id">#{{ measurement.id }}</td>
-                  <td class="cell-template">{{ measurement.templateName }}</td>
                   <td class="cell-author">{{ measurement.createdByUsername }}</td>
-                  <td class="cell-date">{{ measurement.createdAt | date: 'dd.MM.yyyy - HH:mm' }}</td>
-                </tr>
-                <tr class="measurement-row-detail" *ngIf="isRowExpanded(measurement.id)">
-                  <td colspan="5" class="cell-detail">
-                    <div class="measurement-data">
-                      <h4>Messwerte</h4>
-                      <div class="data-sections">
-                        <div *ngFor="let section of getDataKeys(measurement.data)" class="data-section">
-                          <h5>{{ section }}</h5>
-                          <div class="data-fields">
-                            <div *ngFor="let field of getFieldKeys(measurement.data[section])" class="data-field">
-                              <span class="field-label">{{ field }}:</span>
-                              <span class="field-value">{{ formatValue(measurement.data[section][field]) }}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                  <td class="cell-date">{{ measurement.createdAt | date: 'dd.MM.yyyy HH:mm' }}</td>
+                  <td *ngFor="let column of getAllColumns()" class="cell-value">
+                    {{ getValueForColumn(measurement, column) }}
                   </td>
                 </tr>
-              </ng-container>
-            </tbody>
-          </table>
-        </div>
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <div class="empty-state">
+            <p class="empty-title">Keine Ergebnisse</p>
+            <p class="empty-text">
+              Keine Messungen gefunden für "{{ searchQuery() }}".
+            </p>
+          </div>
+        }
       } @else {
         @if (!loading()) {
           <div class="empty-state">

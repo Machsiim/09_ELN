@@ -17,6 +17,7 @@ import {
   MeasurementService,
   MeasurementSearchParams
 } from '../../services/measurement.service';
+import { TemplateDto, TemplateService } from '../../services/template.service';
 
 interface MeasurementSeriesGroup {
   seriesId: number;
@@ -37,12 +38,14 @@ interface MeasurementSeriesGroup {
 })
 export class Measurements implements OnInit {
   private readonly measurementService = inject(MeasurementService);
+  private readonly templateService = inject(TemplateService);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly measurements = signal<MeasurementListItem[]>([]);
   readonly groupedMeasurements = signal<MeasurementSeriesGroup[]>([]);
+  readonly availableTemplates = signal<TemplateDto[]>([]);
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
   readonly success = signal<string | null>(null);
@@ -50,7 +53,7 @@ export class Measurements implements OnInit {
   readonly hasActiveQuery = computed(() => this.lastSearchTerm().length > 0);
   readonly searchControl = new FormControl('', { nonNullable: true });
   readonly filterForm = this.fb.nonNullable.group({
-    seriesId: [''],
+    templateId: [''],
     dateFrom: [''],
     dateTo: ['']
   });
@@ -59,19 +62,33 @@ export class Measurements implements OnInit {
   constructor() {
     this.searchControl.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => {
+      .subscribe((value) => {
         this.error.set(null);
+        const term = value.trim();
+        if (term.length > 0 || this.lastSearchTerm().length > 0) {
+          this.lastSearchTerm.set(term);
+          this.fetchMeasurements(term || undefined, this.buildFilterParams());
+        }
       });
   }
 
   ngOnInit(): void {
     this.fetchMeasurements();
+    this.loadTemplates();
   }
 
-  onSearch(): void {
-    const term = this.searchControl.value.trim();
-    this.lastSearchTerm.set(term);
-    this.fetchMeasurements(term || undefined, this.buildFilterParams());
+  private loadTemplates(): void {
+    this.templateService
+      .getTemplates()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (templates) => {
+          this.availableTemplates.set(templates);
+        },
+        error: (err) => {
+          console.error('Failed to load templates:', err);
+        }
+      });
   }
 
   resetSearch(): void {
@@ -105,7 +122,7 @@ export class Measurements implements OnInit {
       return;
     }
     this.filterForm.reset({
-      seriesId: '',
+      templateId: '',
       dateFrom: '',
       dateTo: ''
     });
@@ -156,30 +173,30 @@ export class Measurements implements OnInit {
     const raw = this.filterForm.getRawValue();
     const params: MeasurementSearchParams = {};
 
-    if (raw.seriesId.trim().length > 0) {
-      const parsed = Number(raw.seriesId);
+    if (raw.templateId !== null && raw.templateId !== undefined && String(raw.templateId).trim().length > 0) {
+      const parsed = Number(raw.templateId);
       if (!Number.isNaN(parsed)) {
-        params.seriesId = parsed;
+        params.templateId = parsed;
       }
     }
 
-    if (raw.dateFrom.trim().length > 0) {
-      params.dateFrom = raw.dateFrom;
+    if (raw.dateFrom && raw.dateFrom.trim().length > 0) {
+      params.dateFrom = `${raw.dateFrom}T00:00:00Z`;
     }
 
-    if (raw.dateTo.trim().length > 0) {
-      params.dateTo = raw.dateTo;
+    if (raw.dateTo && raw.dateTo.trim().length > 0) {
+      params.dateTo = `${raw.dateTo}T23:59:59Z`;
     }
 
     return params;
   }
 
   hasActiveFilters(): boolean {
-    const { seriesId, dateFrom, dateTo } = this.filterForm.getRawValue();
-    return (
-      seriesId.trim().length > 0 ||
-      dateFrom.trim().length > 0 ||
-      dateTo.trim().length > 0
+    const { templateId, dateFrom, dateTo } = this.filterForm.getRawValue();
+    return !!(
+      (templateId !== null && templateId !== undefined && String(templateId).trim().length > 0) ||
+      (dateFrom && dateFrom.trim().length > 0) ||
+      (dateTo && dateTo.trim().length > 0)
     );
   }
 
