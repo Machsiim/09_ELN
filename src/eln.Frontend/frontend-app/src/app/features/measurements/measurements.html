@@ -97,7 +97,11 @@
         </div>
         <div class="measurements-list">
           <article *ngFor="let group of groupedMeasurements(); trackBy: trackById"
-                   class="measurement-row">
+                   class="measurement-row"
+                   (click)="navigateToSeriesDetail(group.seriesId)"
+                   role="button"
+                   tabindex="0"
+                   [attr.aria-label]="'Öffne Messserie ' + group.seriesName">
             <div class="measurement-row-header">
               <div>
                 <p class="measurement-date">

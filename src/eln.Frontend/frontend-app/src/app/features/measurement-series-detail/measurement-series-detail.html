@@ -1,0 +1,94 @@
+<div class="page-container">
+  <app-header />
+
+  <main class="main-content">
+    <section class="series-detail-card">
+      <header class="series-detail-header">
+        <div class="header-top">
+          <button type="button" class="back-button" (click)="goBack()" title="Zurück zur Übersicht">
+            ← Zurück
+          </button>
+        </div>
+        <div>
+          <p class="subtitle">Messserie #{{ seriesId() }}</p>
+          <h1>{{ seriesName() || 'Lade ...' }}</h1>
+        </div>
+        <p class="hint">
+          Alle Messungen dieser Serie in tabellarischer Übersicht.
+        </p>
+      </header>
+
+      @if (error(); as message) {
+        <div class="status error">{{ message }}</div>
+      }
+
+      @if (loading()) {
+        <div class="status info">Messungen werden geladen ...</div>
+      }
+
+      @if (!loading() && measurements().length > 0) {
+        <div class="results-meta">
+          {{ measurements().length }} Messung{{ measurements().length !== 1 ? 'en' : '' }}
+        </div>
+
+        <div class="table-container">
+          <table class="measurements-table">
+            <thead>
+              <tr>
+                <th class="col-expand"></th>
+                <th>Mess-ID</th>
+                <th>Template</th>
+                <th>Erstellt von</th>
+                <th>Erstellt am</th>
+              </tr>
+            </thead>
+            <tbody>
+              <ng-container *ngFor="let measurement of measurements(); trackBy: trackById">
+                <tr class="measurement-row-main" (click)="toggleRow(measurement.id)">
+                  <td class="cell-expand">
+                    <span class="expand-icon" [class.expanded]="isRowExpanded(measurement.id)">
+                      {{ isRowExpanded(measurement.id) ? '▼' : '▶' }}
+                    </span>
+                  </td>
+                  <td class="cell-id">#{{ measurement.id }}</td>
+                  <td class="cell-template">{{ measurement.templateName }}</td>
+                  <td class="cell-author">{{ measurement.createdByUsername }}</td>
+                  <td class="cell-date">{{ measurement.createdAt | date: 'dd.MM.yyyy - HH:mm' }}</td>
+                </tr>
+                <tr class="measurement-row-detail" *ngIf="isRowExpanded(measurement.id)">
+                  <td colspan="5" class="cell-detail">
+                    <div class="measurement-data">
+                      <h4>Messwerte</h4>
+                      <div class="data-sections">
+                        <div *ngFor="let section of getDataKeys(measurement.data)" class="data-section">
+                          <h5>{{ section }}</h5>
+                          <div class="data-fields">
+                            <div *ngFor="let field of getFieldKeys(measurement.data[section])" class="data-field">
+                              <span class="field-label">{{ field }}:</span>
+                              <span class="field-value">{{ formatValue(measurement.data[section][field]) }}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </ng-container>
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        @if (!loading()) {
+          <div class="empty-state">
+            <p class="empty-title">Keine Messungen vorhanden</p>
+            <p class="empty-text">
+              Diese Messserie enthält noch keine Messungen.
+            </p>
+          </div>
+        }
+      }
+    </section>
+  </main>
+
+  <app-footer />
+</div>

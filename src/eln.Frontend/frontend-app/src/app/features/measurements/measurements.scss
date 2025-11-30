@@ -178,6 +178,18 @@
   flex-direction: column;
   gap: 0.75rem;
   box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 15px 30px rgba(15, 23, 42, 0.15);
+    border-color: #93c5fd;
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
 }
 
 .measurement-row-header {

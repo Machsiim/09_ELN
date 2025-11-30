@@ -76,4 +76,12 @@ export class MeasurementService {
       params: httpParams
     });
   }
+
+  getMeasurementsBySeriesId(seriesId: number): Observable<MeasurementResponseDto[]> {
+    return this.http.get<MeasurementResponseDto[]>(`${this.baseUrl}/series/${seriesId}`);
+  }
+
+  getMeasurementById(id: number): Observable<MeasurementResponseDto> {
+    return this.http.get<MeasurementResponseDto>(`${this.baseUrl}/${id}`);
+  }
 }

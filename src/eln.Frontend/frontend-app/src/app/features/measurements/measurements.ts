@@ -8,6 +8,7 @@ import {
   signal
 } from '@angular/core';
 import { FormBuilder, FormControl, ReactiveFormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Header } from '../../components/header/header';
 import { Footer } from '../../components/footer/footer';
@@ -37,6 +38,7 @@ interface MeasurementSeriesGroup {
 export class Measurements implements OnInit {
   private readonly measurementService = inject(MeasurementService);
   private readonly fb = inject(FormBuilder);
+  private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly measurements = signal<MeasurementListItem[]>([]);
@@ -112,6 +114,10 @@ export class Measurements implements OnInit {
 
   trackById(_: number, item: MeasurementSeriesGroup): number {
     return item.seriesId;
+  }
+
+  navigateToSeriesDetail(seriesId: number): void {
+    this.router.navigate(['/messungen/serie', seriesId]);
   }
 
   private fetchMeasurements(searchText?: string, filterParams?: MeasurementSearchParams): void {
