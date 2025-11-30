@@ -1,0 +1,95 @@
+<div class="page-container">
+  <app-header />
+
+  <main class="main-content">
+    <section class="series-detail-card">
+      <header class="series-detail-header">
+        <div class="header-top">
+          <button type="button" class="back-button" (click)="goBack()" title="Zurück zur Übersicht">
+            ← Zurück
+          </button>
+        </div>
+        <div>
+          <p class="subtitle">Messserie #{{ seriesId() }}</p>
+          <h1>{{ seriesName() || 'Lade ...' }}</h1>
+        </div>
+        <p class="hint">
+          Alle Messungen dieser Serie in tabellarischer Übersicht.
+        </p>
+      </header>
+
+      @if (error(); as message) {
+        <div class="status error">{{ message }}</div>
+      }
+
+      @if (loading()) {
+        <div class="status info">Messungen werden geladen ...</div>
+      }
+
+      @if (!loading() && measurements().length > 0) {
+        <div class="search-container">
+          <div class="search-input-wrapper">
+            <input
+              type="text"
+              class="search-input"
+              placeholder="Suche nach ID, Werten, Feldern..."
+              [value]="searchQuery()"
+              (input)="onSearchChange($event)"
+            />
+            @if (searchQuery()) {
+              <button type="button" class="clear-button" (click)="clearSearch()" title="Suche löschen">
+                ✕
+              </button>
+            }
+          </div>
+          <div class="results-meta">
+            {{ filteredMeasurements().length }} von {{ measurements().length }} Messung{{ measurements().length !== 1 ? 'en' : '' }}
+          </div>
+        </div>
+
+        @if (filteredMeasurements().length > 0) {
+          <div class="table-container">
+            <table class="measurements-table">
+              <thead>
+                <tr>
+                  <th>Mess-ID</th>
+                  <th>Erstellt von</th>
+                  <th>Erstellt am</th>
+                  <th *ngFor="let column of getAllColumns()">{{ column }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let measurement of filteredMeasurements(); trackBy: trackById">
+                  <td class="cell-id">#{{ measurement.id }}</td>
+                  <td class="cell-author">{{ measurement.createdByUsername }}</td>
+                  <td class="cell-date">{{ measurement.createdAt | date: 'dd.MM.yyyy HH:mm' }}</td>
+                  <td *ngFor="let column of getAllColumns()" class="cell-value">
+                    {{ getValueForColumn(measurement, column) }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <div class="empty-state">
+            <p class="empty-title">Keine Ergebnisse</p>
+            <p class="empty-text">
+              Keine Messungen gefunden für "{{ searchQuery() }}".
+            </p>
+          </div>
+        }
+      } @else {
+        @if (!loading()) {
+          <div class="empty-state">
+            <p class="empty-title">Keine Messungen vorhanden</p>
+            <p class="empty-text">
+              Diese Messserie enthält noch keine Messungen.
+            </p>
+          </div>
+        }
+      }
+    </section>
+  </main>
+
+  <app-footer />
+</div>

@@ -2,10 +2,147 @@
   <app-header />
 
   <main class="main-content">
-    <div>
-      <h1>Messungen</h1>
-      <p>Übersicht aller Messserien.</p>
-    </div>
+    <section class="measurements-card">
+      <header class="measurements-header">
+        <div>
+          <p class="subtitle">Messungen</p>
+          <h1>Alle Messungen</h1>
+        </div>
+        <p class="hint">
+          Durchsuche alle Messungen nach Seriennamen, Templates oder Autor*innen.
+        </p>
+      </header>
+
+      <div class="toolbar">
+        <div class="search-wrapper">
+          <span class="search-icon">🔍</span>
+          <input type="text"
+                 placeholder="Suche ..."
+                 autocomplete="off"
+                 [formControl]="searchControl"
+                 [disabled]="loading()" />
+        </div>
+        <div class="toolbar-buttons">
+          <button type="button"
+                  class="icon-button"
+                  title="Filter anzeigen"
+                  (click)="toggleFilterPanel()">
+            ⚙️
+          </button>
+          <button type="button"
+                  class="icon-button danger"
+                  title="Filter zurücksetzen"
+                  (click)="resetSearch()"
+                  [disabled]="!canResetSearch() || loading()">
+            ✕
+          </button>
+        </div>
+      </div>
+
+      @if (filterPanelOpen()) {
+        <div class="filter-panel" [formGroup]="filterForm">
+          <div class="form-group">
+            <label for="templateFilter">Template</label>
+            <select id="templateFilter" formControlName="templateId">
+              <option value="">Alle Templates</option>
+              @for (template of availableTemplates(); track template.id) {
+                <option [value]="template.id">
+                  {{ template.name }}
+                </option>
+              }
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="dateFrom">Datum von</label>
+            <input id="dateFrom" type="date" formControlName="dateFrom">
+          </div>
+          <div class="form-group">
+            <label for="dateTo">Datum bis</label>
+            <input id="dateTo" type="date" formControlName="dateTo">
+          </div>
+          <div class="filter-actions">
+            <button type="button"
+                    class="btn btn-primary"
+                    (click)="applyFilters()"
+                    [disabled]="loading()">
+              Filter anwenden
+            </button>
+            <button type="button"
+                    class="btn btn-secondary"
+                    (click)="resetFilters()"
+                    [disabled]="!hasActiveFilters()">
+              Zurücksetzen
+            </button>
+          </div>
+        </div>
+      }
+
+      @if (error(); as message) {
+        <div class="status error">{{ message }}</div>
+      }
+
+      @if (success(); as successMessage) {
+        <div class="status success">{{ successMessage }}</div>
+      }
+
+      @if (loading()) {
+        <div class="status info">Messungen werden geladen ...</div>
+      }
+
+      @if (!loading() && groupedMeasurements().length > 0) {
+        <div class="results-meta">
+          {{ groupedMeasurements().length }} Messserien
+          @if (hasActiveQuery()) {
+            <span>· Suchbegriff: „{{ lastSearchTerm() }}“</span>
+          }
+        </div>
+        <div class="measurements-list">
+          <article *ngFor="let group of groupedMeasurements(); trackBy: trackById"
+                   class="measurement-row"
+                   (click)="navigateToSeriesDetail(group.seriesId)"
+                   role="button"
+                   tabindex="0"
+                   [attr.aria-label]="'Öffne Messserie ' + group.seriesName">
+            <div class="measurement-row-header">
+              <div>
+                <p class="measurement-date">
+                  Letzte Messung:
+                  {{ group.latestCreatedAt | date: 'dd.MM.yyyy - HH:mm' }}
+                </p>
+                <h3>{{ group.seriesName }}</h3>
+              </div>
+              <span class="tag">Serie #{{ group.seriesId }}</span>
+            </div>
+            <div class="measurement-meta">
+              <span>Anzahl Messungen: {{ group.measurementCount }}</span>
+              <span>Letzte Messung: #{{ group.latestMeasurementId }} ({{ group.latestTemplateName }})</span>
+              <span>Autor*innen: {{ group.authorNames.join(', ') }}</span>
+            </div>
+            <div class="template-tags">
+              <span *ngFor="let template of group.templateNames" class="tag tag-secondary">
+                {{ template }}
+              </span>
+            </div>
+          </article>
+        </div>
+      } @else {
+        @if (!loading()) {
+          <div class="empty-state">
+            @if (hasActiveQuery()) {
+              <p class="empty-title">Keine Treffer</p>
+              <p class="empty-text">
+                Für „{{ lastSearchTerm() }}“ wurden keine Messungen gefunden.
+              </p>
+            } @else {
+              <p class="empty-title">Noch keine Messungen vorhanden</p>
+              <p class="empty-text">
+                Sobald Messdaten importiert oder erstellt werden, sehen Sie sie hier in der Übersicht.
+              </p>
+            }
+          </div>
+        }
+      }
+    </section>
   </main>
 
   <app-footer />
