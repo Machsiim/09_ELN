@@ -6,32 +6,127 @@
       <header class="measurements-header">
         <div>
           <p class="subtitle">Messungen</p>
-          <h1>Letzte Messungen</h1>
+          <h1>Alle Messungen</h1>
         </div>
         <p class="hint">
-          Hier erscheinen demnächst alle Messserien, sobald Daten erfasst wurden.
+          Durchsuche alle Messungen nach Seriennamen, Templates oder Autor*innen.
         </p>
       </header>
 
-      <div class="toolbar">
+      <form class="toolbar" (ngSubmit)="onSearch()">
         <div class="search-wrapper">
           <span class="search-icon">🔍</span>
-          <input type="text" placeholder="Suche ..." disabled>
+          <input type="text"
+                 placeholder="Suche ..."
+                 autocomplete="off"
+                 [formControl]="searchControl"
+                 [disabled]="loading()" />
         </div>
         <div class="toolbar-buttons">
-          <button type="button" class="icon-button" disabled title="Suche starten">🔎</button>
-          <button type="button" class="icon-button" disabled title="Filter">⚙️</button>
-          <button type="button" class="icon-button" disabled title="Sortierung">↕️</button>
-          <button type="button" class="icon-button danger" disabled title="Filter zurücksetzen">✕</button>
+          <button type="submit"
+                  class="icon-button"
+                  title="Suche starten"
+                  [disabled]="loading()">
+            🔎
+          </button>
+          <button type="button"
+                  class="icon-button"
+                  title="Filter anzeigen"
+                  (click)="toggleFilterPanel()">
+            ⚙️
+          </button>
+          <button type="button"
+                  class="icon-button danger"
+                  title="Filter zurücksetzen"
+                  (click)="resetSearch()"
+                  [disabled]="!canResetSearch() || loading()">
+            ✕
+          </button>
         </div>
-      </div>
+      </form>
 
-      <div class="empty-state">
-        <p class="empty-title">Noch keine Messungen vorhanden</p>
-        <p class="empty-text">
-          Sobald Messdaten importiert oder erstellt werden, sehen Sie sie hier in der Übersicht.
-        </p>
-      </div>
+      @if (filterPanelOpen()) {
+        <div class="filter-panel" [formGroup]="filterForm">
+          <div class="form-group">
+            <label for="seriesFilter">Serien-ID</label>
+            <input id="seriesFilter" type="number" formControlName="seriesId">
+          </div>
+          <div class="form-group">
+            <label for="dateFrom">Datum von</label>
+            <input id="dateFrom" type="date" formControlName="dateFrom">
+          </div>
+          <div class="form-group">
+            <label for="dateTo">Datum bis</label>
+            <input id="dateTo" type="date" formControlName="dateTo">
+          </div>
+          <div class="filter-actions">
+            <button type="button"
+                    class="btn btn-primary"
+                    (click)="applyFilters()"
+                    [disabled]="loading()">
+              Filter anwenden
+            </button>
+            <button type="button"
+                    class="btn btn-secondary"
+                    (click)="resetFilters()"
+                    [disabled]="!hasActiveFilters()">
+              Zurücksetzen
+            </button>
+          </div>
+        </div>
+      }
+
+      @if (error(); as message) {
+        <div class="status error">{{ message }}</div>
+      }
+
+      @if (loading()) {
+        <div class="status info">Messungen werden geladen ...</div>
+      }
+
+      @if (!loading() && measurements().length > 0) {
+        <div class="results-meta">
+          {{ measurements().length }} Messungen
+          @if (hasActiveQuery()) {
+            <span>· Suchbegriff: „{{ lastSearchTerm() }}“</span>
+          }
+        </div>
+        <div class="measurements-list">
+          <article *ngFor="let measurement of measurements(); trackBy: trackById"
+                   class="measurement-row">
+            <div class="measurement-row-header">
+              <div>
+                <p class="measurement-date">
+                  {{ measurement.createdAt | date: 'dd.MM.yyyy - HH:mm' }}
+                </p>
+                <h3>{{ measurement.seriesName }}</h3>
+              </div>
+              <span class="tag">{{ measurement.templateName }}</span>
+            </div>
+            <div class="measurement-meta">
+              <span>Serie-ID: #{{ measurement.seriesId }}</span>
+              <span>Messung: #{{ measurement.id }}</span>
+              <span>Von: {{ measurement.createdByUsername }}</span>
+            </div>
+          </article>
+        </div>
+      } @else {
+        @if (!loading()) {
+          <div class="empty-state">
+            @if (hasActiveQuery()) {
+              <p class="empty-title">Keine Treffer</p>
+              <p class="empty-text">
+                Für „{{ lastSearchTerm() }}“ wurden keine Messungen gefunden.
+              </p>
+            } @else {
+              <p class="empty-title">Noch keine Messungen vorhanden</p>
+              <p class="empty-text">
+                Sobald Messdaten importiert oder erstellt werden, sehen Sie sie hier in der Übersicht.
+              </p>
+            }
+          </div>
+        }
+      }
     </section>
   </main>
 
