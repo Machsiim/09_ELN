@@ -208,12 +208,25 @@
   font-weight: 600;
 }
 
+.tag-secondary {
+  background: #e0f2fe;
+  color: #0369a1;
+  font-size: 0.85rem;
+}
+
 .measurement-meta {
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
   color: #475569;
   font-size: 0.95rem;
+}
+
+.template-tags {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 .filter-panel {

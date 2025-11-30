@@ -80,33 +80,43 @@
         <div class="status error">{{ message }}</div>
       }
 
+      @if (success(); as successMessage) {
+        <div class="status success">{{ successMessage }}</div>
+      }
+
       @if (loading()) {
         <div class="status info">Messungen werden geladen ...</div>
       }
 
-      @if (!loading() && measurements().length > 0) {
+      @if (!loading() && groupedMeasurements().length > 0) {
         <div class="results-meta">
-          {{ measurements().length }} Messungen
+          {{ groupedMeasurements().length }} Messserien
           @if (hasActiveQuery()) {
             <span>· Suchbegriff: „{{ lastSearchTerm() }}“</span>
           }
         </div>
         <div class="measurements-list">
-          <article *ngFor="let measurement of measurements(); trackBy: trackById"
+          <article *ngFor="let group of groupedMeasurements(); trackBy: trackById"
                    class="measurement-row">
             <div class="measurement-row-header">
               <div>
                 <p class="measurement-date">
-                  {{ measurement.createdAt | date: 'dd.MM.yyyy - HH:mm' }}
+                  Letzte Messung:
+                  {{ group.latestCreatedAt | date: 'dd.MM.yyyy - HH:mm' }}
                 </p>
-                <h3>{{ measurement.seriesName }}</h3>
+                <h3>{{ group.seriesName }}</h3>
               </div>
-              <span class="tag">{{ measurement.templateName }}</span>
+              <span class="tag">Serie #{{ group.seriesId }}</span>
             </div>
             <div class="measurement-meta">
-              <span>Serie-ID: #{{ measurement.seriesId }}</span>
-              <span>Messung: #{{ measurement.id }}</span>
-              <span>Von: {{ measurement.createdByUsername }}</span>
+              <span>Anzahl Messungen: {{ group.measurementCount }}</span>
+              <span>Letzte Messung: #{{ group.latestMeasurementId }} ({{ group.latestTemplateName }})</span>
+              <span>Autor*innen: {{ group.authorNames.join(', ') }}</span>
+            </div>
+            <div class="template-tags">
+              <span *ngFor="let template of group.templateNames" class="tag tag-secondary">
+                {{ template }}
+              </span>
             </div>
           </article>
         </div>
