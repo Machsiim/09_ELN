@@ -73,3 +73,27 @@ public class MeasurementFilterDto
     /// </summary>
     public string? SearchText { get; set; }
 }
+
+/// <summary>
+/// Request to update an existing measurement
+/// </summary>
+public class UpdateMeasurementDto
+{
+    public Dictionary<string, Dictionary<string, object?>> Data { get; set; } = new();
+    // Data structure: { "SectionName": { "FieldName": value } }
+}
+
+/// <summary>
+/// Response for measurement history entry
+/// </summary>
+public class MeasurementHistoryDto
+{
+    public int Id { get; set; }
+    public int MeasurementId { get; set; }
+    public string ChangeType { get; set; } = string.Empty;
+    public Dictionary<string, Dictionary<string, object?>> DataSnapshot { get; set; } = new();
+    public int ChangedBy { get; set; }
+    public string ChangedByUsername { get; set; } = string.Empty;
+    public DateTime ChangedAt { get; set; }
+    public string? ChangeDescription { get; set; }
+}

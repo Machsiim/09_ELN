@@ -13,6 +13,7 @@ public class ElnContext : DbContext
     public DbSet<Template> Templates => Set<Template>();
     public DbSet<MeasurementSeries> MeasurementSeries => Set<MeasurementSeries>();
     public DbSet<Measurement> Measurements => Set<Measurement>();
+    public DbSet<MeasurementHistory> MeasurementHistories => Set<MeasurementHistory>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -37,6 +38,10 @@ public class ElnContext : DbContext
 
         modelBuilder.Entity<Measurement>()
             .Property(m => m.Data)
+            .HasColumnType("jsonb");
+
+        modelBuilder.Entity<MeasurementHistory>()
+            .Property(mh => mh.DataSnapshot)
             .HasColumnType("jsonb");
 
         // Relationships & Delete Behavior
@@ -75,6 +80,20 @@ public class ElnContext : DbContext
             .WithOne(m => m.Template)
             .HasForeignKey(m => m.TemplateId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        // Measurement -> MeasurementHistory
+        modelBuilder.Entity<Measurement>()
+            .HasMany(m => m.History)
+            .WithOne(mh => mh.Measurement)
+            .HasForeignKey(mh => mh.MeasurementId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // User -> MeasurementHistory
+        modelBuilder.Entity<User>()
+            .HasMany<MeasurementHistory>()
+            .WithOne(mh => mh.Changer)
+            .HasForeignKey(mh => mh.ChangedBy)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 
     private static string ToSnakeCase(string? name)

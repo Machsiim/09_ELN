@@ -29,4 +29,5 @@ public class Measurement
     public MeasurementSeries? Series { get; set; }
     public Template? Template { get; set; }
     public User? Creator { get; set; }
+    public List<MeasurementHistory> History { get; set; } = new();
 }
