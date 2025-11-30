@@ -21,6 +21,9 @@ builder.Services.AddSwaggerGen();
 
 // Register application services
 builder.Services.AddScoped<eln.Backend.Application.Services.TemplateService>();
+builder.Services.AddScoped<eln.Backend.Application.Services.MeasurementService>();
+builder.Services.AddScoped<eln.Backend.Application.Services.MeasurementValidationService>();
+builder.Services.AddScoped<eln.Backend.Application.Services.MeasurementSeriesService>();
 
 // Database Context - PostgreSQL
 builder.Services.AddDbContext<ElnContext>(opt =>

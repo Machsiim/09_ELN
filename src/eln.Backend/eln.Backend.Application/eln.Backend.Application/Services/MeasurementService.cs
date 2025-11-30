@@ -116,4 +116,68 @@ public class MeasurementService
         _context.Measurements.Remove(measurement);
         await _context.SaveChangesAsync();
     }
+
+    /// <summary>
+    /// Get filtered measurements based on search criteria
+    /// </summary>
+    public async Task<List<MeasurementListDto>> GetFilteredMeasurementsAsync(MeasurementFilterDto filter)
+    {
+        var query = _context.Measurements
+            .Include(m => m.Series)
+            .Include(m => m.Template)
+            .Include(m => m.Creator)
+            .AsQueryable();
+
+        // Filter by Template ID
+        if (filter.TemplateId.HasValue)
+        {
+            query = query.Where(m => m.TemplateId == filter.TemplateId.Value);
+        }
+
+        // Filter by Series ID
+        if (filter.SeriesId.HasValue)
+        {
+            query = query.Where(m => m.SeriesId == filter.SeriesId.Value);
+        }
+
+        // Filter by Date Range - From
+        if (filter.DateFrom.HasValue)
+        {
+            query = query.Where(m => m.CreatedAt >= filter.DateFrom.Value);
+        }
+
+        // Filter by Date Range - To
+        if (filter.DateTo.HasValue)
+        {
+            // Include the entire day of DateTo
+            var dateTo = filter.DateTo.Value.Date.AddDays(1);
+            query = query.Where(m => m.CreatedAt < dateTo);
+        }
+
+        // Search Text in Series Name, Template Name, or Creator Username
+        if (!string.IsNullOrWhiteSpace(filter.SearchText))
+        {
+            var searchLower = filter.SearchText.ToLower();
+            query = query.Where(m => 
+                (m.Series != null && m.Series.Name.ToLower().Contains(searchLower)) ||
+                (m.Template != null && m.Template.Name.ToLower().Contains(searchLower)) ||
+                (m.Creator != null && m.Creator.Username.ToLower().Contains(searchLower))
+            );
+        }
+
+        // Execute query and order by date descending
+        var measurements = await query
+            .OrderByDescending(m => m.CreatedAt)
+            .ToListAsync();
+
+        return measurements.Select(m => new MeasurementListDto
+        {
+            Id = m.Id,
+            SeriesId = m.SeriesId,
+            SeriesName = m.Series?.Name ?? "Unknown",
+            TemplateName = m.Template?.Name ?? "Unknown",
+            CreatedByUsername = m.Creator?.Username ?? "Unknown",
+            CreatedAt = m.CreatedAt
+        }).ToList();
+    }
 }
