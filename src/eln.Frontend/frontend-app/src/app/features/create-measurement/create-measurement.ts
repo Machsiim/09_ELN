@@ -47,7 +47,6 @@ export class CreateMeasurement implements OnInit {
   readonly showSeriesForm = signal(false);
   readonly createSeriesLoading = signal(false);
   readonly createSeriesError = signal<string | null>(null);
-  readonly createSeriesSuccess = signal<string | null>(null);
   readonly submitting = signal(false);
   readonly submitError = signal<string | null>(null);
   readonly toastMessage = signal<string | null>(null);
@@ -112,7 +111,6 @@ export class CreateMeasurement implements OnInit {
   startCreateSeries(): void {
     this.showSeriesForm.set(true);
     this.createSeriesError.set(null);
-    this.createSeriesSuccess.set(null);
   }
 
   cancelCreateSeries(): void {
@@ -123,7 +121,6 @@ export class CreateMeasurement implements OnInit {
 
   submitSeries(): void {
     this.createSeriesError.set(null);
-    this.createSeriesSuccess.set(null);
 
     if (this.seriesForm.invalid) {
       this.seriesForm.markAllAsTouched();
@@ -143,8 +140,7 @@ export class CreateMeasurement implements OnInit {
           this.selectedSeriesId.set(series.id);
           this.seriesForm.reset({ name: '', description: '' });
           this.showSeriesForm.set(false);
-          this.createSeriesSuccess.set(`Messreihe "${series.name}" wurde erstellt.`);
-          this.clearCreateSeriesSuccessLater();
+          this.showToast(`Messreihe "${series.name}" wurde angelegt.`);
         },
         error: () => {
           this.createSeriesLoading.set(false);
@@ -300,10 +296,6 @@ export class CreateMeasurement implements OnInit {
     }
 
     return data;
-  }
-
-  private clearCreateSeriesSuccessLater(): void {
-    setTimeout(() => this.createSeriesSuccess.set(null), 3500);
   }
 
   private showToast(message: string): void {

@@ -120,12 +120,6 @@
         </div>
       }
 
-      @if (createSeriesSuccess(); as createSuccess) {
-        <div class="status success">
-          {{ createSuccess }}
-        </div>
-      }
-
       @if (activeSchema(); as schema) {
         @if (measurementForm; as form) {
           <form [formGroup]="form"
