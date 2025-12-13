@@ -37,6 +37,11 @@ export class MeasurementSeriesDetail implements OnInit {
   readonly seriesName = signal<string>('');
   readonly selectedMeasurementIds = signal<Set<number>>(new Set());
   readonly deleteInProgress = signal(false);
+  readonly confirmVisible = signal(false);
+  readonly confirmMessage = signal<string>('');
+  readonly pendingDeletionIds = signal<number[]>([]);
+  readonly successMessage = signal<string | null>(null);
+  private successTimeout: number | null = null;
 
   ngOnInit(): void {
     this.route.params
@@ -70,7 +75,7 @@ export class MeasurementSeriesDetail implements OnInit {
     this.selectedMeasurementIds.set(current);
   }
 
-  async deleteSelectedMeasurements(): Promise<void> {
+  requestDeletion(): void {
     if (!this.hasSelection() || this.deleteInProgress()) {
       return;
     }
@@ -78,14 +83,26 @@ export class MeasurementSeriesDetail implements OnInit {
     const ids = Array.from(this.selectedMeasurementIds());
     const confirmationMessage =
       ids.length === 1
-        ? `Soll die Messung #${ids[0]} wirklich gelöscht werden?`
-        : `Sollen die ${ids.length} ausgewählten Messungen wirklich gelöscht werden?`;
+        ? `Sind Sie sicher, dass Sie die Messung #${ids[0]} löschen wollen?`
+        : `Sind Sie sicher, dass Sie die Messungen ${ids.map(id => `#${id}`).join(', ')} löschen wollen?`;
 
-    const confirmed = window.confirm(confirmationMessage);
-    if (!confirmed) {
+    this.pendingDeletionIds.set(ids);
+    this.confirmMessage.set(`${confirmationMessage} Diese Aktion kann nicht widerrufen werden.`);
+    this.confirmVisible.set(true);
+  }
+
+  cancelDeletion(): void {
+    if (this.deleteInProgress()) return;
+    this.confirmVisible.set(false);
+    this.pendingDeletionIds.set([]);
+  }
+
+  async confirmDeletion(): Promise<void> {
+    if (this.deleteInProgress() || this.pendingDeletionIds().length === 0) {
       return;
     }
 
+    const ids = this.pendingDeletionIds();
     this.deleteInProgress.set(true);
     this.error.set(null);
 
@@ -94,7 +111,7 @@ export class MeasurementSeriesDetail implements OnInit {
         ids.map(id => firstValueFrom(this.measurementService.deleteMeasurement(id)))
       );
 
-      const remaining = this.measurements().filter(m => !this.selectedMeasurementIds().has(m.id));
+      const remaining = this.measurements().filter(m => !ids.includes(m.id));
       this.measurements.set(remaining);
       this.selectedMeasurementIds.set(new Set());
 
@@ -103,12 +120,28 @@ export class MeasurementSeriesDetail implements OnInit {
       } else {
         this.filteredMeasurements.set(remaining);
       }
+      this.confirmVisible.set(false);
+      this.pendingDeletionIds.set([]);
+      this.showSuccess(ids.length === 1
+        ? `Messung #${ids[0]} wurde gelöscht.`
+        : `${ids.length} Messungen wurden gelöscht.`);
     } catch (err) {
       console.error('Failed to delete measurements', err);
       this.error.set('Ausgewählte Messungen konnten nicht gelöscht werden.');
     } finally {
       this.deleteInProgress.set(false);
     }
+  }
+
+  private showSuccess(message: string): void {
+    this.successMessage.set(message);
+    if (this.successTimeout) {
+      window.clearTimeout(this.successTimeout);
+    }
+    this.successTimeout = window.setTimeout(() => {
+      this.successMessage.set(null);
+      this.successTimeout = null;
+    }, 4000);
   }
 
   trackById(_: number, item: MeasurementResponseDto): number {

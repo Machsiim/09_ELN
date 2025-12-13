@@ -54,7 +54,7 @@
                 type="button"
                 class="action-button danger"
                 [disabled]="!hasSelection() || deleteInProgress()"
-                (click)="deleteSelectedMeasurements()"
+                (click)="requestDeletion()"
               >
                 {{ deleteInProgress() ? 'Löschen ...' : 'Löschen' }}
               </button>
@@ -116,3 +116,31 @@
 
   <app-footer />
 </div>
+
+@if (confirmVisible()) {
+  <div class="modal-backdrop">
+    <div class="modal-dialog">
+      <h2>Aktion bestätigen</h2>
+      <p>{{ confirmMessage() }}</p>
+      <div class="modal-actions">
+        <button type="button" class="modal-button" (click)="cancelDeletion()" [disabled]="deleteInProgress()">
+          Abbrechen
+        </button>
+        <button
+          type="button"
+          class="modal-button danger"
+          (click)="confirmDeletion()"
+          [disabled]="deleteInProgress()"
+        >
+          {{ deleteInProgress() ? 'Löschen ...' : 'Löschen' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (successMessage()) {
+  <div class="toast toast-success">
+    {{ successMessage() }}
+  </div>
+}
