@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { MatIconModule } from '@angular/material/icon';
 import {
   Component,
   DestroyRef,
@@ -32,7 +33,7 @@ interface MeasurementSeriesGroup {
 
 @Component({
   selector: 'app-measurements',
-  imports: [CommonModule, ReactiveFormsModule, Header, Footer],
+  imports: [CommonModule, ReactiveFormsModule, MatIconModule, Header, Footer],
   templateUrl: './measurements.html',
   styleUrl: './measurements.scss'
 })

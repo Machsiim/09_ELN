@@ -15,7 +15,7 @@
 
       <div class="toolbar">
         <div class="search-wrapper">
-          <span class="search-icon">🔍</span>
+          <mat-icon class="search-icon" aria-hidden="true">search</mat-icon>
           <input type="text"
                  placeholder="Suche ..."
                  autocomplete="off"
@@ -27,14 +27,14 @@
                   class="icon-button"
                   title="Filter anzeigen"
                   (click)="toggleFilterPanel()">
-            ⚙️
+            <mat-icon aria-hidden="true">tune</mat-icon>
           </button>
           <button type="button"
                   class="icon-button danger"
                   title="Filter zurücksetzen"
                   (click)="resetSearch()"
                   [disabled]="!canResetSearch() || loading()">
-            ✕
+            <mat-icon aria-hidden="true">close</mat-icon>
           </button>
         </div>
       </div>
