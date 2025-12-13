@@ -42,8 +42,18 @@
               </button>
             }
           </div>
-          <div class="results-meta">
-            {{ filteredMeasurements().length }} von {{ measurements().length }} Messung{{ measurements().length !== 1 ? 'en' : '' }}
+          <div class="results-actions">
+            <div class="results-meta">
+              {{ filteredMeasurements().length }} von {{ measurements().length }} Messung{{ measurements().length !== 1 ? 'en' : '' }}
+            </div>
+            <div class="action-buttons">
+              <button type="button" class="action-button" disabled>
+                Bearbeiten
+              </button>
+              <button type="button" class="action-button" disabled>
+                Löschen
+              </button>
+            </div>
           </div>
         </div>
 
