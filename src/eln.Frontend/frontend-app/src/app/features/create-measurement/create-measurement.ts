@@ -50,7 +50,8 @@ export class CreateMeasurement implements OnInit {
   readonly createSeriesSuccess = signal<string | null>(null);
   readonly submitting = signal(false);
   readonly submitError = signal<string | null>(null);
-  readonly submitSuccess = signal<string | null>(null);
+  readonly toastMessage = signal<string | null>(null);
+  private toastTimeout: number | null = null;
 
   measurementForm: FormGroup | null = null;
   private controlMap = new Map<string, { section: string; field: string }>();
@@ -230,7 +231,7 @@ export class CreateMeasurement implements OnInit {
       .subscribe({
         next: (response) => {
           this.submitting.set(false);
-          this.submitSuccess.set(`Messung #${response.id} wurde gespeichert.`);
+          this.showToast(`Messung #${response.id} wurde gespeichert.`);
           this.measurementForm?.reset();
         },
         error: () => {
@@ -303,6 +304,17 @@ export class CreateMeasurement implements OnInit {
 
   private clearCreateSeriesSuccessLater(): void {
     setTimeout(() => this.createSeriesSuccess.set(null), 3500);
+  }
+
+  private showToast(message: string): void {
+    this.toastMessage.set(message);
+    if (this.toastTimeout) {
+      window.clearTimeout(this.toastTimeout);
+    }
+    this.toastTimeout = window.setTimeout(() => {
+      this.toastMessage.set(null);
+      this.toastTimeout = null;
+    }, 4000);
   }
 
   private parseSchema(schema: string): TemplateSchema {

@@ -215,13 +215,14 @@
         </div>
       }
 
-      @if (submitSuccess(); as successMessage) {
-        <div class="status success">
-          {{ successMessage }}
-        </div>
-      }
     </section>
   </main>
 
   <app-footer />
 </div>
+
+@if (toastMessage()) {
+  <div class="toast toast-success">
+    {{ toastMessage() }}
+  </div>
+}
