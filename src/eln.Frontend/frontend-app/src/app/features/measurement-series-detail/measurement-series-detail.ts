@@ -35,6 +35,8 @@ export class MeasurementSeriesDetail implements OnInit {
   readonly error = signal<string | null>(null);
   readonly seriesId = signal<number | null>(null);
   readonly seriesName = signal<string>('');
+  readonly selectedMeasurementIds = signal<Set<number>>(new Set());
+  readonly deleteInProgress = signal(false);
 
   ngOnInit(): void {
     this.route.params
@@ -48,6 +50,65 @@ export class MeasurementSeriesDetail implements OnInit {
           this.error.set('Ungültige Serien-ID');
         }
       });
+  }
+
+  isSelected(measurementId: number): boolean {
+    return this.selectedMeasurementIds().has(measurementId);
+  }
+
+  hasSelection(): boolean {
+    return this.selectedMeasurementIds().size > 0;
+  }
+
+  toggleSelection(measurementId: number, checked: boolean): void {
+    const current = new Set(this.selectedMeasurementIds());
+    if (checked) {
+      current.add(measurementId);
+    } else {
+      current.delete(measurementId);
+    }
+    this.selectedMeasurementIds.set(current);
+  }
+
+  async deleteSelectedMeasurements(): Promise<void> {
+    if (!this.hasSelection() || this.deleteInProgress()) {
+      return;
+    }
+
+    const ids = Array.from(this.selectedMeasurementIds());
+    const confirmationMessage =
+      ids.length === 1
+        ? `Soll die Messung #${ids[0]} wirklich gelöscht werden?`
+        : `Sollen die ${ids.length} ausgewählten Messungen wirklich gelöscht werden?`;
+
+    const confirmed = window.confirm(confirmationMessage);
+    if (!confirmed) {
+      return;
+    }
+
+    this.deleteInProgress.set(true);
+    this.error.set(null);
+
+    try {
+      await Promise.all(
+        ids.map(id => firstValueFrom(this.measurementService.deleteMeasurement(id)))
+      );
+
+      const remaining = this.measurements().filter(m => !this.selectedMeasurementIds().has(m.id));
+      this.measurements.set(remaining);
+      this.selectedMeasurementIds.set(new Set());
+
+      if (this.searchQuery().trim()) {
+        this.filterMeasurements();
+      } else {
+        this.filteredMeasurements.set(remaining);
+      }
+    } catch (err) {
+      console.error('Failed to delete measurements', err);
+      this.error.set('Ausgewählte Messungen konnten nicht gelöscht werden.');
+    } finally {
+      this.deleteInProgress.set(false);
+    }
   }
 
   trackById(_: number, item: MeasurementResponseDto): number {
@@ -209,6 +270,7 @@ export class MeasurementSeriesDetail implements OnInit {
 
           this.measurements.set(fullMeasurements);
           this.filteredMeasurements.set(fullMeasurements);
+          this.selectedMeasurementIds.set(new Set());
           this.loading.set(false);
         },
         error: () => {

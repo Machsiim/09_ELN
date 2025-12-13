@@ -84,4 +84,8 @@ export class MeasurementService {
   getMeasurementById(id: number): Observable<MeasurementResponseDto> {
     return this.http.get<MeasurementResponseDto>(`${this.baseUrl}/${id}`);
   }
+
+  deleteMeasurement(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${id}`);
+  }
 }

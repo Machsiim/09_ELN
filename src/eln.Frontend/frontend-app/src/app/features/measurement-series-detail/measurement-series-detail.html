@@ -50,8 +50,13 @@
               <button type="button" class="action-button" disabled>
                 Bearbeiten
               </button>
-              <button type="button" class="action-button" disabled>
-                Löschen
+              <button
+                type="button"
+                class="action-button danger"
+                [disabled]="!hasSelection() || deleteInProgress()"
+                (click)="deleteSelectedMeasurements()"
+              >
+                {{ deleteInProgress() ? 'Löschen ...' : 'Löschen' }}
               </button>
             </div>
           </div>
@@ -62,6 +67,7 @@
             <table class="measurements-table">
               <thead>
                 <tr>
+                  <th class="select-column"></th>
                   <th>Mess-ID</th>
                   <th>Erstellt von</th>
                   <th>Erstellt am</th>
@@ -70,6 +76,13 @@
               </thead>
               <tbody>
                 <tr *ngFor="let measurement of filteredMeasurements(); trackBy: trackById">
+                  <td class="select-column">
+                    <input
+                      type="checkbox"
+                      [checked]="isSelected(measurement.id)"
+                      (change)="toggleSelection(measurement.id, $any($event.target).checked)"
+                    />
+                  </td>
                   <td class="cell-id">#{{ measurement.id }}</td>
                   <td class="cell-author">{{ measurement.createdByUsername }}</td>
                   <td class="cell-date">{{ measurement.createdAt | date: 'dd.MM.yyyy HH:mm' }}</td>
