@@ -53,7 +53,7 @@ export class CreateMeasurement implements OnInit {
   private toastTimeout: number | null = null;
 
   measurementForm: FormGroup | null = null;
-  private controlMap = new Map<string, { section: string; field: string }>();
+  private controlMap = new Map<string, { section: string; card: string; field: string }>();
   readonly seriesForm = this.fb.nonNullable.group({
     name: ['', [Validators.required, Validators.maxLength(200)]],
     description: ['']
@@ -263,8 +263,9 @@ export class CreateMeasurement implements OnInit {
           const validators = field.type === 'number' ? [Validators.pattern(/^-?\d+(\.\d+)?$/)] : [];
           controls[controlName] = this.fb.control('', validators);
           const sectionKey = section.title?.trim() || 'Sektion';
+          const cardKey = card.title?.trim() || 'Bereich';
           const fieldKey = field.label?.trim() || 'Feld';
-          this.controlMap.set(controlName, { section: sectionKey, field: fieldKey });
+          this.controlMap.set(controlName, { section: sectionKey, card: cardKey, field: fieldKey });
         });
       });
     });
@@ -286,13 +287,15 @@ export class CreateMeasurement implements OnInit {
       }
       const value = control.value;
       const sectionName = meta.section || 'Sektion';
+      const cardName = meta.card || 'Bereich';
       const fieldName = meta.field || 'Feld';
 
       if (!data[sectionName]) {
         data[sectionName] = {};
       }
 
-      data[sectionName][fieldName] = value;
+      const compositeField = cardName ? `${cardName} - ${fieldName}` : fieldName;
+      data[sectionName][compositeField] = value;
     }
 
     return data;

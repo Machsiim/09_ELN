@@ -14,6 +14,11 @@ import { MeasurementResponseDto, MeasurementService } from '../../services/measu
 
 interface SectionEntry {
   name: string;
+  cards: CardEntry[];
+}
+
+interface CardEntry {
+  name: string;
   fields: { key: string; value: unknown }[];
 }
 
@@ -77,15 +82,31 @@ export class MeasurementDetail implements OnInit {
     if (!measurement) {
       return [];
     }
-    const entries: SectionEntry[] = [];
+
+    const sections: SectionEntry[] = [];
+
     for (const [sectionName, fields] of Object.entries(measurement.data)) {
-      const fieldEntries = Object.entries(fields).map(([key, value]) => ({
-        key,
-        value
-      }));
-      entries.push({ name: sectionName, fields: fieldEntries });
+      const cards = new Map<string, CardEntry>();
+
+      for (const [rawKey, value] of Object.entries(fields)) {
+        const separatorIndex = rawKey.indexOf(' - ');
+        const cardName = separatorIndex > -1 ? rawKey.slice(0, separatorIndex) : 'Allgemein';
+        const fieldLabel = separatorIndex > -1 ? rawKey.slice(separatorIndex + 3) : rawKey;
+
+        if (!cards.has(cardName)) {
+          cards.set(cardName, { name: cardName, fields: [] });
+        }
+
+        cards.get(cardName)!.fields.push({ key: fieldLabel, value });
+      }
+
+      sections.push({
+        name: sectionName,
+        cards: Array.from(cards.values())
+      });
     }
-    return entries;
+
+    return sections;
   }
 
   formatValue(value: unknown): string {

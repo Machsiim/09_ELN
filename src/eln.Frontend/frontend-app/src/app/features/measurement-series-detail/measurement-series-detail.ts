@@ -257,14 +257,16 @@ export class MeasurementSeriesDetail implements OnInit {
   }
 
   getValueForColumn(measurement: MeasurementResponseDto, column: string): string {
-    const [sectionName, fieldName] = column.split(' - ');
+    const separatorIndex = column.indexOf(' - ');
+    const sectionName = separatorIndex > -1 ? column.slice(0, separatorIndex) : column;
+    const fieldKey = separatorIndex > -1 ? column.slice(separatorIndex + 3) : '';
 
-    if (!sectionName || !fieldName) return '-';
+    if (!sectionName || !fieldKey) return '-';
 
     const section = measurement.data[sectionName];
     if (!section) return '-';
 
-    const value = section[fieldName];
+    const value = section[fieldKey];
 
     if (value === null || value === undefined) {
       return '-';

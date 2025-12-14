@@ -13,7 +13,7 @@
         </div>
         @if (measurement(); as data) {
           <p class="meta">
-            Serie #{{ data.seriesId }} · Vorlage: {{ data.templateName }} · Erstellt von {{ data.createdByUsername }} am
+            Serie #{{ data.seriesId }} · Template: {{ data.templateName }} · Erstellt von {{ data.createdByUsername }} am
             {{ data.createdAt | date: 'dd.MM.yyyy HH:mm' }}
           </p>
         }
@@ -35,26 +35,28 @@
                 <header class="preview-section-header">
                   <h2>{{ section.name }}</h2>
                 </header>
-                <div class="preview-cards single-card">
-                  <div class="preview-card">
-                    <header class="preview-card-header">
-                      <div>
-                        <h3>Messwerte</h3>
-                        <small>{{ section.fields.length }} Feld{{ section.fields.length === 1 ? '' : 'er' }}</small>
-                      </div>
-                    </header>
-                    <ul class="preview-fields">
-                      @for (field of section.fields; track field.key) {
-                        <li>
-                          <div class="field-meta">
-                            <span class="field-label">{{ field.key }}</span>
-                            <span class="field-type">Wert</span>
-                          </div>
-                          <span class="field-value">{{ formatValue(field.value) }}</span>
-                        </li>
-                      }
-                    </ul>
-                  </div>
+                <div class="preview-cards">
+                  @for (card of section.cards; track card.name) {
+                    <div class="preview-card">
+                      <header class="preview-card-header">
+                        <div>
+                          <h3>{{ card.name }}</h3>
+                          <small>{{ card.fields.length }} Feld{{ card.fields.length === 1 ? '' : 'er' }}</small>
+                        </div>
+                      </header>
+                      <ul class="preview-fields">
+                        @for (field of card.fields; track field.key) {
+                          <li>
+                            <div class="field-meta">
+                              <span class="field-label">{{ field.key }}</span>
+                              <span class="field-type">Wert</span>
+                            </div>
+                            <span class="field-value">{{ formatValue(field.value) }}</span>
+                          </li>
+                        }
+                      </ul>
+                    </div>
+                  }
                 </div>
               </article>
             }
