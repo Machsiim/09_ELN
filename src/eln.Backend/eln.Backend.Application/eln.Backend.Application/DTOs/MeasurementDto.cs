@@ -92,8 +92,20 @@ public class MeasurementHistoryDto
     public int MeasurementId { get; set; }
     public string ChangeType { get; set; } = string.Empty;
     public Dictionary<string, Dictionary<string, object?>> DataSnapshot { get; set; } = new();
+    public List<FieldChangeDto> Changes { get; set; } = new(); // NEW: Detailed changes
     public int ChangedBy { get; set; }
     public string ChangedByUsername { get; set; } = string.Empty;
     public DateTime ChangedAt { get; set; }
     public string? ChangeDescription { get; set; }
+}
+
+/// <summary>
+/// Represents a single field change
+/// </summary>
+public class FieldChangeDto
+{
+    public string Section { get; set; } = string.Empty;
+    public string Field { get; set; } = string.Empty;
+    public string? OldValue { get; set; }
+    public string? NewValue { get; set; }
 }
