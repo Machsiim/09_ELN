@@ -7,16 +7,24 @@
         <button class="back-button" type="button" (click)="goBack()">
           ← Zurück
         </button>
-        <div class="titles">
-          <p class="eyebrow">Messung</p>
-          <h1>#{{ measurement()?.id || '...' }}</h1>
+        <div class="header-main">
+          <div class="titles">
+            <p class="eyebrow">Messung</p>
+            <h1>#{{ measurement()?.id || '...' }}</h1>
+          </div>
+          @if (measurement(); as data) {
+            <div class="header-meta">
+              <p class="meta">
+                Serie #{{ data.seriesId }} · Template: {{ data.templateName }} · Erstellt von {{ data.createdByUsername }} am
+                {{ data.createdAt | date: 'dd.MM.yyyy HH:mm' }}
+              </p>
+              <div class="action-buttons">
+                <button class="action-button">Bearbeiten</button>
+                <button class="action-button danger" (click)="confirmDelete()">Löschen</button>
+              </div>
+            </div>
+          }
         </div>
-        @if (measurement(); as data) {
-          <p class="meta">
-            Serie #{{ data.seriesId }} · Template: {{ data.templateName }} · Erstellt von {{ data.createdByUsername }} am
-            {{ data.createdAt | date: 'dd.MM.yyyy HH:mm' }}
-          </p>
-        }
       </header>
 
       @if (error(); as message) {
@@ -68,3 +76,25 @@
 
   <app-footer />
 </div>
+
+@if (deleteConfirmVisible()) {
+  <div class="modal-backdrop">
+    <div class="modal-dialog">
+      <h2>Aktion bestätigen</h2>
+      <p>Soll die Messung {{ measurement()?.id }} wirklich gelöscht werden? Diese Aktion kann nicht widerrufen werden.</p>
+      <div class="modal-actions">
+        <button class="modal-button" type="button" (click)="closeDeleteModal()" [disabled]="deleteInProgress()">
+          Abbrechen
+        </button>
+        <button
+          class="modal-button danger"
+          type="button"
+          (click)="deleteMeasurement()"
+          [disabled]="deleteInProgress()"
+        >
+          {{ deleteInProgress() ? 'Löschen ...' : 'Löschen' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

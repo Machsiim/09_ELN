@@ -38,6 +38,8 @@ export class MeasurementDetail implements OnInit {
   readonly measurement = signal<MeasurementResponseDto | null>(null);
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
+  readonly deleteInProgress = signal(false);
+  readonly deleteConfirmVisible = signal(false);
 
   ngOnInit(): void {
     this.route.params.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(params => {
@@ -75,6 +77,40 @@ export class MeasurementDetail implements OnInit {
       return;
     }
     this.router.navigate([`/messungen/serie/${measurement.seriesId}`]);
+  }
+
+  confirmDelete(): void {
+    if (!this.deleteInProgress()) {
+      this.deleteConfirmVisible.set(true);
+    }
+  }
+
+  closeDeleteModal(): void {
+    if (this.deleteInProgress()) return;
+    this.deleteConfirmVisible.set(false);
+  }
+
+  deleteMeasurement(): void {
+    const measurement = this.measurement();
+    if (!measurement || this.deleteInProgress()) {
+      return;
+    }
+
+    this.deleteInProgress.set(true);
+    this.measurementService
+      .deleteMeasurement(measurement.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.deleteInProgress.set(false);
+          this.deleteConfirmVisible.set(false);
+          this.router.navigate([`/messungen/serie/${measurement.seriesId}`]);
+        },
+        error: () => {
+          this.deleteInProgress.set(false);
+          this.error.set('Messung konnte nicht gelöscht werden.');
+        }
+      });
   }
 
   getSections(): SectionEntry[] {
