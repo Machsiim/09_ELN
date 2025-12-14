@@ -60,7 +60,7 @@ public class MeasurementSeriesController : ControllerBase
         {
             // TODO: Get actual user ID from JWT token
             int userId = 1; // Placeholder
-            
+
             var result = await _seriesService.CreateSeriesAsync(dto, userId);
             return CreatedAtAction(nameof(GetSeries), new { id = result.Id }, result);
         }
@@ -84,6 +84,25 @@ public class MeasurementSeriesController : ControllerBase
         catch (Exception ex)
         {
             return NotFound(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Update an existing measurement series
+    /// </summary>
+    [HttpPut("{id:int}")]
+    public async Task<ActionResult<MeasurementSeriesResponseDto>> UpdateSeries(
+        int id,
+        [FromBody] UpdateMeasurementSeriesDto dto)
+    {
+        try
+        {
+            var result = await _seriesService.UpdateSeriesAsync(id, dto);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
         }
     }
 }

@@ -78,4 +78,23 @@ public class MeasurementSeriesService
         _context.MeasurementSeries.Remove(series);
         await _context.SaveChangesAsync();
     }
+
+
+    /// <summary>
+    /// Update an existing measurement series
+    /// </summary>
+    public async Task<MeasurementSeriesResponseDto> UpdateSeriesAsync(int id, UpdateMeasurementSeriesDto dto)
+    {
+        var series = await _context.MeasurementSeries.FindAsync(id);
+        if (series == null)
+            throw new Exception($"MeasurementSeries with ID {id} not found");
+
+        // Update properties
+        series.Name = dto.Name;
+        series.Description = dto.Description;
+
+        await _context.SaveChangesAsync();
+
+        return await GetSeriesByIdAsync(id);
+    }
 }
