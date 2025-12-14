@@ -14,7 +14,7 @@ import {
 } from '@angular/forms';
 import { TemplateDto, TemplateService } from '../../services/template.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { CommonModule } from '@angular/common';
+
 import {
   TemplateCardSchema,
   TemplateFieldSchema,
@@ -35,7 +35,7 @@ type BuilderField = TemplateFieldSchema;
 
 @Component({
   selector: 'app-templates',
-  imports: [CommonModule, ReactiveFormsModule, Header, Footer],
+  imports: [ReactiveFormsModule, Header, Footer],
   templateUrl: './templates.html',
   styleUrl: './templates.scss'
 })

@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import {
   Component,
   DestroyRef,
@@ -24,7 +24,7 @@ import {
 } from '../../services/measurement-series.service';
 @Component({
   selector: 'app-create-measurement',
-  imports: [CommonModule, ReactiveFormsModule, Header, Footer],
+  imports: [ReactiveFormsModule, Header, Footer],
   templateUrl: './create-measurement.html',
   styleUrl: './create-measurement.scss'
 })

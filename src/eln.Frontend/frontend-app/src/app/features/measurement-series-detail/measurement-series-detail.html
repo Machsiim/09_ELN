@@ -35,7 +35,7 @@
               placeholder="Suche nach ID, Werten, Feldern..."
               [value]="searchQuery()"
               (input)="onSearchChange($event)"
-            />
+              />
             @if (searchQuery()) {
               <button type="button" class="clear-button" (click)="clearSearch()" title="Suche löschen">
                 ✕
@@ -46,13 +46,13 @@
             <div class="results-meta">
               {{ filteredMeasurements().length }} von {{ measurements().length }} Messung{{ measurements().length !== 1 ? 'en' : '' }}
             </div>
-              <div class="action-buttons">
-                <button
-                  type="button"
+            <div class="action-buttons">
+              <button
+                type="button"
                 class="action-button danger"
                 [disabled]="!hasSelection() || deleteInProgress()"
                 (click)="requestDeletion()"
-              >
+                >
                 {{ deleteInProgress() ? 'Löschen ...' : 'Löschen' }}
               </button>
             </div>
@@ -68,26 +68,32 @@
                   <th>Mess-ID</th>
                   <th>Erstellt von</th>
                   <th>Erstellt am</th>
-                  <th *ngFor="let column of getAllColumns()">{{ column }}</th>
+                  @for (column of getAllColumns(); track column) {
+                    <th>{{ column }}</th>
+                  }
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let measurement of filteredMeasurements(); trackBy: trackById" (click)="goToMeasurement(measurement)" class="measurement-row">
-                  <td class="select-column" (click)="$event.stopPropagation()">
-                    <input
-                      type="checkbox"
-                      [checked]="isSelected(measurement.id)"
-                      (click)="$event.stopPropagation()"
-                      (change)="toggleSelection(measurement.id, $any($event.target).checked)"
-                    />
-                  </td>
-                  <td class="cell-id">#{{ measurement.id }}</td>
-                  <td class="cell-author">{{ measurement.createdByUsername }}</td>
-                  <td class="cell-date">{{ measurement.createdAt | date: 'dd.MM.yyyy HH:mm' }}</td>
-                  <td *ngFor="let column of getAllColumns()" class="cell-value">
-                    {{ getValueForColumn(measurement, column) }}
-                  </td>
-                </tr>
+                @for (measurement of filteredMeasurements(); track trackById($index, measurement)) {
+                  <tr (click)="goToMeasurement(measurement)" class="measurement-row">
+                    <td class="select-column" (click)="$event.stopPropagation()">
+                      <input
+                        type="checkbox"
+                        [checked]="isSelected(measurement.id)"
+                        (click)="$event.stopPropagation()"
+                        (change)="toggleSelection(measurement.id, $any($event.target).checked)"
+                        />
+                    </td>
+                    <td class="cell-id">#{{ measurement.id }}</td>
+                    <td class="cell-author">{{ measurement.createdByUsername }}</td>
+                    <td class="cell-date">{{ measurement.createdAt | date: 'dd.MM.yyyy HH:mm' }}</td>
+                    @for (column of getAllColumns(); track column) {
+                      <td class="cell-value">
+                        {{ getValueForColumn(measurement, column) }}
+                      </td>
+                    }
+                  </tr>
+                }
               </tbody>
             </table>
           </div>
@@ -129,7 +135,7 @@
           class="modal-button danger"
           (click)="confirmDeletion()"
           [disabled]="deleteInProgress()"
-        >
+          >
           {{ deleteInProgress() ? 'Löschen ...' : 'Löschen' }}
         </button>
       </div>
