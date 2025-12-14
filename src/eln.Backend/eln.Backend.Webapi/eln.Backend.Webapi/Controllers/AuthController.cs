@@ -1,7 +1,7 @@
 ﻿using eln.Backend.Application.Auth;
+using eln.Backend.Application.DTOs;
 using eln.Backend.Application.Infrastructure;
 using eln.Backend.Application.Model;
-using eln.Backend.Application.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -11,6 +11,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Security.Claims;
 using System.Text;
+using System.Text.RegularExpressions;
 namespace eln.Backend.Webapi.Controllers
 {
     [ApiController]
@@ -86,7 +87,6 @@ namespace eln.Backend.Webapi.Controllers
         private string GenerateJwtToken(string username, out DateTime expiresAt)
         {
             // Rolle aus dem Usernamen ableiten:
-            // beginnt die UID mit "if" => Student, sonst Mitarbeiter
             var role = username.StartsWith("if", StringComparison.OrdinalIgnoreCase)
                 ? "Student"
                 : "Staff";
@@ -117,10 +117,13 @@ namespace eln.Backend.Webapi.Controllers
             if (string.IsNullOrWhiteSpace(username))
                 return "User";
 
-            // if… = Studierende, sonst Mitarbeiter
-            return username.StartsWith("if", StringComparison.OrdinalIgnoreCase)
-                ? "Student"
-                : "Staff";
+            // Wenn eine Mail kommt, nur den Teil vor dem @ betrachten
+            var localPart = username.Split('@')[0];
+
+            // Mitarbeiter: nur Buchstaben + ein Punkt, keine Ziffern
+            var isStaff = Regex.IsMatch(localPart, @"^[A-Za-z]+\.[A-Za-z]+$");
+
+            return isStaff ? "Staff" : "Student";
         }
     }
 }

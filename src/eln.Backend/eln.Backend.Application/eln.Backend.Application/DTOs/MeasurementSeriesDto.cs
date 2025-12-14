@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace eln.Backend.Application.DTOs;
 
 /// <summary>
@@ -5,7 +7,24 @@ namespace eln.Backend.Application.DTOs;
 /// </summary>
 public class CreateMeasurementSeriesDto
 {
+    [Required(ErrorMessage = "Name is required")]
+    [StringLength(200, MinimumLength = 1, ErrorMessage = "Name must be between 1 and 200 characters")]
     public string Name { get; set; } = string.Empty;
+
+    [StringLength(1000, ErrorMessage = "Description cannot exceed 1000 characters")]
+    public string? Description { get; set; }
+}
+
+/// <summary>
+/// Request to update an existing measurement series
+/// </summary>
+public class UpdateMeasurementSeriesDto
+{
+    [Required(ErrorMessage = "Name is required")]
+    [StringLength(200, MinimumLength = 1, ErrorMessage = "Name must be between 1 and 200 characters")]
+    public string Name { get; set; } = string.Empty;
+
+    [StringLength(1000, ErrorMessage = "Description cannot exceed 1000 characters")]
     public string? Description { get; set; }
 }
 
