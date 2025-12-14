@@ -47,7 +47,12 @@
               {{ filteredMeasurements().length }} von {{ measurements().length }} Messung{{ measurements().length !== 1 ? 'en' : '' }}
             </div>
             <div class="action-buttons">
-              <button type="button" class="action-button" disabled>
+              <button
+                type="button"
+                class="action-button edit"
+                [class.active]="canEdit()"
+                [disabled]="!canEdit()"
+              >
                 Bearbeiten
               </button>
               <button

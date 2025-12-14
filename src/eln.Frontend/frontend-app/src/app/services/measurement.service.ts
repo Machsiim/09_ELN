@@ -88,8 +88,4 @@ export class MeasurementService {
   deleteMeasurement(id: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }
-
-  updateMeasurement(id: number, data: Record<string, Record<string, unknown>>): Observable<MeasurementResponseDto> {
-    return this.http.put<MeasurementResponseDto>(`${this.baseUrl}/${id}`, { data });
-  }
 }

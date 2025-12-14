@@ -65,6 +65,10 @@ export class MeasurementSeriesDetail implements OnInit {
     return this.selectedMeasurementIds().size > 0;
   }
 
+  canEdit(): boolean {
+    return this.selectedMeasurementIds().size === 1;
+  }
+
   toggleSelection(measurementId: number, checked: boolean): void {
     const current = new Set(this.selectedMeasurementIds());
     if (checked) {
