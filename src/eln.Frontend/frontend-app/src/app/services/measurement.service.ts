@@ -13,6 +13,8 @@ export interface MeasurementResponseDto {
   createdBy: number;
   createdByUsername: string;
   createdAt: string;
+  updatedAt?: string;
+  updatedByUsername?: string;
 }
 
 export interface CreateMeasurementPayload {
@@ -40,6 +42,25 @@ export interface MeasurementSearchParams {
   dateFrom?: string;
   dateTo?: string;
   searchText?: string;
+}
+
+export interface MeasurementHistoryDto {
+  id: number;
+  measurementId: number;
+  changeType: string;
+  dataSnapshot: Record<string, Record<string, unknown>>;
+  changes: FieldChangeDto[];
+  changedBy: number;
+  changedByUsername: string;
+  changedAt: string;
+  changeDescription?: string;
+}
+
+export interface FieldChangeDto {
+  section: string;
+  field: string;
+  oldValue?: string;
+  newValue?: string;
 }
 
 @Injectable({
@@ -95,5 +116,9 @@ export class MeasurementService {
 
   updateMeasurement(id: number, payload: UpdateMeasurementPayload): Observable<MeasurementResponseDto> {
     return this.http.put<MeasurementResponseDto>(`${this.baseUrl}/${id}`, payload);
+  }
+
+  getMeasurementHistory(id: number): Observable<MeasurementHistoryDto[]> {
+    return this.http.get<MeasurementHistoryDto[]>(`${this.baseUrl}/${id}/history`);
   }
 }

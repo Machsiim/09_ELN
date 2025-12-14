@@ -78,10 +78,35 @@ export class MeasurementDetail implements OnInit {
             this.editableData.set(this.cloneData(result.data));
           }
           this.loading.set(false);
+          this.fetchLatestUpdate(id, result);
         },
         error: () => {
           this.loading.set(false);
           this.error.set('Messung konnte nicht geladen werden.');
+        }
+      });
+  }
+
+  private fetchLatestUpdate(id: number, measurement: MeasurementResponseDto): void {
+    this.measurementService
+      .getMeasurementHistory(id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (history) => {
+          const latestUpdate = history
+            .filter(h => h.changeType === 'Updated')
+            .sort((a, b) => new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime())[0];
+
+          if (latestUpdate) {
+            this.measurement.set({
+              ...measurement,
+              updatedAt: latestUpdate.changedAt,
+              updatedByUsername: latestUpdate.changedByUsername
+            });
+          }
+        },
+        error: () => {
+          // Silently fail - update info is not critical
         }
       });
   }
@@ -192,6 +217,7 @@ export class MeasurementDetail implements OnInit {
           this.editableData.set(null);
           this.isEditing.set(false);
           this.showToast('Messung wurde aktualisiert.');
+          this.fetchLatestUpdate(measurement.id, updated);
         },
         error: () => {
           this.saveInProgress.set(false);

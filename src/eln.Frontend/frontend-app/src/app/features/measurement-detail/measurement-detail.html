@@ -14,10 +14,19 @@
           </div>
           @if (measurement(); as data) {
             <div class="header-meta">
-              <p class="meta">
-                Serie #{{ data.seriesId }} · Template: {{ data.templateName }} · Erstellt von {{ data.createdByUsername }} am
-                {{ data.createdAt | date: 'dd.MM.yyyy HH:mm' }}
-              </p>
+              <div class="meta-info">
+                <p class="meta">
+                  Serie #{{ data.seriesId }} · Template: {{ data.templateName }}
+                </p>
+                <p class="meta">
+                  Erstellt von {{ data.createdByUsername }} am {{ data.createdAt | date: 'dd.MM.yyyy HH:mm' }} Uhr
+                </p>
+                @if (data.updatedAt) {
+                  <p class="meta updated">
+                    Zuletzt geändert von {{ data.updatedByUsername || 'Unbekannt' }} am {{ data.updatedAt | date: 'dd.MM.yyyy HH:mm' }} Uhr
+                  </p>
+                }
+              </div>
               <div class="action-buttons">
                 @if (!isEditing()) {
                   <button class="action-button edit active" (click)="startEditing()">Bearbeiten</button>
