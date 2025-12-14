@@ -7,6 +7,11 @@ export const routes: Routes = [
     pathMatch: 'full'
   },
   {
+    path: 'login',
+    loadComponent: () => import('./features/login/login').then(m => m.Login),
+    title: 'Anmelden - Biomedical Research Notebook'
+  },
+  {
     path: 'startseite',
     loadComponent: () => import('./features/home/home').then(m => m.Home),
     title: 'Startseite - Biomedical Research Notebook'

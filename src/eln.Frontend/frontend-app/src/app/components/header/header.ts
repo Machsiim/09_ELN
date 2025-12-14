@@ -25,6 +25,6 @@ export class Header {
   }
 
   onProfileClick(): void {
-    console.log('Profile clicked');
+    window.location.href = '/login';
   }
 }
