@@ -35,6 +35,7 @@ export class MeasurementSeriesDetail implements OnInit {
   readonly error = signal<string | null>(null);
   readonly seriesId = signal<number | null>(null);
   readonly seriesName = signal<string>('');
+  readonly seriesDescription = signal<string>('');
   readonly selectedMeasurementIds = signal<Set<number>>(new Set());
   readonly deleteInProgress = signal(false);
   readonly confirmVisible = signal(false);
@@ -65,10 +66,6 @@ export class MeasurementSeriesDetail implements OnInit {
     return this.selectedMeasurementIds().size > 0;
   }
 
-  canEdit(): boolean {
-    return this.selectedMeasurementIds().size === 1;
-  }
-
   toggleSelection(measurementId: number, checked: boolean): void {
     const current = new Set(this.selectedMeasurementIds());
     if (checked) {
@@ -82,6 +79,7 @@ export class MeasurementSeriesDetail implements OnInit {
   goToMeasurement(measurement: MeasurementResponseDto): void {
     this.router.navigate([`/messungen/serie/${measurement.seriesId}/${measurement.id}`]);
   }
+
 
   requestDeletion(): void {
     if (!this.hasSelection() || this.deleteInProgress()) {
@@ -322,4 +320,5 @@ export class MeasurementSeriesDetail implements OnInit {
         }
       });
   }
+
 }

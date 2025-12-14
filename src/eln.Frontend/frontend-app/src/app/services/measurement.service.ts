@@ -21,6 +21,10 @@ export interface CreateMeasurementPayload {
   data: Record<string, Record<string, unknown>>;
 }
 
+export interface UpdateMeasurementPayload {
+  data: Record<string, Record<string, unknown>>;
+}
+
 export interface MeasurementListItem {
   id: number;
   seriesId: number;
@@ -87,5 +91,9 @@ export class MeasurementService {
 
   deleteMeasurement(id: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
+  }
+
+  updateMeasurement(id: number, payload: UpdateMeasurementPayload): Observable<MeasurementResponseDto> {
+    return this.http.put<MeasurementResponseDto>(`${this.baseUrl}/${id}`, payload);
   }
 }

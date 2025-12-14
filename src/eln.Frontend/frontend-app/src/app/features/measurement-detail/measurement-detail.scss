@@ -34,8 +34,11 @@
 
 .header-meta {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 0.75rem;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .action-buttons {
@@ -82,6 +85,16 @@
       color: #fff;
     }
   }
+
+  &.success {
+    background: #388e3c;
+    border-color: #2e7d32;
+    color: #fff;
+
+    &:hover:not(:disabled) {
+      background: #2e7d32;
+    }
+  }
 }
 
 .back-button {
@@ -126,6 +139,7 @@
   margin: 0;
   color: #666;
   font-size: 0.95rem;
+  flex: 1;
 }
 
 .status {
@@ -247,6 +261,21 @@
   color: #0f172a;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+.field-input {
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid #cbd5f5;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-family: 'Fira Code', 'JetBrains Mono', Consolas, monospace;
+  color: #0f172a;
+
+  &:disabled {
+    background: #f3f4f6;
+    cursor: not-allowed;
+  }
 }
 
 @media (min-width: 768px) {

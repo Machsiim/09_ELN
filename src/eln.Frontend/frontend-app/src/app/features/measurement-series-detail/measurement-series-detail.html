@@ -46,17 +46,9 @@
             <div class="results-meta">
               {{ filteredMeasurements().length }} von {{ measurements().length }} Messung{{ measurements().length !== 1 ? 'en' : '' }}
             </div>
-            <div class="action-buttons">
-              <button
-                type="button"
-                class="action-button edit"
-                [class.active]="canEdit()"
-                [disabled]="!canEdit()"
-              >
-                Bearbeiten
-              </button>
-              <button
-                type="button"
+              <div class="action-buttons">
+                <button
+                  type="button"
                 class="action-button danger"
                 [disabled]="!hasSelection() || deleteInProgress()"
                 (click)="requestDeletion()"
