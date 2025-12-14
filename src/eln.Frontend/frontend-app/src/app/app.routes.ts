@@ -37,6 +37,11 @@ export const routes: Routes = [
     title: 'Messserie Details - Biomedical Research Notebook'
   },
   {
+    path: 'messungen/serie/:seriesId/:measurementId',
+    loadComponent: () => import('./features/measurement-detail/measurement-detail').then(m => m.MeasurementDetail),
+    title: 'Messung - Biomedical Research Notebook'
+  },
+  {
     path: 'templates',
     loadComponent: () => import('./features/templates/templates').then(m => m.Templates),
     title: 'Templates - Biomedical Research Notebook'

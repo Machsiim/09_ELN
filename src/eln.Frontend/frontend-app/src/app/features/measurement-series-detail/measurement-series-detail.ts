@@ -79,6 +79,10 @@ export class MeasurementSeriesDetail implements OnInit {
     this.selectedMeasurementIds.set(current);
   }
 
+  goToMeasurement(measurement: MeasurementResponseDto): void {
+    this.router.navigate([`/messungen/serie/${measurement.seriesId}/${measurement.id}`]);
+  }
+
   requestDeletion(): void {
     if (!this.hasSelection() || this.deleteInProgress()) {
       return;

@@ -1,0 +1,68 @@
+<div class="page-container">
+  <app-header />
+
+  <main class="main-content">
+    <section class="detail-card">
+      <header class="detail-header">
+        <button class="back-button" type="button" (click)="goBack()">
+          ← Zurück
+        </button>
+        <div class="titles">
+          <p class="eyebrow">Messung</p>
+          <h1>#{{ measurement()?.id || '...' }}</h1>
+        </div>
+        @if (measurement(); as data) {
+          <p class="meta">
+            Serie #{{ data.seriesId }} · Vorlage: {{ data.templateName }} · Erstellt von {{ data.createdByUsername }} am
+            {{ data.createdAt | date: 'dd.MM.yyyy HH:mm' }}
+          </p>
+        }
+      </header>
+
+      @if (error(); as message) {
+        <div class="status error">{{ message }}</div>
+      }
+
+      @if (loading()) {
+        <div class="status info">Messung wird geladen ...</div>
+      }
+
+      @if (!loading() && measurement()) {
+        <div class="measurement-preview">
+          <div class="preview-sections">
+            @for (section of getSections(); track section.name) {
+              <article class="preview-section">
+                <header class="preview-section-header">
+                  <h2>{{ section.name }}</h2>
+                </header>
+                <div class="preview-cards single-card">
+                  <div class="preview-card">
+                    <header class="preview-card-header">
+                      <div>
+                        <h3>Messwerte</h3>
+                        <small>{{ section.fields.length }} Feld{{ section.fields.length === 1 ? '' : 'er' }}</small>
+                      </div>
+                    </header>
+                    <ul class="preview-fields">
+                      @for (field of section.fields; track field.key) {
+                        <li>
+                          <div class="field-meta">
+                            <span class="field-label">{{ field.key }}</span>
+                            <span class="field-type">Wert</span>
+                          </div>
+                          <span class="field-value">{{ formatValue(field.value) }}</span>
+                        </li>
+                      }
+                    </ul>
+                  </div>
+                </div>
+              </article>
+            }
+          </div>
+        </div>
+      }
+    </section>
+  </main>
+
+  <app-footer />
+</div>

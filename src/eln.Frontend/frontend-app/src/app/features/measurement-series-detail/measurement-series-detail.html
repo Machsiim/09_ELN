@@ -80,11 +80,12 @@
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let measurement of filteredMeasurements(); trackBy: trackById">
-                  <td class="select-column">
+                <tr *ngFor="let measurement of filteredMeasurements(); trackBy: trackById" (click)="goToMeasurement(measurement)" class="measurement-row">
+                  <td class="select-column" (click)="$event.stopPropagation()">
                     <input
                       type="checkbox"
                       [checked]="isSelected(measurement.id)"
+                      (click)="$event.stopPropagation()"
                       (change)="toggleSelection(measurement.id, $any($event.target).checked)"
                     />
                   </td>

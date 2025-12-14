@@ -344,6 +344,7 @@ h1 {
     tr {
       border-bottom: 1px solid #e0e0e0;
       transition: background-color 0.15s;
+      cursor: pointer;
 
       &:hover {
         background: #fafafa;
@@ -382,6 +383,7 @@ h1 {
       white-space: nowrap;
       padding-right: 2rem;
     }
+    .measurement-row .select-column,
     .select-column {
       text-align: center;
       input {
