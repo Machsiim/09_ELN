@@ -1,6 +1,10 @@
 using eln.Backend.Application.DTOs;
 using eln.Backend.Application.Services;
+using eln.Backend.Application.Infrastructure;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace eln.Backend.Webapi.Controllers;
 
@@ -9,10 +13,12 @@ namespace eln.Backend.Webapi.Controllers;
 public class MeasurementsController : ControllerBase
 {
     private readonly MeasurementService _measurementService;
+    private readonly ElnContext _context;
 
-    public MeasurementsController(MeasurementService measurementService)
+    public MeasurementsController(MeasurementService measurementService, ElnContext context)
     {
         _measurementService = measurementService;
+        _context = context;
     }
 
     /// <summary>
@@ -74,8 +80,10 @@ public class MeasurementsController : ControllerBase
     /// <summary>
     /// Search and filter measurements
     /// GET /api/measurements/search?templateId=1&dateFrom=2024-01-01&searchText=temp
+    /// RBAC: Students see only their own, Staff see all
     /// </summary>
     [HttpGet("search")]
+    [Authorize] // Requires JWT Token
     public async Task<ActionResult<List<MeasurementListDto>>> SearchMeasurements(
         [FromQuery] int? templateId,
         [FromQuery] int? seriesId,
@@ -85,6 +93,18 @@ public class MeasurementsController : ControllerBase
     {
         try
         {
+            // Extract username and role from JWT
+            var username = User.FindFirst(ClaimTypes.Name)?.Value;
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value ?? "Student";
+
+            if (string.IsNullOrEmpty(username))
+                return Unauthorized();
+
+            // Get user ID from database
+            var user = await _context.Users.SingleOrDefaultAsync(u => u.Username == username);
+            if (user == null)
+                return Unauthorized();
+
             var filter = new MeasurementFilterDto
             {
                 TemplateId = templateId,
@@ -94,7 +114,7 @@ public class MeasurementsController : ControllerBase
                 SearchText = searchText
             };
 
-            var results = await _measurementService.GetFilteredMeasurementsAsync(filter);
+            var results = await _measurementService.GetFilteredMeasurementsAsync(filter, user.Id, userRole);
             return Ok(results);
         }
         catch (Exception ex)
