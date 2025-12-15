@@ -130,14 +130,25 @@ public class MeasurementService
 
     /// <summary>
     /// Get filtered measurements based on search criteria
+    /// Role-based access: Students only see their own, Staff see all
     /// </summary>
-    public async Task<List<MeasurementListDto>> GetFilteredMeasurementsAsync(MeasurementFilterDto filter)
+    public async Task<List<MeasurementListDto>> GetFilteredMeasurementsAsync(
+        MeasurementFilterDto filter, 
+        int userId, 
+        string userRole)
     {
         var query = _context.Measurements
             .Include(m => m.Series)
             .Include(m => m.Template)
             .Include(m => m.Creator)
             .AsQueryable();
+
+        // RBAC: Students can only see their own measurements
+        if (userRole != "Staff")
+        {
+            query = query.Where(m => m.CreatedBy == userId);
+        }
+        // Staff can see all measurements (no additional filter)
 
         // Filter by Template ID
         if (filter.TemplateId.HasValue)
