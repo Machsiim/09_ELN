@@ -43,6 +43,8 @@ export class MeasurementSeriesDetail implements OnInit {
   readonly pendingDeletionIds = signal<number[]>([]);
   readonly successMessage = signal<string | null>(null);
   private successTimeout: number | null = null;
+  readonly columnPickerVisible = signal(false);
+  readonly visibleColumns = signal<Set<string>>(new Set());
 
   ngOnInit(): void {
     this.route.params
@@ -235,8 +237,12 @@ export class MeasurementSeriesDetail implements OnInit {
     this.filteredMeasurements.set(filtered);
   }
 
-  getAllColumns(): string[] {
-    // Use all measurements to get all possible columns, not just filtered ones
+  getBaseColumns(): string[] {
+    return ['Mess-ID', 'Erstellt von', 'Erstellt am'];
+  }
+
+  getDataColumns(): string[] {
+    // Use all measurements to get all possible data columns, not just filtered ones
     const measurements = this.measurements();
     if (measurements.length === 0) return [];
 
@@ -252,6 +258,51 @@ export class MeasurementSeriesDetail implements OnInit {
     });
 
     return Array.from(columnsSet).sort();
+  }
+
+  getAllColumns(): string[] {
+    return [...this.getBaseColumns(), ...this.getDataColumns()];
+  }
+
+  getVisibleColumns(): string[] {
+    const visible = this.visibleColumns();
+    return this.getAllColumns().filter(col => visible.has(col));
+  }
+
+  getVisibleDataColumns(): string[] {
+    const visible = this.visibleColumns();
+    return this.getDataColumns().filter(col => visible.has(col));
+  }
+
+  toggleColumnVisibility(column: string): void {
+    const current = new Set(this.visibleColumns());
+    if (current.has(column)) {
+      current.delete(column);
+    } else {
+      current.add(column);
+    }
+    this.visibleColumns.set(current);
+  }
+
+  isColumnVisible(column: string): boolean {
+    return this.visibleColumns().has(column);
+  }
+
+  isBaseColumnVisible(columnName: string): boolean {
+    return this.visibleColumns().has(columnName);
+  }
+
+  toggleColumnPicker(): void {
+    this.columnPickerVisible.set(!this.columnPickerVisible());
+  }
+
+  showAllColumns(): void {
+    const allColumns = this.getAllColumns();
+    this.visibleColumns.set(new Set(allColumns));
+  }
+
+  hideAllColumns(): void {
+    this.visibleColumns.set(new Set());
   }
 
   getValueForColumn(measurement: MeasurementResponseDto, column: string): string {
@@ -312,6 +363,12 @@ export class MeasurementSeriesDetail implements OnInit {
           this.measurements.set(fullMeasurements);
           this.filteredMeasurements.set(fullMeasurements);
           this.selectedMeasurementIds.set(new Set());
+
+          // Initialize all columns as visible on first load
+          if (this.visibleColumns().size === 0) {
+            this.showAllColumns();
+          }
+
           this.loading.set(false);
         },
         error: () => {

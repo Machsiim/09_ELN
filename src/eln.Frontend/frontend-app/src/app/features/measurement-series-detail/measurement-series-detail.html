@@ -49,6 +49,14 @@
             <div class="action-buttons">
               <button
                 type="button"
+                class="action-button"
+                (click)="toggleColumnPicker()"
+                title="Spalten ein-/ausblenden"
+                >
+                Spalten ({{ getVisibleColumns().length }})
+              </button>
+              <button
+                type="button"
                 class="action-button danger"
                 [disabled]="!hasSelection() || deleteInProgress()"
                 (click)="requestDeletion()"
@@ -59,16 +67,46 @@
           </div>
         </div>
 
+        @if (columnPickerVisible()) {
+          <div class="column-picker">
+            <div class="column-picker-header">
+              <h3>Spalten auswählen</h3>
+              <div class="column-picker-actions">
+                <button type="button" class="picker-action-button" (click)="showAllColumns()">Alle anzeigen</button>
+                <button type="button" class="picker-action-button" (click)="hideAllColumns()">Alle ausblenden</button>
+              </div>
+            </div>
+            <div class="column-list">
+              @for (column of getAllColumns(); track column) {
+                <label class="column-item">
+                  <input
+                    type="checkbox"
+                    [checked]="isColumnVisible(column)"
+                    (change)="toggleColumnVisibility(column)"
+                  />
+                  <span>{{ column }}</span>
+                </label>
+              }
+            </div>
+          </div>
+        }
+
         @if (filteredMeasurements().length > 0) {
           <div class="table-container">
             <table class="measurements-table">
               <thead>
                 <tr>
                   <th class="select-column"></th>
-                  <th>Mess-ID</th>
-                  <th>Erstellt von</th>
-                  <th>Erstellt am</th>
-                  @for (column of getAllColumns(); track column) {
+                  @if (isBaseColumnVisible('Mess-ID')) {
+                    <th>Mess-ID</th>
+                  }
+                  @if (isBaseColumnVisible('Erstellt von')) {
+                    <th>Erstellt von</th>
+                  }
+                  @if (isBaseColumnVisible('Erstellt am')) {
+                    <th>Erstellt am</th>
+                  }
+                  @for (column of getVisibleDataColumns(); track column) {
                     <th>{{ column }}</th>
                   }
                 </tr>
@@ -84,10 +122,16 @@
                         (change)="toggleSelection(measurement.id, $any($event.target).checked)"
                         />
                     </td>
-                    <td class="cell-id">#{{ measurement.id }}</td>
-                    <td class="cell-author">{{ measurement.createdByUsername }}</td>
-                    <td class="cell-date">{{ measurement.createdAt | date: 'dd.MM.yyyy HH:mm' }}</td>
-                    @for (column of getAllColumns(); track column) {
+                    @if (isBaseColumnVisible('Mess-ID')) {
+                      <td class="cell-id">#{{ measurement.id }}</td>
+                    }
+                    @if (isBaseColumnVisible('Erstellt von')) {
+                      <td class="cell-author">{{ measurement.createdByUsername }}</td>
+                    }
+                    @if (isBaseColumnVisible('Erstellt am')) {
+                      <td class="cell-date">{{ measurement.createdAt | date: 'dd.MM.yyyy HH:mm' }}</td>
+                    }
+                    @for (column of getVisibleDataColumns(); track column) {
                       <td class="cell-value">
                         {{ getValueForColumn(measurement, column) }}
                       </td>
