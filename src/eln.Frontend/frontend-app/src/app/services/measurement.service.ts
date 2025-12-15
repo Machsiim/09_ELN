@@ -118,7 +118,24 @@ export class MeasurementService {
     return this.http.put<MeasurementResponseDto>(`${this.baseUrl}/${id}`, payload);
   }
 
-  getMeasurementHistory(id: number): Observable<MeasurementHistoryDto[]> {
-    return this.http.get<MeasurementHistoryDto[]>(`${this.baseUrl}/${id}/history`);
+  getMeasurementHistory(id: number): Observable<MeasurementHistoryEntry[]> {
+    return this.http.get<MeasurementHistoryEntry[]>(`${this.baseUrl}/${id}/history`);
   }
+}
+export interface MeasurementHistoryEntry {
+  id: number;
+  measurementId: number;
+  changeType: string;
+  changeDescription?: string | null;
+  changedBy: number;
+  changedByUsername: string;
+  changedAt: string;
+  changes: FieldChange[];
+}
+
+export interface FieldChange {
+  section: string;
+  field: string;
+  oldValue?: string | null;
+  newValue?: string | null;
 }

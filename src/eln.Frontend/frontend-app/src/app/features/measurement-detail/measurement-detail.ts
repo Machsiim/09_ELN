@@ -10,7 +10,11 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Header } from '../../components/header/header';
 import { Footer } from '../../components/footer/footer';
-import { MeasurementResponseDto, MeasurementService } from '../../services/measurement.service';
+import {
+  MeasurementResponseDto,
+  MeasurementService,
+  MeasurementHistoryEntry
+} from '../../services/measurement.service';
 
 interface SectionEntry {
   name: string;
@@ -51,6 +55,10 @@ export class MeasurementDetail implements OnInit {
   readonly saveInProgress = signal(false);
   readonly editableData = signal<Record<string, Record<string, unknown>> | null>(null);
   readonly cancelEditVisible = signal(false);
+  readonly historyVisible = signal(false);
+  readonly historyLoading = signal(false);
+  readonly historyError = signal<string | null>(null);
+  readonly historyEntries = signal<MeasurementHistoryEntry[]>([]);
 
   private toastTimeout: number | null = null;
 
@@ -316,5 +324,32 @@ export class MeasurementDetail implements OnInit {
       this.toastMessage.set(null);
       this.toastTimeout = null;
     }, 4000);
+  }
+
+  openHistory(): void {
+    const measurement = this.measurement();
+    if (!measurement) {
+      return;
+    }
+    this.historyVisible.set(true);
+    this.historyLoading.set(true);
+    this.historyError.set(null);
+    this.measurementService
+      .getMeasurementHistory(measurement.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (entries) => {
+          this.historyEntries.set(entries);
+          this.historyLoading.set(false);
+        },
+        error: () => {
+          this.historyLoading.set(false);
+          this.historyError.set('Der Änderungsverlauf konnte nicht geladen werden.');
+        }
+      });
+  }
+
+  closeHistory(): void {
+    this.historyVisible.set(false);
   }
 }
