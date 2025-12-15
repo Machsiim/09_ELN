@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterModule } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-header',
@@ -8,6 +9,8 @@ import { RouterModule } from '@angular/router';
   styleUrl: './header.scss',
 })
 export class Header {
+  readonly authService = inject(AuthService);
+
   onCreateMeasurement(): void {
     window.location.href = '/erstellen';
   }
@@ -25,6 +28,11 @@ export class Header {
   }
 
   onProfileClick(): void {
-    console.log('Profile clicked');
+    window.location.href = '/login';
+  }
+
+  onLogout(): void {
+    this.authService.logout();
+    window.location.href = '/login';
   }
 }

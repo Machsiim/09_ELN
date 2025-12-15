@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import {
   Component,
   DestroyRef,
@@ -24,7 +24,7 @@ import {
 } from '../../services/measurement-series.service';
 @Component({
   selector: 'app-create-measurement',
-  imports: [CommonModule, ReactiveFormsModule, Header, Footer],
+  imports: [ReactiveFormsModule, Header, Footer],
   templateUrl: './create-measurement.html',
   styleUrl: './create-measurement.scss'
 })
@@ -47,13 +47,13 @@ export class CreateMeasurement implements OnInit {
   readonly showSeriesForm = signal(false);
   readonly createSeriesLoading = signal(false);
   readonly createSeriesError = signal<string | null>(null);
-  readonly createSeriesSuccess = signal<string | null>(null);
   readonly submitting = signal(false);
   readonly submitError = signal<string | null>(null);
-  readonly submitSuccess = signal<string | null>(null);
+  readonly toastMessage = signal<string | null>(null);
+  private toastTimeout: number | null = null;
 
   measurementForm: FormGroup | null = null;
-  private controlMap = new Map<string, { section: string; field: string }>();
+  private controlMap = new Map<string, { section: string; card: string; field: string }>();
   readonly seriesForm = this.fb.nonNullable.group({
     name: ['', [Validators.required, Validators.maxLength(200)]],
     description: ['']
@@ -111,7 +111,6 @@ export class CreateMeasurement implements OnInit {
   startCreateSeries(): void {
     this.showSeriesForm.set(true);
     this.createSeriesError.set(null);
-    this.createSeriesSuccess.set(null);
   }
 
   cancelCreateSeries(): void {
@@ -122,7 +121,6 @@ export class CreateMeasurement implements OnInit {
 
   submitSeries(): void {
     this.createSeriesError.set(null);
-    this.createSeriesSuccess.set(null);
 
     if (this.seriesForm.invalid) {
       this.seriesForm.markAllAsTouched();
@@ -142,8 +140,7 @@ export class CreateMeasurement implements OnInit {
           this.selectedSeriesId.set(series.id);
           this.seriesForm.reset({ name: '', description: '' });
           this.showSeriesForm.set(false);
-          this.createSeriesSuccess.set(`Messreihe "${series.name}" wurde erstellt.`);
-          this.clearCreateSeriesSuccessLater();
+          this.showToast(`Messreihe "${series.name}" wurde angelegt.`);
         },
         error: () => {
           this.createSeriesLoading.set(false);
@@ -230,7 +227,7 @@ export class CreateMeasurement implements OnInit {
       .subscribe({
         next: (response) => {
           this.submitting.set(false);
-          this.submitSuccess.set(`Messung #${response.id} wurde gespeichert.`);
+          this.showToast(`Messung #${response.id} wurde gespeichert.`);
           this.measurementForm?.reset();
         },
         error: () => {
@@ -266,8 +263,9 @@ export class CreateMeasurement implements OnInit {
           const validators = field.type === 'number' ? [Validators.pattern(/^-?\d+(\.\d+)?$/)] : [];
           controls[controlName] = this.fb.control('', validators);
           const sectionKey = section.title?.trim() || 'Sektion';
+          const cardKey = card.title?.trim() || 'Bereich';
           const fieldKey = field.label?.trim() || 'Feld';
-          this.controlMap.set(controlName, { section: sectionKey, field: fieldKey });
+          this.controlMap.set(controlName, { section: sectionKey, card: cardKey, field: fieldKey });
         });
       });
     });
@@ -289,20 +287,29 @@ export class CreateMeasurement implements OnInit {
       }
       const value = control.value;
       const sectionName = meta.section || 'Sektion';
+      const cardName = meta.card || 'Bereich';
       const fieldName = meta.field || 'Feld';
 
       if (!data[sectionName]) {
         data[sectionName] = {};
       }
 
-      data[sectionName][fieldName] = value;
+      const compositeField = cardName ? `${cardName} - ${fieldName}` : fieldName;
+      data[sectionName][compositeField] = value;
     }
 
     return data;
   }
 
-  private clearCreateSeriesSuccessLater(): void {
-    setTimeout(() => this.createSeriesSuccess.set(null), 3500);
+  private showToast(message: string): void {
+    this.toastMessage.set(message);
+    if (this.toastTimeout) {
+      window.clearTimeout(this.toastTimeout);
+    }
+    this.toastTimeout = window.setTimeout(() => {
+      this.toastMessage.set(null);
+      this.toastTimeout = null;
+    }, 4000);
   }
 
   private parseSchema(schema: string): TemplateSchema {

@@ -29,5 +29,10 @@ WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
 
+# Install LDAP client libraries required for System.DirectoryServices.Protocols
+RUN apt-get update && \
+    apt-get install -y libldap-2.5-0 && \
+    rm -rf /var/lib/apt/lists/*
+
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "eln.Backend.Webapi.dll"]

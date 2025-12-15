@@ -9,9 +9,7 @@
           <h1>Messlayouts visuell gestalten</h1>
         </div>
         <div class="status-pills">
-          @if (successMessage()) {
-          <span class="status success">{{ successMessage() }}</span>
-          } @if (error()) {
+          @if (error()) {
           <span class="status error">{{ error() }}</span>
           }
         </div>
@@ -183,3 +181,9 @@
 
   <app-footer />
 </div>
+
+@if (toastMessage()) {
+  <div class="toast toast-success">
+    {{ toastMessage() }}
+  </div>
+}

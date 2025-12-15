@@ -35,38 +35,109 @@
               placeholder="Suche nach ID, Werten, Feldern..."
               [value]="searchQuery()"
               (input)="onSearchChange($event)"
-            />
+              />
             @if (searchQuery()) {
               <button type="button" class="clear-button" (click)="clearSearch()" title="Suche löschen">
                 ✕
               </button>
             }
           </div>
-          <div class="results-meta">
-            {{ filteredMeasurements().length }} von {{ measurements().length }} Messung{{ measurements().length !== 1 ? 'en' : '' }}
+          <div class="results-actions">
+            <div class="results-meta">
+              {{ filteredMeasurements().length }} von {{ measurements().length }} Messung{{ measurements().length !== 1 ? 'en' : '' }}
+            </div>
+            <div class="action-buttons">
+              <button
+                type="button"
+                class="action-button"
+                (click)="toggleColumnPicker()"
+                title="Spalten ein-/ausblenden"
+                >
+                Spalten ({{ getVisibleColumns().length }})
+              </button>
+              <button
+                type="button"
+                class="action-button danger"
+                [disabled]="!hasSelection() || deleteInProgress()"
+                (click)="requestDeletion()"
+                >
+                {{ deleteInProgress() ? 'Löschen ...' : 'Löschen' }}
+              </button>
+            </div>
           </div>
         </div>
+
+        @if (columnPickerVisible()) {
+          <div class="column-picker">
+            <div class="column-picker-header">
+              <h3>Spalten auswählen</h3>
+              <div class="column-picker-actions">
+                <button type="button" class="picker-action-button" (click)="showAllColumns()">Alle anzeigen</button>
+                <button type="button" class="picker-action-button" (click)="hideAllColumns()">Alle ausblenden</button>
+              </div>
+            </div>
+            <div class="column-list">
+              @for (column of getAllColumns(); track column) {
+                <label class="column-item">
+                  <input
+                    type="checkbox"
+                    [checked]="isColumnVisible(column)"
+                    (change)="toggleColumnVisibility(column)"
+                  />
+                  <span>{{ column }}</span>
+                </label>
+              }
+            </div>
+          </div>
+        }
 
         @if (filteredMeasurements().length > 0) {
           <div class="table-container">
             <table class="measurements-table">
               <thead>
                 <tr>
-                  <th>Mess-ID</th>
-                  <th>Erstellt von</th>
-                  <th>Erstellt am</th>
-                  <th *ngFor="let column of getAllColumns()">{{ column }}</th>
+                  <th class="select-column"></th>
+                  @if (isBaseColumnVisible('Mess-ID')) {
+                    <th>Mess-ID</th>
+                  }
+                  @if (isBaseColumnVisible('Erstellt von')) {
+                    <th>Erstellt von</th>
+                  }
+                  @if (isBaseColumnVisible('Erstellt am')) {
+                    <th>Erstellt am</th>
+                  }
+                  @for (column of getVisibleDataColumns(); track column) {
+                    <th>{{ column }}</th>
+                  }
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let measurement of filteredMeasurements(); trackBy: trackById">
-                  <td class="cell-id">#{{ measurement.id }}</td>
-                  <td class="cell-author">{{ measurement.createdByUsername }}</td>
-                  <td class="cell-date">{{ measurement.createdAt | date: 'dd.MM.yyyy HH:mm' }}</td>
-                  <td *ngFor="let column of getAllColumns()" class="cell-value">
-                    {{ getValueForColumn(measurement, column) }}
-                  </td>
-                </tr>
+                @for (measurement of filteredMeasurements(); track trackById($index, measurement)) {
+                  <tr (click)="goToMeasurement(measurement)" class="measurement-row">
+                    <td class="select-column" (click)="$event.stopPropagation()">
+                      <input
+                        type="checkbox"
+                        [checked]="isSelected(measurement.id)"
+                        (click)="$event.stopPropagation()"
+                        (change)="toggleSelection(measurement.id, $any($event.target).checked)"
+                        />
+                    </td>
+                    @if (isBaseColumnVisible('Mess-ID')) {
+                      <td class="cell-id">#{{ measurement.id }}</td>
+                    }
+                    @if (isBaseColumnVisible('Erstellt von')) {
+                      <td class="cell-author">{{ measurement.createdByUsername }}</td>
+                    }
+                    @if (isBaseColumnVisible('Erstellt am')) {
+                      <td class="cell-date">{{ measurement.createdAt | date: 'dd.MM.yyyy HH:mm' }}</td>
+                    }
+                    @for (column of getVisibleDataColumns(); track column) {
+                      <td class="cell-value">
+                        {{ getValueForColumn(measurement, column) }}
+                      </td>
+                    }
+                  </tr>
+                }
               </tbody>
             </table>
           </div>
@@ -93,3 +164,31 @@
 
   <app-footer />
 </div>
+
+@if (confirmVisible()) {
+  <div class="modal-backdrop">
+    <div class="modal-dialog">
+      <h2>Aktion bestätigen</h2>
+      <p>{{ confirmMessage() }}</p>
+      <div class="modal-actions">
+        <button type="button" class="modal-button" (click)="cancelDeletion()" [disabled]="deleteInProgress()">
+          Abbrechen
+        </button>
+        <button
+          type="button"
+          class="modal-button danger"
+          (click)="confirmDeletion()"
+          [disabled]="deleteInProgress()"
+          >
+          {{ deleteInProgress() ? 'Löschen ...' : 'Löschen' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (successMessage()) {
+  <div class="toast toast-success">
+    {{ successMessage() }}
+  </div>
+}

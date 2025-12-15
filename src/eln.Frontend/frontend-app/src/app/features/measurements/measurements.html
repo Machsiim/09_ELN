@@ -15,26 +15,26 @@
 
       <div class="toolbar">
         <div class="search-wrapper">
-          <span class="search-icon">🔍</span>
+          <mat-icon class="search-icon" aria-hidden="true">search</mat-icon>
           <input type="text"
-                 placeholder="Suche ..."
-                 autocomplete="off"
-                 [formControl]="searchControl"
-                 [disabled]="loading()" />
+            placeholder="Suche ..."
+            autocomplete="off"
+            [formControl]="searchControl"
+            [disabled]="loading()" />
         </div>
         <div class="toolbar-buttons">
           <button type="button"
-                  class="icon-button"
-                  title="Filter anzeigen"
-                  (click)="toggleFilterPanel()">
-            ⚙️
+            class="icon-button"
+            title="Filter anzeigen"
+            (click)="toggleFilterPanel()">
+            <mat-icon aria-hidden="true">tune</mat-icon>
           </button>
           <button type="button"
-                  class="icon-button danger"
-                  title="Filter zurücksetzen"
-                  (click)="resetSearch()"
-                  [disabled]="!canResetSearch() || loading()">
-            ✕
+            class="icon-button danger"
+            title="Filter zurücksetzen"
+            (click)="resetSearch()"
+            [disabled]="!canResetSearch() || loading()">
+            <mat-icon aria-hidden="true">close</mat-icon>
           </button>
         </div>
       </div>
@@ -62,15 +62,15 @@
           </div>
           <div class="filter-actions">
             <button type="button"
-                    class="btn btn-primary"
-                    (click)="applyFilters()"
-                    [disabled]="loading()">
+              class="btn btn-primary"
+              (click)="applyFilters()"
+              [disabled]="loading()">
               Filter anwenden
             </button>
             <button type="button"
-                    class="btn btn-secondary"
-                    (click)="resetFilters()"
-                    [disabled]="!hasActiveFilters()">
+              class="btn btn-secondary"
+              (click)="resetFilters()"
+              [disabled]="!hasActiveFilters()">
               Zurücksetzen
             </button>
           </div>
@@ -97,33 +97,37 @@
           }
         </div>
         <div class="measurements-list">
-          <article *ngFor="let group of groupedMeasurements(); trackBy: trackById"
-                   class="measurement-row"
-                   (click)="navigateToSeriesDetail(group.seriesId)"
-                   role="button"
-                   tabindex="0"
-                   [attr.aria-label]="'Öffne Messserie ' + group.seriesName">
-            <div class="measurement-row-header">
-              <div>
-                <p class="measurement-date">
-                  Letzte Messung:
-                  {{ group.latestCreatedAt | date: 'dd.MM.yyyy - HH:mm' }}
-                </p>
-                <h3>{{ group.seriesName }}</h3>
+          @for (group of groupedMeasurements(); track trackById($index, group)) {
+            <article
+              class="measurement-row"
+              (click)="navigateToSeriesDetail(group.seriesId)"
+              role="button"
+              tabindex="0"
+              [attr.aria-label]="'Öffne Messserie ' + group.seriesName">
+              <div class="measurement-row-header">
+                <div>
+                  <p class="measurement-date">
+                    Letzte Messung:
+                    {{ group.latestCreatedAt | date: 'dd.MM.yyyy - HH:mm' }}
+                  </p>
+                  <h3>{{ group.seriesName }}</h3>
+                </div>
+                <span class="tag">Serie #{{ group.seriesId }}</span>
               </div>
-              <span class="tag">Serie #{{ group.seriesId }}</span>
-            </div>
-            <div class="measurement-meta">
-              <span>Anzahl Messungen: {{ group.measurementCount }}</span>
-              <span>Letzte Messung: #{{ group.latestMeasurementId }} ({{ group.latestTemplateName }})</span>
-              <span>Autor*innen: {{ group.authorNames.join(', ') }}</span>
-            </div>
-            <div class="template-tags">
-              <span *ngFor="let template of group.templateNames" class="tag tag-secondary">
-                {{ template }}
-              </span>
-            </div>
-          </article>
+              <div class="measurement-meta">
+                <span>Anzahl Messungen: {{ group.measurementCount }}</span>
+                <span>Letzte Messung: #{{ group.latestMeasurementId }} ({{ group.latestTemplateName }})</span>
+                <span>Autor*innen: {{ group.authorNames.join(', ') }}</span>
+              </div>
+              <div class="template-tags">
+                @for (template of group.templateNames; track template) {
+                  <span class="tag tag-secondary">
+                    {{ template }}
+                  </span>
+                }
+              </div>
+            </article>
+          }
         </div>
       } @else {
         @if (!loading()) {
