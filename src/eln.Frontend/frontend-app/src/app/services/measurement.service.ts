@@ -1,7 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { AuthService } from './auth.service';
 
 export interface MeasurementResponseDto {
   id: number;
@@ -68,6 +69,7 @@ export interface FieldChangeDto {
 })
 export class MeasurementService {
   private readonly http = inject(HttpClient);
+  private readonly authService = inject(AuthService);
   private readonly baseUrl = `${environment.apiUrl.replace(/\/$/, '')}/measurements`;
 
   createMeasurement(payload: CreateMeasurementPayload): Observable<MeasurementResponseDto> {
@@ -99,11 +101,43 @@ export class MeasurementService {
 
     return this.http.get<MeasurementListItem[]>(`${this.baseUrl}/search`, {
       params: httpParams
-    });
+    }).pipe(
+      map(measurements => this.filterMeasurementsByRole(measurements))
+    );
   }
 
   getMeasurementsBySeriesId(seriesId: number): Observable<MeasurementResponseDto[]> {
-    return this.http.get<MeasurementResponseDto[]>(`${this.baseUrl}/series/${seriesId}`);
+    return this.http.get<MeasurementResponseDto[]>(`${this.baseUrl}/series/${seriesId}`).pipe(
+      map(measurements => this.filterMeasurementResponsesByRole(measurements))
+    );
+  }
+
+  private filterMeasurementsByRole(measurements: MeasurementListItem[]): MeasurementListItem[] {
+    const currentUser = this.authService.currentUser();
+
+    if (!currentUser) {
+      return [];
+    }
+
+    if (this.authService.isStaff()) {
+      return measurements;
+    }
+
+    return measurements.filter(m => m.createdByUsername === currentUser.username);
+  }
+
+  private filterMeasurementResponsesByRole(measurements: MeasurementResponseDto[]): MeasurementResponseDto[] {
+    const currentUser = this.authService.currentUser();
+
+    if (!currentUser) {
+      return [];
+    }
+
+    if (this.authService.isStaff()) {
+      return measurements;
+    }
+
+    return measurements.filter(m => m.createdByUsername === currentUser.username);
   }
 
   getMeasurementById(id: number): Observable<MeasurementResponseDto> {

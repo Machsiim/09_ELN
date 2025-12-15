@@ -10,14 +10,13 @@ export interface LoginRequest {
 
 export interface LoginResponse {
   token: string;
-  userId: number;
-  username: string;
   expiresAt?: string;
 }
 
 export interface User {
   id: number;
   username: string;
+  role: string;
 }
 
 @Injectable({
@@ -47,6 +46,24 @@ export class AuthService {
     );
   }
 
+  // TESTCODE START - Zum Testen von Benutzerrollen
+  testLoginStudent(): Observable<LoginResponse> {
+    return this.http.post<LoginResponse>(`${this.baseUrl}/test-login-student`, {}).pipe(
+      tap(response => {
+        this.setSession(response);
+      })
+    );
+  }
+
+  testLoginStaff(): Observable<LoginResponse> {
+    return this.http.post<LoginResponse>(`${this.baseUrl}/test-login-staff`, {}).pipe(
+      tap(response => {
+        this.setSession(response);
+      })
+    );
+  }
+  // TESTCODE END
+
   logout(): void {
     localStorage.removeItem(this.TOKEN_KEY);
     localStorage.removeItem(this.USER_KEY);
@@ -61,14 +78,31 @@ export class AuthService {
   private setSession(authResult: LoginResponse): void {
     localStorage.setItem(this.TOKEN_KEY, authResult.token);
 
+    const decodedToken = this.decodeToken(authResult.token);
+
     const user: User = {
-      id: authResult.userId,
-      username: authResult.username
+      id: 0,
+      username: decodedToken?.username || 'Unknown',
+      role: decodedToken?.role || 'User'
     };
 
     localStorage.setItem(this.USER_KEY, JSON.stringify(user));
     this.currentUser.set(user);
     this.isAuthenticated.set(true);
+  }
+
+  private decodeToken(token: string): { username: string; role: string } | null {
+    try {
+      const payload = token.split('.')[1];
+      const decoded = JSON.parse(atob(payload));
+      return {
+        username: decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] || decoded.name || decoded.sub,
+        role: decoded['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || decoded.role
+      };
+    } catch (error) {
+      console.error('Error decoding token:', error);
+      return null;
+    }
   }
 
   private loadUserFromStorage(): User | null {
@@ -85,5 +119,17 @@ export class AuthService {
 
   private hasValidToken(): boolean {
     return !!this.getToken();
+  }
+
+  getCurrentRole(): string | null {
+    return this.currentUser()?.role || null;
+  }
+
+  isStaff(): boolean {
+    return this.getCurrentRole() === 'Staff';
+  }
+
+  isStudent(): boolean {
+    return this.getCurrentRole() === 'Student';
   }
 }

@@ -5,6 +5,7 @@ import {
   inject,
   signal
 } from '@angular/core';
+import { Router } from '@angular/router';
 import { Header } from '../../components/header/header';
 import { Footer } from '../../components/footer/footer';
 import {
@@ -13,6 +14,7 @@ import {
   Validators
 } from '@angular/forms';
 import { TemplateDto, TemplateService } from '../../services/template.service';
+import { AuthService } from '../../services/auth.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import {
@@ -42,6 +44,8 @@ type BuilderField = TemplateFieldSchema;
 export class Templates implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly templateService = inject(TemplateService);
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly templates = signal<TemplateDto[]>([]);
@@ -83,6 +87,10 @@ export class Templates implements OnInit {
   });
 
   ngOnInit(): void {
+    if (!this.authService.isStaff()) {
+      this.router.navigate(['/startseite']);
+      return;
+    }
     this.fetchTemplates();
   }
 
@@ -217,6 +225,11 @@ export class Templates implements OnInit {
   }
 
   saveTemplate(): void {
+    if (!this.authService.isStaff()) {
+      this.error.set('Nur Lektoren können Templates erstellen.');
+      return;
+    }
+
     if (this.templateForm.invalid) {
       this.templateForm.markAllAsTouched();
       return;

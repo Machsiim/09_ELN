@@ -22,7 +22,7 @@ export class Login {
   constructor() {
     this.loginForm = this.fb.group({
       username: ['', [Validators.required]],
-      password: ['', [Validators.required, Validators.minLength(6)]]
+      password: ['', [Validators.required, Validators.minLength(8)]]
     });
   }
 
@@ -62,4 +62,38 @@ export class Login {
   get passwordControl() {
     return this.loginForm.get('password');
   }
+
+  // TESTCODE START - Zum Testen von Benutzerrollen
+  testLoginStudent(): void {
+    this.loading.set(true);
+    this.error.set(null);
+
+    this.authService.testLoginStudent().subscribe({
+      next: (response) => {
+        this.loading.set(false);
+        this.router.navigate(['/startseite']);
+      },
+      error: (err) => {
+        this.loading.set(false);
+        this.error.set(err.error?.message || 'Test-Login fehlgeschlagen.');
+      }
+    });
+  }
+
+  testLoginStaff(): void {
+    this.loading.set(true);
+    this.error.set(null);
+
+    this.authService.testLoginStaff().subscribe({
+      next: (response) => {
+        this.loading.set(false);
+        this.router.navigate(['/startseite']);
+      },
+      error: (err) => {
+        this.loading.set(false);
+        this.error.set(err.error?.message || 'Test-Login fehlgeschlagen.');
+      }
+    });
+  }
+  // TESTCODE END
 }
