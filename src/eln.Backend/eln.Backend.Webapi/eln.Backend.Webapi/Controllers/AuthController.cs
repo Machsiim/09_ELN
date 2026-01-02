@@ -121,9 +121,9 @@ namespace eln.Backend.Webapi.Controllers
             var localPart = username.Split('@')[0];
 
             // Mitarbeiter: nur Buchstaben + ein Punkt, keine Ziffern
-            var isStaff = Regex.IsMatch(localPart, @"^[A-Za-z]+\.[A-Za-z]+$");
+            var isStudent = Regex.IsMatch(localPart, @"^[a-z]{2}[0-9]{2}[a-z][0-9]{3}$");
 
-            return isStaff ? "Staff" : "Student";
+            return isStudent ? "Student" : "Staff";
         }
     }
 }
