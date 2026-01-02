@@ -15,6 +15,7 @@ import {
   MeasurementService,
   MeasurementHistoryEntry
 } from '../../services/measurement.service';
+import { MediaAttachment } from '../../models/media-attachment';
 
 interface SectionEntry {
   name: string;
@@ -59,6 +60,7 @@ export class MeasurementDetail implements OnInit {
   readonly historyLoading = signal(false);
   readonly historyError = signal<string | null>(null);
   readonly historyEntries = signal<MeasurementHistoryEntry[]>([]);
+  readonly expandedMediaFields = signal<Set<string>>(new Set());
 
   private toastTimeout: number | null = null;
 
@@ -82,6 +84,7 @@ export class MeasurementDetail implements OnInit {
       .subscribe({
         next: (result) => {
           this.measurement.set(result);
+          this.expandedMediaFields.set(new Set());
           if (this.isEditing()) {
             this.editableData.set(this.cloneData(result.data));
           }
@@ -279,6 +282,42 @@ export class MeasurementDetail implements OnInit {
       }
     }
     return String(value);
+  }
+
+  getMediaAttachments(value: unknown): MediaAttachment[] | null {
+    if (!Array.isArray(value)) {
+      return null;
+    }
+    const attachments = value.filter(
+      (item: unknown): item is MediaAttachment =>
+        !!item &&
+        typeof item === 'object' &&
+        'dataUrl' in item &&
+        typeof (item as MediaAttachment).dataUrl === 'string'
+    );
+    return attachments.length > 0 ? attachments : null;
+  }
+
+  toggleMediaPreview(sectionName: string, rawKey: string): void {
+    const key = this.buildMediaFieldKey(sectionName, rawKey);
+    this.expandedMediaFields.update((current) => {
+      const next = new Set(current);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  }
+
+  isMediaExpanded(sectionName: string, rawKey: string): boolean {
+    const key = this.buildMediaFieldKey(sectionName, rawKey);
+    return this.expandedMediaFields().has(key);
+  }
+
+  private buildMediaFieldKey(sectionName: string, rawKey: string): string {
+    return `${sectionName}::${rawKey}`;
   }
 
   getEditableValue(sectionName: string, rawKey: string): string {

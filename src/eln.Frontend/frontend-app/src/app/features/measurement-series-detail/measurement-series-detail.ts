@@ -15,6 +15,7 @@ import {
   MeasurementResponseDto,
   MeasurementService
 } from '../../services/measurement.service';
+import { MediaAttachment } from '../../models/media-attachment';
 
 @Component({
   selector: 'app-measurement-series-detail',
@@ -305,23 +306,54 @@ export class MeasurementSeriesDetail implements OnInit {
     this.visibleColumns.set(new Set());
   }
 
-  getValueForColumn(measurement: MeasurementResponseDto, column: string): string {
+  private resolveColumnValue(measurement: MeasurementResponseDto, column: string): unknown {
     const separatorIndex = column.indexOf(' - ');
     const sectionName = separatorIndex > -1 ? column.slice(0, separatorIndex) : column;
     const fieldKey = separatorIndex > -1 ? column.slice(separatorIndex + 3) : '';
 
-    if (!sectionName || !fieldKey) return '-';
+    if (!sectionName || !fieldKey) {
+      return null;
+    }
 
     const section = measurement.data[sectionName];
-    if (!section) return '-';
+    if (!section) {
+      return null;
+    }
 
-    const value = section[fieldKey];
+    return section[fieldKey];
+  }
 
+  private extractMediaAttachments(value: unknown): MediaAttachment[] | null {
+    if (!Array.isArray(value)) {
+      return null;
+    }
+    const attachments = value.filter(
+      (item: unknown): item is MediaAttachment =>
+        !!item &&
+        typeof item === 'object' &&
+        'dataUrl' in item &&
+        typeof (item as MediaAttachment).dataUrl === 'string'
+    );
+    return attachments.length > 0 ? attachments : null;
+  }
+
+  getValueForColumn(measurement: MeasurementResponseDto, column: string): string {
+    const value = this.resolveColumnValue(measurement, column);
     if (value === null || value === undefined) {
       return '-';
     }
+
+    const attachments = this.extractMediaAttachments(value);
+    if (attachments) {
+      return attachments.map((item) => item.name).join(', ');
+    }
+
     if (typeof value === 'object') {
-      return JSON.stringify(value);
+      try {
+        return JSON.stringify(value);
+      } catch {
+        return String(value);
+      }
     }
     return String(value);
   }

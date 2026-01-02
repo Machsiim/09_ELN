@@ -89,9 +89,42 @@
                                 [disabled]="saveInProgress()"
                               />
                             } @else {
-                              <span class="field-value">{{ formatValue(field.value) }}</span>
+                              @if (getMediaAttachments(field.value); as attachments) {
+                                <div class="field-value media-value">
+                                  <div class="media-summary">
+                                    <strong>
+                                      {{ attachments.length === 1 ? attachments[0].name : attachments.length + ' Dateien' }}
+                                    </strong>
+                                    <small *ngIf="attachments.length === 1">
+                                      {{ attachments[0].size / 1024 | number: '1.0-0' }} KB
+                                    </small>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    class="media-toggle-button"
+                                    (click)="toggleMediaPreview(section.name, field.rawKey)">
+                                    {{ isMediaExpanded(section.name, field.rawKey) ? 'Bild verbergen' : 'Bild anzeigen' }}
+                                  </button>
+                                </div>
+                              } @else {
+                                <span class="field-value">{{ formatValue(field.value) }}</span>
+                              }
                             }
                           </li>
+                          @if (
+                            !isEditing() &&
+                            isMediaExpanded(section.name, field.rawKey) &&
+                            getMediaAttachments(field.value); as previewAttachments
+                          ) {
+                            <div class="media-preview-card">
+                              @for (attachment of previewAttachments; track attachment.id) {
+                                <figure class="media-thumb">
+                                  <img [src]="attachment.dataUrl" [alt]="attachment.name" />
+                                  <figcaption>{{ attachment.name }}</figcaption>
+                                </figure>
+                              }
+                            </div>
+                          }
                         }
                       </ul>
                     </div>

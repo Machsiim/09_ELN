@@ -22,9 +22,11 @@ import {
   MeasurementSeriesDto,
   MeasurementSeriesService
 } from '../../services/measurement-series.service';
+import { MediaAttachment } from '../../models/media-attachment';
+import { MediaUploadField } from '../../components/media-upload-field/media-upload-field';
 @Component({
   selector: 'app-create-measurement',
-  imports: [ReactiveFormsModule, Header, Footer],
+  imports: [ReactiveFormsModule, Header, Footer, MediaUploadField],
   templateUrl: './create-measurement.html',
   styleUrl: './create-measurement.scss'
 })
@@ -261,7 +263,11 @@ export class CreateMeasurement implements OnInit {
         card.fields?.forEach((field) => {
           const controlName = this.getControlName(section.id, card.id, field.id, field.label);
           const validators = field.type === 'number' ? [Validators.pattern(/^-?\d+(\.\d+)?$/)] : [];
-          controls[controlName] = this.fb.control('', validators);
+          const control =
+            field.type === 'media'
+              ? this.fb.control<MediaAttachment[]>([])
+              : this.fb.control('', validators);
+          controls[controlName] = control;
           const sectionKey = section.title?.trim() || 'Sektion';
           const cardKey = card.title?.trim() || 'Bereich';
           const fieldKey = field.label?.trim() || 'Feld';
