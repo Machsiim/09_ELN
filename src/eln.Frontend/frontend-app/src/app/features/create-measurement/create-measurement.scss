@@ -7,11 +7,11 @@
 .main-content {
   flex: 1;
   padding: 2rem;
-  background: #f8fafc;
+  background: #fff;
 }
 
 .create-measurement-card {
-  max-width: 640px;
+  max-width: 960px;
   margin: 0 auto;
   padding: 2rem;
   background: #fff;
@@ -258,4 +258,39 @@
   display: flex;
   justify-content: flex-end;
   margin-top: 1.5rem;
+}
+
+.toast {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 1.5rem;
+  padding: 1rem 1.25rem;
+  border-radius: 0.75rem;
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.2);
+  z-index: 1000;
+  animation: fadeInOut 4s forwards;
+}
+
+.toast-success {
+  background: #15803d;
+}
+
+@keyframes fadeInOut {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  10%,
+  90% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
 }

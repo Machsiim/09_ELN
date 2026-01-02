@@ -35,6 +35,16 @@ export class MeasurementSeriesDetail implements OnInit {
   readonly error = signal<string | null>(null);
   readonly seriesId = signal<number | null>(null);
   readonly seriesName = signal<string>('');
+  readonly seriesDescription = signal<string>('');
+  readonly selectedMeasurementIds = signal<Set<number>>(new Set());
+  readonly deleteInProgress = signal(false);
+  readonly confirmVisible = signal(false);
+  readonly confirmMessage = signal<string>('');
+  readonly pendingDeletionIds = signal<number[]>([]);
+  readonly successMessage = signal<string | null>(null);
+  private successTimeout: number | null = null;
+  readonly columnPickerVisible = signal(false);
+  readonly visibleColumns = signal<Set<string>>(new Set());
 
   ngOnInit(): void {
     this.route.params
@@ -48,6 +58,98 @@ export class MeasurementSeriesDetail implements OnInit {
           this.error.set('Ungültige Serien-ID');
         }
       });
+  }
+
+  isSelected(measurementId: number): boolean {
+    return this.selectedMeasurementIds().has(measurementId);
+  }
+
+  hasSelection(): boolean {
+    return this.selectedMeasurementIds().size > 0;
+  }
+
+  toggleSelection(measurementId: number, checked: boolean): void {
+    const current = new Set(this.selectedMeasurementIds());
+    if (checked) {
+      current.add(measurementId);
+    } else {
+      current.delete(measurementId);
+    }
+    this.selectedMeasurementIds.set(current);
+  }
+
+  goToMeasurement(measurement: MeasurementResponseDto): void {
+    this.router.navigate([`/messungen/serie/${measurement.seriesId}/${measurement.id}`]);
+  }
+
+
+  requestDeletion(): void {
+    if (!this.hasSelection() || this.deleteInProgress()) {
+      return;
+    }
+
+    const ids = Array.from(this.selectedMeasurementIds());
+    const confirmationMessage =
+      ids.length === 1
+        ? `Sind Sie sicher, dass Sie die Messung #${ids[0]} löschen wollen?`
+        : `Sind Sie sicher, dass Sie die Messungen ${ids.map(id => `#${id}`).join(', ')} löschen wollen?`;
+
+    this.pendingDeletionIds.set(ids);
+    this.confirmMessage.set(`${confirmationMessage} Diese Aktion kann nicht widerrufen werden.`);
+    this.confirmVisible.set(true);
+  }
+
+  cancelDeletion(): void {
+    if (this.deleteInProgress()) return;
+    this.confirmVisible.set(false);
+    this.pendingDeletionIds.set([]);
+  }
+
+  async confirmDeletion(): Promise<void> {
+    if (this.deleteInProgress() || this.pendingDeletionIds().length === 0) {
+      return;
+    }
+
+    const ids = this.pendingDeletionIds();
+    this.deleteInProgress.set(true);
+    this.error.set(null);
+
+    try {
+      await Promise.all(
+        ids.map(id => firstValueFrom(this.measurementService.deleteMeasurement(id)))
+      );
+
+      const remaining = this.measurements().filter(m => !ids.includes(m.id));
+      this.measurements.set(remaining);
+      this.selectedMeasurementIds.set(new Set());
+
+      if (this.searchQuery().trim()) {
+        this.filterMeasurements();
+      } else {
+        this.filteredMeasurements.set(remaining);
+      }
+      this.confirmVisible.set(false);
+      this.pendingDeletionIds.set([]);
+      this.showSuccess(ids.length === 1
+        ? `Messung #${ids[0]} wurde gelöscht.`
+        : `${ids.length} Messungen wurden gelöscht.`);
+    } catch (err) {
+      console.error('Failed to delete measurements', err);
+      this.error.set('Ausgewählte Messungen konnten nicht gelöscht werden.');
+    } finally {
+      this.deleteInProgress.set(false);
+    }
+  }
+
+  private showSuccess(message: string): void {
+    this.successMessage.set(message);
+    if (this.successTimeout) {
+      window.clearTimeout(this.successTimeout);
+    }
+    this.successTimeout = window.setTimeout(() => {
+      this.successMessage.set(null);
+      this.successTimeout = null;
+    }, 4000);
   }
 
   trackById(_: number, item: MeasurementResponseDto): number {
@@ -135,8 +237,12 @@ export class MeasurementSeriesDetail implements OnInit {
     this.filteredMeasurements.set(filtered);
   }
 
-  getAllColumns(): string[] {
-    // Use all measurements to get all possible columns, not just filtered ones
+  getBaseColumns(): string[] {
+    return ['Mess-ID', 'Erstellt von', 'Erstellt am'];
+  }
+
+  getDataColumns(): string[] {
+    // Use all measurements to get all possible data columns, not just filtered ones
     const measurements = this.measurements();
     if (measurements.length === 0) return [];
 
@@ -154,15 +260,62 @@ export class MeasurementSeriesDetail implements OnInit {
     return Array.from(columnsSet).sort();
   }
 
-  getValueForColumn(measurement: MeasurementResponseDto, column: string): string {
-    const [sectionName, fieldName] = column.split(' - ');
+  getAllColumns(): string[] {
+    return [...this.getBaseColumns(), ...this.getDataColumns()];
+  }
 
-    if (!sectionName || !fieldName) return '-';
+  getVisibleColumns(): string[] {
+    const visible = this.visibleColumns();
+    return this.getAllColumns().filter(col => visible.has(col));
+  }
+
+  getVisibleDataColumns(): string[] {
+    const visible = this.visibleColumns();
+    return this.getDataColumns().filter(col => visible.has(col));
+  }
+
+  toggleColumnVisibility(column: string): void {
+    const current = new Set(this.visibleColumns());
+    if (current.has(column)) {
+      current.delete(column);
+    } else {
+      current.add(column);
+    }
+    this.visibleColumns.set(current);
+  }
+
+  isColumnVisible(column: string): boolean {
+    return this.visibleColumns().has(column);
+  }
+
+  isBaseColumnVisible(columnName: string): boolean {
+    return this.visibleColumns().has(columnName);
+  }
+
+  toggleColumnPicker(): void {
+    this.columnPickerVisible.set(!this.columnPickerVisible());
+  }
+
+  showAllColumns(): void {
+    const allColumns = this.getAllColumns();
+    this.visibleColumns.set(new Set(allColumns));
+  }
+
+  hideAllColumns(): void {
+    this.visibleColumns.set(new Set());
+  }
+
+  getValueForColumn(measurement: MeasurementResponseDto, column: string): string {
+    const separatorIndex = column.indexOf(' - ');
+    const sectionName = separatorIndex > -1 ? column.slice(0, separatorIndex) : column;
+    const fieldKey = separatorIndex > -1 ? column.slice(separatorIndex + 3) : '';
+
+    if (!sectionName || !fieldKey) return '-';
 
     const section = measurement.data[sectionName];
     if (!section) return '-';
 
-    const value = section[fieldName];
+    const value = section[fieldKey];
 
     if (value === null || value === undefined) {
       return '-';
@@ -209,6 +362,13 @@ export class MeasurementSeriesDetail implements OnInit {
 
           this.measurements.set(fullMeasurements);
           this.filteredMeasurements.set(fullMeasurements);
+          this.selectedMeasurementIds.set(new Set());
+
+          // Initialize all columns as visible on first load
+          if (this.visibleColumns().size === 0) {
+            this.showAllColumns();
+          }
+
           this.loading.set(false);
         },
         error: () => {
@@ -217,4 +377,5 @@ export class MeasurementSeriesDetail implements OnInit {
         }
       });
   }
+
 }

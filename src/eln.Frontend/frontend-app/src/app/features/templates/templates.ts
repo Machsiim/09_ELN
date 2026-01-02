@@ -5,6 +5,7 @@ import {
   inject,
   signal
 } from '@angular/core';
+import { Router } from '@angular/router';
 import { Header } from '../../components/header/header';
 import { Footer } from '../../components/footer/footer';
 import {
@@ -13,8 +14,9 @@ import {
   Validators
 } from '@angular/forms';
 import { TemplateDto, TemplateService } from '../../services/template.service';
+import { AuthService } from '../../services/auth.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { CommonModule } from '@angular/common';
+
 import {
   TemplateCardSchema,
   TemplateFieldSchema,
@@ -35,13 +37,15 @@ type BuilderField = TemplateFieldSchema;
 
 @Component({
   selector: 'app-templates',
-  imports: [CommonModule, ReactiveFormsModule, Header, Footer],
+  imports: [ReactiveFormsModule, Header, Footer],
   templateUrl: './templates.html',
   styleUrl: './templates.scss'
 })
 export class Templates implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly templateService = inject(TemplateService);
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly templates = signal<TemplateDto[]>([]);
@@ -49,6 +53,8 @@ export class Templates implements OnInit {
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
   readonly successMessage = signal<string | null>(null);
+  readonly toastMessage = signal<string | null>(null);
+  private toastTimeout: number | null = null;
 
   readonly fieldTypeOptions: { value: TemplateFieldType; label: string }[] = [
     { value: 'text', label: 'Kurztext' },
@@ -81,6 +87,10 @@ export class Templates implements OnInit {
   });
 
   ngOnInit(): void {
+    if (!this.authService.isStaff()) {
+      this.router.navigate(['/startseite']);
+      return;
+    }
     this.fetchTemplates();
   }
 
@@ -215,6 +225,11 @@ export class Templates implements OnInit {
   }
 
   saveTemplate(): void {
+    if (!this.authService.isStaff()) {
+      this.error.set('Nur Lektoren können Templates erstellen.');
+      return;
+    }
+
     if (this.templateForm.invalid) {
       this.templateForm.markAllAsTouched();
       return;
@@ -251,9 +266,8 @@ export class Templates implements OnInit {
         next: (template) => {
           this.templates.update((list) => [template, ...list]);
           this.loading.set(false);
-          this.successMessage.set('Template wurde gespeichert.');
+          this.showToast('Template wurde gespeichert.');
           this.templateForm.reset({ name: '' });
-          this.clearSuccessLater();
         },
         error: () => {
           this.loading.set(false);
@@ -267,8 +281,7 @@ export class Templates implements OnInit {
       const schema = this.decodeSchema(template.schema);
       this.templateForm.controls.name.setValue(`${template.name} (Kopie)`);
       this.setSectionsFromSchema(schema);
-      this.successMessage.set('Template wurde in den Builder geladen.');
-      this.clearSuccessLater();
+      this.showToast('Template wurde in den Builder geladen.');
     } catch {
       this.error.set('Schema konnte nicht geladen werden.');
     }
@@ -353,7 +366,14 @@ export class Templates implements OnInit {
     return `${scope}-${Math.random().toString(36).slice(2, 9)}`;
   }
 
-  private clearSuccessLater(): void {
-    setTimeout(() => this.successMessage.set(null), 3500);
+  private showToast(message: string): void {
+    this.toastMessage.set(message);
+    if (this.toastTimeout) {
+      window.clearTimeout(this.toastTimeout);
+    }
+    this.toastTimeout = window.setTimeout(() => {
+      this.toastMessage.set(null);
+      this.toastTimeout = null;
+    }, 4000);
   }
 }

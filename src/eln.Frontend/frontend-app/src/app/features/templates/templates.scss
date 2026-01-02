@@ -253,3 +253,36 @@
   text-align: center;
   margin: 2rem 0;
 }
+
+.toast {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 1.5rem;
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.25);
+  z-index: 1200;
+  animation: fadeInOut 4s forwards;
+}
+
+.toast-success {
+  background: #16a34a;
+}
+
+@keyframes fadeInOut {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  10%,
+  90% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
