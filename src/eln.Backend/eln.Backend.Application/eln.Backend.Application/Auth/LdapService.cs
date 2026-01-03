@@ -29,7 +29,7 @@ public class LdapService : ILdapService
             var identifier = new LdapDirectoryIdentifier(
                 _settings.Server,
                 _settings.Port,
-                false,
+                true,
                 false);
 
             using var connection = new LdapConnection(identifier)
@@ -55,7 +55,7 @@ public class LdapService : ILdapService
                 // Aktiviert SSL/TLS für die Verbindung.
                 connection.SessionOptions.SecureSocketLayer = true;
                 
-                connection.SessionOptions.VerifyServerCertificate += (conn, cert) => true;
+                //connection.SessionOptions.VerifyServerCertificate += (conn, cert) => true;
             }
 
             
