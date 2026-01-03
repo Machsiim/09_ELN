@@ -262,10 +262,13 @@ export class CreateMeasurement implements OnInit {
       section.cards?.forEach((card) => {
         card.fields?.forEach((field) => {
           const controlName = this.getControlName(section.id, card.id, field.id, field.label);
-          const validators = field.type === 'number' ? [Validators.pattern(/^-?\d+(\.\d+)?$/)] : [];
+          const validators = [Validators.required];
+          if (field.type === 'number') {
+            validators.push(Validators.pattern(/^-?\d+(\.\d+)?$/));
+          }
           const control =
             field.type === 'media'
-              ? this.fb.control<MediaAttachment[]>([])
+              ? this.fb.control<MediaAttachment[]>([], { validators })
               : this.fb.control('', validators);
           controls[controlName] = control;
           const sectionKey = section.title?.trim() || 'Sektion';
