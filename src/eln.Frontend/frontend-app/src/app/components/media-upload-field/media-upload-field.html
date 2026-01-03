@@ -45,8 +45,8 @@
         </button>
       </div>
       <div class="preview-image" *ngIf="isPreviewExpanded(attachment.id)">
-        <img *ngIf="attachment.dataUrl?.startsWith('data:image')" [src]="attachment.dataUrl" [alt]="attachment.name">
-        <span *ngIf="!attachment.dataUrl?.startsWith('data:image')">{{ attachment.type || 'Keine Vorschau verfügbar' }}</span>
+        <img *ngIf="attachment.dataUrl.startsWith('data:image')" [src]="attachment.dataUrl" [alt]="attachment.name">
+        <span *ngIf="!attachment.dataUrl.startsWith('data:image')">{{ attachment.type || 'Keine Vorschau verfügbar' }}</span>
       </div>
     </article>
   </div>

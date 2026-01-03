@@ -305,19 +305,36 @@
   }
 }
 
-.media-toggle-button {
-  border: 2px solid #111827;
+.media-buttons {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.media-add-button {
+  border: none;
   border-radius: 999px;
-  padding: 0.45rem 1.1rem;
-  background: transparent;
+  padding: 0.35rem 1rem;
+  background: #c1f1d0;
+  color: #065f46;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.media-toggle-button {
+  border: none;
+  outline: none;
+  box-shadow: none;
+  border-radius: 999px;
+  padding: 0.35rem 1rem;
+  background: #e0edff;
   color: #1d4ed8;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s;
+}
 
-  &:hover {
-    background: rgba(29, 78, 216, 0.08);
-  }
+.media-toggle-button:focus-visible {
+  outline: none;
 }
 
 .media-preview-card {
@@ -332,6 +349,10 @@
   width: 100%;
   box-sizing: border-box;
   align-self: stretch;
+
+  &.editable-preview {
+    gap: 0.75rem;
+  }
 }
 
 .media-thumb {
@@ -357,6 +378,43 @@
     font-weight: 600;
     text-align: left;
   }
+
+  &.media-thumb-editable {
+    justify-content: space-between;
+  }
+}
+
+.media-remove-button {
+  border: none;
+  border-radius: 10px;
+  padding: 0.2rem;
+  background: #fee2e2;
+  color: #b91c1c;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+
+  mat-icon {
+    font-size: 20px;
+  }
+}
+
+.media-dialog {
+  background: #fff;
+  border-radius: 16px;
+  padding: 1.5rem;
+  width: min(540px, 90vw);
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.15);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.media-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
 }
 
 .field-input {
@@ -517,8 +575,8 @@
 }
 
 .change-value {
-  display: inline-block;
-  margin-right: 0.75rem;
+  display: block;
+  margin-top: 0.25rem;
 
   &.old {
     color: #b91c1c;

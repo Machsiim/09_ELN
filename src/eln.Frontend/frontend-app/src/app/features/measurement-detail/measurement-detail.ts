@@ -6,6 +6,7 @@ import {
   inject,
   signal
 } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Header } from '../../components/header/header';
@@ -16,6 +17,8 @@ import {
   MeasurementHistoryEntry
 } from '../../services/measurement.service';
 import { MediaAttachment } from '../../models/media-attachment';
+import { MatIconModule } from '@angular/material/icon';
+import { MediaUploadField } from '../../components/media-upload-field/media-upload-field';
 
 interface SectionEntry {
   name: string;
@@ -28,6 +31,7 @@ interface CardEntry {
 }
 
 interface FieldEntry {
+  type?: string;
   key: string;
   value: unknown;
   rawKey: string;
@@ -36,7 +40,7 @@ interface FieldEntry {
 @Component({
   selector: 'app-measurement-detail',
   standalone: true,
-  imports: [CommonModule, Header, Footer],
+  imports: [CommonModule, FormsModule, Header, Footer, MatIconModule, MediaUploadField],
   templateUrl: './measurement-detail.html',
   styleUrl: './measurement-detail.scss'
 })
@@ -61,6 +65,9 @@ export class MeasurementDetail implements OnInit {
   readonly historyError = signal<string | null>(null);
   readonly historyEntries = signal<MeasurementHistoryEntry[]>([]);
   readonly expandedMediaFields = signal<Set<string>>(new Set());
+  readonly mediaDialogOpen = signal(false);
+  readonly mediaDialogContext = signal<{ section: string; field: string } | null>(null);
+  readonly pendingMediaAttachments = signal<MediaAttachment[]>([]);
 
   private toastTimeout: number | null = null;
 
@@ -285,17 +292,13 @@ export class MeasurementDetail implements OnInit {
   }
 
   getMediaAttachments(value: unknown): MediaAttachment[] | null {
-    if (!Array.isArray(value)) {
-      return null;
-    }
-    const attachments = value.filter(
-      (item: unknown): item is MediaAttachment =>
-        !!item &&
-        typeof item === 'object' &&
-        'dataUrl' in item &&
-        typeof (item as MediaAttachment).dataUrl === 'string'
-    );
-    return attachments.length > 0 ? attachments : null;
+    return this.extractMediaAttachments(value);
+  }
+
+  getEditableMediaAttachments(sectionName: string, rawKey: string): MediaAttachment[] | null {
+    const data = this.editableData();
+    const value = data?.[sectionName]?.[rawKey];
+    return this.extractMediaAttachments(value);
   }
 
   toggleMediaPreview(sectionName: string, rawKey: string): void {
@@ -316,8 +319,66 @@ export class MeasurementDetail implements OnInit {
     return this.expandedMediaFields().has(key);
   }
 
+  isMediaField(sectionOrType: string, rawKey?: string, rawValue?: unknown): boolean {
+    if (rawKey === undefined) {
+      return sectionOrType === 'media';
+    }
+    const measurement = this.measurement();
+    const baseValue = measurement?.data?.[sectionOrType]?.[rawKey] ?? rawValue;
+    const editableValue = this.editableData()?.[sectionOrType]?.[rawKey];
+    return this.extractMediaAttachments(baseValue) !== null || this.extractMediaAttachments(editableValue) !== null;
+  }
+
   private buildMediaFieldKey(sectionName: string, rawKey: string): string {
     return `${sectionName}::${rawKey}`;
+  }
+
+  openMediaDialog(sectionName: string, rawKey: string): void {
+    this.mediaDialogContext.set({ section: sectionName, field: rawKey });
+    this.pendingMediaAttachments.set([]);
+    this.mediaDialogOpen.set(true);
+  }
+
+  closeMediaDialog(): void {
+    this.mediaDialogOpen.set(false);
+    this.mediaDialogContext.set(null);
+    this.pendingMediaAttachments.set([]);
+  }
+
+  onDialogAttachmentsChange(attachments: MediaAttachment[]): void {
+    this.pendingMediaAttachments.set(attachments ?? []);
+  }
+
+  saveDialogAttachments(): void {
+    const context = this.mediaDialogContext();
+    const attachments = this.pendingMediaAttachments();
+    if (!context || attachments.length === 0) {
+      this.closeMediaDialog();
+      return;
+    }
+
+    const current = this.editableData();
+    if (!current || !current[context.section]) {
+      this.closeMediaDialog();
+      return;
+    }
+
+    const existing = this.getEditableMediaAttachments(context.section, context.field) ?? [];
+    const updatedSection = {
+      ...current[context.section],
+      [context.field]: [...existing, ...attachments]
+    };
+
+    this.editableData.set({
+      ...current,
+      [context.section]: updatedSection
+    });
+    this.expandedMediaFields.update((set) => {
+      const clone = new Set(set);
+      clone.add(this.buildMediaFieldKey(context.section, context.field));
+      return clone;
+    });
+    this.closeMediaDialog();
   }
 
   getEditableValue(sectionName: string, rawKey: string): string {
@@ -352,6 +413,46 @@ export class MeasurementDetail implements OnInit {
 
   private cloneData(data: Record<string, Record<string, unknown>>): Record<string, Record<string, unknown>> {
     return JSON.parse(JSON.stringify(data));
+  }
+
+  removeEditableAttachment(sectionName: string, rawKey: string, attachmentId: string): void {
+    const current = this.editableData();
+    if (!current || !current[sectionName]) return;
+
+    const attachments = this.getEditableMediaAttachments(sectionName, rawKey);
+    if (!attachments) {
+      return;
+    }
+
+    const filtered = attachments.filter((attachment) => attachment.id !== attachmentId);
+    const nextSection = { ...current[sectionName], [rawKey]: filtered };
+
+    this.editableData.set({
+      ...current,
+      [sectionName]: nextSection
+    });
+  }
+
+  private extractMediaAttachments(value: unknown): MediaAttachment[] | null {
+    let parsed: unknown = value;
+    if (typeof value === 'string') {
+      try {
+        parsed = JSON.parse(value);
+      } catch {
+        return null;
+      }
+    }
+    if (!Array.isArray(parsed)) {
+      return null;
+    }
+    const attachments = parsed.filter(
+      (item: unknown): item is MediaAttachment =>
+        !!item &&
+        typeof item === 'object' &&
+        'dataUrl' in item &&
+        typeof (item as MediaAttachment).dataUrl === 'string'
+    );
+    return attachments;
   }
 
   private showToast(message: string): void {
@@ -390,5 +491,23 @@ export class MeasurementDetail implements OnInit {
 
   closeHistory(): void {
     this.historyVisible.set(false);
+  }
+
+  isMediaChange(fieldName: string, value?: unknown): boolean {
+    if (!value) {
+      return false;
+    }
+    return this.extractMediaAttachments(value) !== null;
+  }
+
+  formatMediaSummary(value: unknown): string {
+    const attachments = this.extractMediaAttachments(value);
+    if (!attachments || attachments.length === 0) {
+      return '-';
+    }
+    if (attachments.length === 1) {
+      return attachments[0].name;
+    }
+    return `${attachments.length} Dateien (${attachments.map((a) => a.name).join(', ')})`;
   }
 }
