@@ -46,6 +46,9 @@ export class MeasurementSeriesDetail implements OnInit {
   private successTimeout: number | null = null;
   readonly columnPickerVisible = signal(false);
   readonly visibleColumns = signal<Set<string>>(new Set());
+  readonly shareDialogVisible = signal(false);
+  readonly shareLink = signal<string | null>(null);
+  readonly shareLoading = signal(false);
 
   ngOnInit(): void {
     this.route.params
@@ -159,6 +162,22 @@ export class MeasurementSeriesDetail implements OnInit {
 
   goBack(): void {
     this.router.navigate(['/messungen']);
+  }
+
+  openShareDialog(): void {
+    this.shareDialogVisible.set(true);
+    this.shareLoading.set(true);
+    // Placeholder async behavior
+    setTimeout(() => {
+      this.shareLink.set('https://placeholder.example.com/share/series/' + (this.seriesId() ?? ''));
+      this.shareLoading.set(false);
+    }, 1200);
+  }
+
+  closeShareDialog(): void {
+    this.shareDialogVisible.set(false);
+    this.shareLink.set(null);
+    this.shareLoading.set(false);
   }
 
   onSearchChange(event: Event): void {

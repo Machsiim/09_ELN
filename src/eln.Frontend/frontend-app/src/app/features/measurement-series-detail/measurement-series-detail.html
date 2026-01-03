@@ -8,6 +8,9 @@
           <button type="button" class="back-button" (click)="goBack()" title="Zurück zur Übersicht">
             ← Zurück
           </button>
+          <button type="button" class="share-button" (click)="openShareDialog()" title="Sharing-Link anzeigen">
+            Link teilen
+          </button>
         </div>
         <div>
           <p class="subtitle">Messserie #{{ seriesId() }}</p>
@@ -182,6 +185,22 @@
           >
           {{ deleteInProgress() ? 'Löschen ...' : 'Löschen' }}
         </button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (shareDialogVisible()) {
+  <div class="modal-backdrop">
+    <div class="share-dialog">
+      <h2>Sharing-Link</h2>
+      @if (shareLoading()) {
+        <p class="status info">Link wird geladen ...</p>
+      } @else {
+        <p class="share-url">{{ shareLink() }}</p>
+      }
+      <div class="modal-actions">
+        <button type="button" class="modal-button" (click)="closeShareDialog()">Schließen</button>
       </div>
     </div>
   </div>
