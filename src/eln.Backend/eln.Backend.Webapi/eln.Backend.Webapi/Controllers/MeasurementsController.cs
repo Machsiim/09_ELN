@@ -25,16 +25,25 @@ public class MeasurementsController : ControllerBase
     /// Create a new measurement with template assignment
     /// </summary>
     [HttpPost]
+    [Authorize]
     public async Task<ActionResult<MeasurementResponseDto>> CreateMeasurement(
         [FromBody] CreateMeasurementDto dto,
         CancellationToken cancellationToken)
     {
         try
         {
-            // TODO: Get actual user ID from JWT token
-            int userId = 1; // Placeholder
+            // Extract username from JWT
+            var username = User.FindFirst(ClaimTypes.Name)?.Value;
+
+            if (string.IsNullOrEmpty(username))
+                return Unauthorized();
+
+            // Get user ID from database
+            var user = await _context.Users.SingleOrDefaultAsync(u => u.Username == username);
+            if (user == null)
+                return Unauthorized();
             
-            var result = await _measurementService.CreateMeasurementAsync(dto, userId);
+            var result = await _measurementService.CreateMeasurementAsync(dto, user.Id);
             return CreatedAtAction(nameof(GetMeasurement), new { id = result.Id }, result);
         }
         catch (Exception ex)
@@ -125,12 +134,35 @@ public class MeasurementsController : ControllerBase
 
     /// <summary>
     /// Delete a measurement
+    /// Students can only delete their own measurements
     /// </summary>
     [HttpDelete("{id:int}")]
+    [Authorize]
     public async Task<ActionResult> DeleteMeasurement(int id)
     {
         try
         {
+            // Extract username and role from JWT
+            var username = User.FindFirst(ClaimTypes.Name)?.Value;
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value ?? "Student";
+
+            if (string.IsNullOrEmpty(username))
+                return Unauthorized();
+
+            // Get user ID from database
+            var user = await _context.Users.SingleOrDefaultAsync(u => u.Username == username);
+            if (user == null)
+                return Unauthorized();
+
+            // Get measurement to check ownership
+            var measurement = await _context.Measurements.FindAsync(id);
+            if (measurement == null)
+                return NotFound(new { error = "Measurement not found" });
+
+            // Students can only delete their own measurements
+            if (userRole == "Student" && measurement.CreatedBy != user.Id)
+                return Forbid();
+
             await _measurementService.DeleteMeasurementAsync(id);
             return NoContent();
         }
@@ -143,18 +175,38 @@ public class MeasurementsController : ControllerBase
 
     /// <summary>
     /// Update an existing measurement
+    /// Students can only update their own measurements
     /// </summary>
     [HttpPut("{id:int}")]
+    [Authorize]
     public async Task<ActionResult<MeasurementResponseDto>> UpdateMeasurement(
         int id,
         [FromBody] UpdateMeasurementDto dto)
     {
         try
         {
-            // TODO: Get actual user ID from JWT token
-            int userId = 1; // Placeholder
+            // Extract username and role from JWT
+            var username = User.FindFirst(ClaimTypes.Name)?.Value;
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value ?? "Student";
+
+            if (string.IsNullOrEmpty(username))
+                return Unauthorized();
+
+            // Get user ID from database
+            var user = await _context.Users.SingleOrDefaultAsync(u => u.Username == username);
+            if (user == null)
+                return Unauthorized();
+
+            // Get measurement to check ownership
+            var measurement = await _context.Measurements.FindAsync(id);
+            if (measurement == null)
+                return NotFound(new { error = "Measurement not found" });
+
+            // Students can only update their own measurements
+            if (userRole == "Student" && measurement.CreatedBy != user.Id)
+                return Forbid();
             
-            var result = await _measurementService.UpdateMeasurementAsync(id, dto, userId);
+            var result = await _measurementService.UpdateMeasurementAsync(id, dto, user.Id);
             return Ok(result);
         }
         catch (Exception ex)

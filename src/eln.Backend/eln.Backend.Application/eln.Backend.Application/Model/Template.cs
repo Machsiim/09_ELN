@@ -22,6 +22,7 @@ public class Template
     public JsonDocument Schema { get; set; } // Template Definition (Sections + Fields)
     public int CreatedBy { get; set; }
     public DateTime CreatedAt { get; set; }
+    public bool IsArchived { get; set; } = false;
 
     // Navigation Properties
     public User? Creator { get; set; }

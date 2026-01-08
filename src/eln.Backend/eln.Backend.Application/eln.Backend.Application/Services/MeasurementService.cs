@@ -32,22 +32,18 @@ public class MeasurementService
         if (series == null)
             throw new Exception($"MeasurementSeries with ID {dto.SeriesId} not found");
 
-        // Parse template schema
-        var schemaJson = template.Schema.RootElement.GetProperty("sections").GetRawText();
-        var sections = JsonSerializer.Deserialize<List<TemplateSectionDto>>(schemaJson) ?? new();
+        // Convert data to JSON first
+        var dataJson = JsonSerializer.Serialize(dto.Data);
+        var jsonDocument = JsonDocument.Parse(dataJson);
 
-        // Validate measurement data
-        var validationResult = _validationService.ValidateMeasurementData(sections, dto.Data);
+        // STRICT VALIDATION: All fields must be filled and types must match
+        var validationResult = _validationService.ValidateMeasurementDataStrict(template.Schema, jsonDocument);
         if (!validationResult.IsValid)
         {
-            var errorMessages = string.Join(", ", validationResult.Errors.Select(e => 
+            var errorMessages = string.Join("; ", validationResult.Errors.Select(e => 
                 $"{e.Section}.{e.Field}: {e.Error}"));
             throw new Exception($"Validation failed: {errorMessages}");
         }
-
-        // Convert data to JSON
-        var dataJson = JsonSerializer.Serialize(dto.Data);
-        var jsonDocument = JsonDocument.Parse(dataJson);
 
         var measurement = new Measurement(dto.SeriesId, dto.TemplateId, jsonDocument, userId);
         
@@ -143,12 +139,8 @@ public class MeasurementService
             .Include(m => m.Creator)
             .AsQueryable();
 
-        // RBAC: Students can only see their own measurements
-        if (userRole != "Staff")
-        {
-            query = query.Where(m => m.CreatedBy == userId);
-        }
-        // Staff can see all measurements (no additional filter)
+        // RBAC: Students can see ALL measurements (no filter on viewing)
+        // They can only EDIT/DELETE their own (enforced in controller)
 
         // Filter by Template ID
         if (filter.TemplateId.HasValue)
@@ -220,15 +212,15 @@ public class MeasurementService
         if (template == null)
             throw new Exception($"Template for measurement {id} not found");
 
-        // Parse template schema
-        var schemaJson = template.Schema.RootElement.GetProperty("sections").GetRawText();
-        var sections = JsonSerializer.Deserialize<List<TemplateSectionDto>>(schemaJson) ?? new();
+        // Convert new data to JSON
+        var newDataJson = JsonSerializer.Serialize(dto.Data);
+        var newJsonDocument = JsonDocument.Parse(newDataJson);
 
-        // Validate new measurement data
-        var validationResult = _validationService.ValidateMeasurementData(sections, dto.Data);
+        // STRICT VALIDATION: All fields must be filled and types must match
+        var validationResult = _validationService.ValidateMeasurementDataStrict(template.Schema, newJsonDocument);
         if (!validationResult.IsValid)
         {
-            var errorMessages = string.Join(", ", validationResult.Errors.Select(e => 
+            var errorMessages = string.Join("; ", validationResult.Errors.Select(e => 
                 $"{e.Section}.{e.Field}: {e.Error}"));
             throw new Exception($"Validation failed: {errorMessages}");
         }
@@ -245,8 +237,7 @@ public class MeasurementService
         _context.MeasurementHistories.Add(historyEntry);
 
         // Update measurement with new data
-        var newDataJson = JsonSerializer.Serialize(dto.Data);
-        measurement.Data = JsonDocument.Parse(newDataJson);
+        measurement.Data = newJsonDocument;
 
         await _context.SaveChangesAsync();
 
