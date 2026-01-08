@@ -31,6 +31,7 @@ public class MeasurementSeriesService
     {
         var series = await _context.MeasurementSeries
             .Include(s => s.Creator)
+            .Include(s => s.Locker)
             .Include(s => s.Measurements)
             .FirstOrDefaultAsync(s => s.Id == id);
 
@@ -45,7 +46,11 @@ public class MeasurementSeriesService
             CreatedBy = series.CreatedBy,
             CreatedByUsername = series.Creator?.Username ?? "Unknown",
             CreatedAt = series.CreatedAt,
-            MeasurementCount = series.Measurements.Count
+            MeasurementCount = series.Measurements.Count,
+            IsLocked = series.IsLocked,
+            LockedBy = series.LockedBy,
+            LockedByUsername = series.Locker?.Username,
+            LockedAt = series.LockedAt
         };
     }
 
@@ -53,6 +58,7 @@ public class MeasurementSeriesService
     {
         var allSeries = await _context.MeasurementSeries
             .Include(s => s.Creator)
+            .Include(s => s.Locker)
             .Include(s => s.Measurements)
             .OrderByDescending(s => s.CreatedAt)
             .ToListAsync();
@@ -65,7 +71,11 @@ public class MeasurementSeriesService
             CreatedBy = s.CreatedBy,
             CreatedByUsername = s.Creator?.Username ?? "Unknown",
             CreatedAt = s.CreatedAt,
-            MeasurementCount = s.Measurements.Count
+            MeasurementCount = s.Measurements.Count,
+            IsLocked = s.IsLocked,
+            LockedBy = s.LockedBy,
+            LockedByUsername = s.Locker?.Username,
+            LockedAt = s.LockedAt
         }).ToList();
     }
 
@@ -89,9 +99,55 @@ public class MeasurementSeriesService
         if (series == null)
             throw new Exception($"MeasurementSeries with ID {id} not found");
 
+        // Check if series is locked
+        if (series.IsLocked)
+            throw new Exception("Cannot update locked series. Please unlock it first.");
+
         // Update properties
         series.Name = dto.Name;
         series.Description = dto.Description;
+
+        await _context.SaveChangesAsync();
+
+        return await GetSeriesByIdAsync(id);
+    }
+
+    /// <summary>
+    /// Lock a measurement series (Staff only)
+    /// </summary>
+    public async Task<MeasurementSeriesResponseDto> LockSeriesAsync(int id, int userId)
+    {
+        var series = await _context.MeasurementSeries.FindAsync(id);
+        if (series == null)
+            throw new Exception($"MeasurementSeries with ID {id} not found");
+
+        if (series.IsLocked)
+            throw new Exception("Series is already locked");
+
+        series.IsLocked = true;
+        series.LockedBy = userId;
+        series.LockedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        return await GetSeriesByIdAsync(id);
+    }
+
+    /// <summary>
+    /// Unlock a measurement series (Staff only)
+    /// </summary>
+    public async Task<MeasurementSeriesResponseDto> UnlockSeriesAsync(int id)
+    {
+        var series = await _context.MeasurementSeries.FindAsync(id);
+        if (series == null)
+            throw new Exception($"MeasurementSeries with ID {id} not found");
+
+        if (!series.IsLocked)
+            throw new Exception("Series is not locked");
+
+        series.IsLocked = false;
+        series.LockedBy = null;
+        series.LockedAt = null;
 
         await _context.SaveChangesAsync();
 

@@ -32,8 +32,9 @@ public class MeasurementsController : ControllerBase
     {
         try
         {
-            // Extract username from JWT
+            // Extract username and role from JWT
             var username = User.FindFirst(ClaimTypes.Name)?.Value;
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value ?? "Student";
 
             if (string.IsNullOrEmpty(username))
                 return Unauthorized();
@@ -42,6 +43,14 @@ public class MeasurementsController : ControllerBase
             var user = await _context.Users.SingleOrDefaultAsync(u => u.Username == username);
             if (user == null)
                 return Unauthorized();
+
+            // Check if series is locked
+            var series = await _context.MeasurementSeries.FindAsync(dto.SeriesId);
+            if (series == null)
+                return BadRequest(new { error = "Series not found" });
+
+            if (series.IsLocked && userRole != "Staff")
+                return BadRequest(new { error = "Cannot add measurements to locked series. Only Staff can modify locked series." });
             
             var result = await _measurementService.CreateMeasurementAsync(dto, user.Id);
             return CreatedAtAction(nameof(GetMeasurement), new { id = result.Id }, result);
@@ -154,10 +163,17 @@ public class MeasurementsController : ControllerBase
             if (user == null)
                 return Unauthorized();
 
-            // Get measurement to check ownership
-            var measurement = await _context.Measurements.FindAsync(id);
+            // Get measurement to check ownership and series lock status
+            var measurement = await _context.Measurements
+                .Include(m => m.Series)
+                .FirstOrDefaultAsync(m => m.Id == id);
+                
             if (measurement == null)
                 return NotFound(new { error = "Measurement not found" });
+
+            // Check if series is locked
+            if (measurement.Series != null && measurement.Series.IsLocked && userRole != "Staff")
+                return BadRequest(new { error = "Cannot delete measurements from locked series. Only Staff can modify locked series." });
 
             // Students can only delete their own measurements
             if (userRole == "Student" && measurement.CreatedBy != user.Id)
@@ -197,10 +213,17 @@ public class MeasurementsController : ControllerBase
             if (user == null)
                 return Unauthorized();
 
-            // Get measurement to check ownership
-            var measurement = await _context.Measurements.FindAsync(id);
+            // Get measurement to check ownership and series lock status
+            var measurement = await _context.Measurements
+                .Include(m => m.Series)
+                .FirstOrDefaultAsync(m => m.Id == id);
+                
             if (measurement == null)
                 return NotFound(new { error = "Measurement not found" });
+
+            // Check if series is locked
+            if (measurement.Series != null && measurement.Series.IsLocked && userRole != "Staff")
+                return BadRequest(new { error = "Cannot modify measurements in locked series. Only Staff can modify locked series." });
 
             // Students can only update their own measurements
             if (userRole == "Student" && measurement.CreatedBy != user.Id)

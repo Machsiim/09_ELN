@@ -32,6 +32,10 @@ public class MeasurementService
         if (series == null)
             throw new Exception($"MeasurementSeries with ID {dto.SeriesId} not found");
 
+        // Check if series is locked
+        if (series.IsLocked)
+            throw new Exception("Cannot create measurement in locked series. Series must be unlocked first.");
+
         // Convert data to JSON first
         var dataJson = JsonSerializer.Serialize(dto.Data);
         var jsonDocument = JsonDocument.Parse(dataJson);
