@@ -80,15 +80,70 @@ public class TemplatesController : ControllerBase
             return ValidationProblem(ModelState);
         }
 
-        var template = await _context.Templates.FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
+        var template = await _context.Templates
+            .Include(t => t.Measurements)
+            .FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
+            
         if (template is null)
         {
             return NotFound();
         }
 
+        // Check if template is archived
+        if (template.IsArchived)
+        {
+            return BadRequest(new { message = "Cannot edit archived template." });
+        }
+
+        // Check if template has measurements
+        if (template.Measurements.Any())
+        {
+            return BadRequest(new { message = "Cannot edit template that has measurements." });
+        }
+
         template.Name = request.Name;
         template.Schema = request.Schema ?? JsonDocument.Parse("{}");
 
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return Ok(new TemplateResponse(template.Id, template.Name, template.Schema.RootElement.GetRawText()));
+    }
+
+    [HttpDelete("{id:int}")]
+    public async Task<ActionResult> DeleteTemplate(int id, CancellationToken cancellationToken)
+    {
+        var template = await _context.Templates
+            .Include(t => t.Measurements)
+            .FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
+
+        if (template is null)
+        {
+            return NotFound();
+        }
+
+        // Check if template has measurements
+        if (template.Measurements.Any())
+        {
+            return BadRequest(new { message = "Cannot delete template with existing measurements. Archive it instead." });
+        }
+
+        _context.Templates.Remove(template);
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return NoContent();
+    }
+
+    [HttpPut("{id:int}/archive")]
+    public async Task<ActionResult<TemplateResponse>> ArchiveTemplate(int id, CancellationToken cancellationToken)
+    {
+        var template = await _context.Templates.FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
+        
+        if (template is null)
+        {
+            return NotFound();
+        }
+
+        template.IsArchived = true;
         await _context.SaveChangesAsync(cancellationToken);
 
         return Ok(new TemplateResponse(template.Id, template.Name, template.Schema.RootElement.GetRawText()));

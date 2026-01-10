@@ -25,16 +25,34 @@ public class MeasurementsController : ControllerBase
     /// Create a new measurement with template assignment
     /// </summary>
     [HttpPost]
+    [Authorize]
     public async Task<ActionResult<MeasurementResponseDto>> CreateMeasurement(
         [FromBody] CreateMeasurementDto dto,
         CancellationToken cancellationToken)
     {
         try
         {
-            // TODO: Get actual user ID from JWT token
-            int userId = 1; // Placeholder
+            // Extract username and role from JWT
+            var username = User.FindFirst(ClaimTypes.Name)?.Value;
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value ?? "Student";
+
+            if (string.IsNullOrEmpty(username))
+                return Unauthorized();
+
+            // Get user ID from database
+            var user = await _context.Users.SingleOrDefaultAsync(u => u.Username == username);
+            if (user == null)
+                return Unauthorized();
+
+            // Check if series is locked
+            var series = await _context.MeasurementSeries.FindAsync(dto.SeriesId);
+            if (series == null)
+                return BadRequest(new { error = "Series not found" });
+
+            if (series.IsLocked && userRole != "Staff")
+                return BadRequest(new { error = "Cannot add measurements to locked series. Only Staff can modify locked series." });
             
-            var result = await _measurementService.CreateMeasurementAsync(dto, userId);
+            var result = await _measurementService.CreateMeasurementAsync(dto, user.Id);
             return CreatedAtAction(nameof(GetMeasurement), new { id = result.Id }, result);
         }
         catch (Exception ex)
@@ -125,12 +143,42 @@ public class MeasurementsController : ControllerBase
 
     /// <summary>
     /// Delete a measurement
+    /// Students can only delete their own measurements
     /// </summary>
     [HttpDelete("{id:int}")]
+    [Authorize]
     public async Task<ActionResult> DeleteMeasurement(int id)
     {
         try
         {
+            // Extract username and role from JWT
+            var username = User.FindFirst(ClaimTypes.Name)?.Value;
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value ?? "Student";
+
+            if (string.IsNullOrEmpty(username))
+                return Unauthorized();
+
+            // Get user ID from database
+            var user = await _context.Users.SingleOrDefaultAsync(u => u.Username == username);
+            if (user == null)
+                return Unauthorized();
+
+            // Get measurement to check ownership and series lock status
+            var measurement = await _context.Measurements
+                .Include(m => m.Series)
+                .FirstOrDefaultAsync(m => m.Id == id);
+                
+            if (measurement == null)
+                return NotFound(new { error = "Measurement not found" });
+
+            // Check if series is locked
+            if (measurement.Series != null && measurement.Series.IsLocked && userRole != "Staff")
+                return BadRequest(new { error = "Cannot delete measurements from locked series. Only Staff can modify locked series." });
+
+            // Students can only delete their own measurements
+            if (userRole == "Student" && measurement.CreatedBy != user.Id)
+                return Forbid();
+
             await _measurementService.DeleteMeasurementAsync(id);
             return NoContent();
         }
@@ -143,18 +191,45 @@ public class MeasurementsController : ControllerBase
 
     /// <summary>
     /// Update an existing measurement
+    /// Students can only update their own measurements
     /// </summary>
     [HttpPut("{id:int}")]
+    [Authorize]
     public async Task<ActionResult<MeasurementResponseDto>> UpdateMeasurement(
         int id,
         [FromBody] UpdateMeasurementDto dto)
     {
         try
         {
-            // TODO: Get actual user ID from JWT token
-            int userId = 1; // Placeholder
+            // Extract username and role from JWT
+            var username = User.FindFirst(ClaimTypes.Name)?.Value;
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value ?? "Student";
+
+            if (string.IsNullOrEmpty(username))
+                return Unauthorized();
+
+            // Get user ID from database
+            var user = await _context.Users.SingleOrDefaultAsync(u => u.Username == username);
+            if (user == null)
+                return Unauthorized();
+
+            // Get measurement to check ownership and series lock status
+            var measurement = await _context.Measurements
+                .Include(m => m.Series)
+                .FirstOrDefaultAsync(m => m.Id == id);
+                
+            if (measurement == null)
+                return NotFound(new { error = "Measurement not found" });
+
+            // Check if series is locked
+            if (measurement.Series != null && measurement.Series.IsLocked && userRole != "Staff")
+                return BadRequest(new { error = "Cannot modify measurements in locked series. Only Staff can modify locked series." });
+
+            // Students can only update their own measurements
+            if (userRole == "Student" && measurement.CreatedBy != user.Id)
+                return Forbid();
             
-            var result = await _measurementService.UpdateMeasurementAsync(id, dto, userId);
+            var result = await _measurementService.UpdateMeasurementAsync(id, dto, user.Id);
             return Ok(result);
         }
         catch (Exception ex)

@@ -40,4 +40,10 @@ public class MeasurementSeriesResponseDto
     public string CreatedByUsername { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
     public int MeasurementCount { get; set; }
+    
+    // Locking information
+    public bool IsLocked { get; set; }
+    public int? LockedBy { get; set; }
+    public string? LockedByUsername { get; set; }
+    public DateTime? LockedAt { get; set; }
 }

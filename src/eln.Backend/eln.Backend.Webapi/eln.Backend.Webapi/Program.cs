@@ -17,13 +17,40 @@ if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONM
 // Add services to the container
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Description = "JWT Authorization header using the Bearer scheme. Example: \"Bearer {token}\""
+    });
+    
+    c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    {
+        {
+            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                {
+                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
 
 // Register application services
 builder.Services.AddScoped<eln.Backend.Application.Services.TemplateService>();
 builder.Services.AddScoped<eln.Backend.Application.Services.MeasurementService>();
 builder.Services.AddScoped<eln.Backend.Application.Services.MeasurementValidationService>();
 builder.Services.AddScoped<eln.Backend.Application.Services.MeasurementSeriesService>();
+builder.Services.AddScoped<eln.Backend.Application.Services.ShareLinkService>();
 
 // Database Context - PostgreSQL
 builder.Services.AddDbContext<ElnContext>(opt =>
