@@ -1,0 +1,252 @@
+.measurement-preview {
+  margin-top: 2rem;
+}
+
+.preview-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.preview-section {
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 1.25rem;
+  background: #f8fafc;
+}
+
+.preview-section-header {
+  margin-bottom: 1rem;
+
+  h2 {
+    margin: 0;
+    font-size: 1.4rem;
+    color: #0f172a;
+  }
+}
+
+.preview-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.preview-card {
+  background: #fff;
+  border-radius: 18px;
+  border: 1px solid #dbeafe;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.preview-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+
+  h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: #0f172a;
+  }
+
+  small {
+    color: #6b7280;
+  }
+}
+
+.preview-fields {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.preview-fields li {
+  border: 1px dashed #cbd5f5;
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  background: #fdfdff;
+}
+
+.field-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.field-label {
+  font-weight: 600;
+  color: #111827;
+}
+
+.field-type {
+  font-size: 0.85rem;
+  color: #4f46e5;
+  font-weight: 500;
+}
+
+.field-value {
+  font-family: 'Fira Code', 'JetBrains Mono', Consolas, monospace;
+  font-size: 0.95rem;
+  color: #0f172a;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.media-value {
+  font-family: inherit;
+  white-space: normal;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.media-summary {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 0;
+
+  strong {
+    color: #111827;
+  }
+
+  small {
+    color: #6b7280;
+  }
+}
+
+.media-buttons {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.media-add-button {
+  border: none;
+  border-radius: 999px;
+  padding: 0.35rem 1rem;
+  background: #c1f1d0;
+  color: #065f46;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.media-toggle-button {
+  border: none;
+  outline: none;
+  box-shadow: none;
+  border-radius: 999px;
+  padding: 0.35rem 1rem;
+  background: #e0edff;
+  color: #1d4ed8;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.media-toggle-button:focus-visible {
+  outline: none;
+}
+
+.media-preview-card {
+  margin: 0.75rem 0 1rem;
+  border: 1px solid #dbeafe;
+  border-radius: 16px;
+  padding: 1.5rem;
+  background: #f5f8ff;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  width: 100%;
+  box-sizing: border-box;
+  align-self: stretch;
+
+  &.editable-preview {
+    gap: 0.75rem;
+  }
+}
+
+.media-thumb {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  border: 1px solid #cbd5f5;
+  border-radius: 16px;
+  padding: 1rem;
+  background: #fff;
+
+  img {
+    width: 420px;
+    height: 260px;
+    object-fit: contain;
+    border-radius: 14px;
+    background: #f8fafc;
+  }
+
+  figcaption {
+    font-size: 1rem;
+    color: #1f2937;
+    font-weight: 600;
+    text-align: left;
+  }
+
+  &.media-thumb-editable {
+    justify-content: space-between;
+  }
+}
+
+.media-remove-button {
+  border: none;
+  border-radius: 10px;
+  padding: 0.2rem;
+  background: #fee2e2;
+  color: #b91c1c;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+
+  mat-icon {
+    font-size: 20px;
+  }
+}
+
+.field-input {
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid #cbd5f5;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-family: 'Fira Code', 'JetBrains Mono', Consolas, monospace;
+  color: #0f172a;
+
+  &:disabled {
+    background: #f3f4f6;
+    cursor: not-allowed;
+  }
+}
+
+@media (min-width: 768px) {
+  .preview-fields li {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .field-value {
+    max-width: 65%;
+    text-align: right;
+  }
+}

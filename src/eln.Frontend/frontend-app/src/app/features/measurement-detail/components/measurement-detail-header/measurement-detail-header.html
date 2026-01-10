@@ -1,0 +1,44 @@
+<header class="detail-header">
+  <div class="header-top">
+    <button class="back-button" type="button" (click)="back.emit()">
+      ← Zurück
+    </button>
+    <button class="history-button" type="button" (click)="openHistory.emit()" title="Änderungsverlauf anzeigen">
+      Verlauf
+    </button>
+  </div>
+  <div class="header-main">
+    <div class="titles">
+      <p class="eyebrow">Messung</p>
+      <h1>#{{ measurement?.id || '...' }}</h1>
+    </div>
+    @if (measurement; as data) {
+      <div class="header-meta">
+        <div class="meta-info">
+          <p class="meta">
+            Serie #{{ data.seriesId }} · Template: {{ data.templateName }}
+          </p>
+          <p class="meta">
+            Erstellt von {{ data.createdByUsername }} am {{ data.createdAt | date: 'dd.MM.yyyy HH:mm' }} Uhr
+          </p>
+          @if (data.updatedAt) {
+            <p class="meta updated">
+              Zuletzt geändert von {{ data.updatedByUsername || 'Unbekannt' }} am {{ data.updatedAt | date: 'dd.MM.yyyy HH:mm' }} Uhr
+            </p>
+          }
+        </div>
+        <div class="action-buttons">
+          @if (!isEditing) {
+            <button class="action-button edit active" (click)="startEditing.emit()">Bearbeiten</button>
+            <button class="action-button danger" (click)="confirmDelete.emit()">Löschen</button>
+          } @else {
+            <button class="action-button" (click)="cancelEditing.emit()" [disabled]="saveInProgress">Abbrechen</button>
+            <button class="action-button success" (click)="saveEdits.emit()" [disabled]="saveInProgress">
+              {{ saveInProgress ? 'Speichern ...' : 'Speichern' }}
+            </button>
+          }
+        </div>
+      </div>
+    }
+  </div>
+</header>

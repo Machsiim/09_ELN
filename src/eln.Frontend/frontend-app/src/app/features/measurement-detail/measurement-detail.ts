@@ -6,7 +6,6 @@ import {
   inject,
   signal
 } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Header } from '../../components/header/header';
@@ -17,30 +16,31 @@ import {
   MeasurementHistoryEntry
 } from '../../services/measurement.service';
 import { MediaAttachment } from '../../models/media-attachment';
-import { MatIconModule } from '@angular/material/icon';
-import { MediaUploadField } from '../../components/media-upload-field/media-upload-field';
-
-interface SectionEntry {
-  name: string;
-  cards: CardEntry[];
-}
-
-interface CardEntry {
-  name: string;
-  fields: FieldEntry[];
-}
-
-interface FieldEntry {
-  type?: string;
-  key: string;
-  value: unknown;
-  rawKey: string;
-}
+import { MeasurementDetailHeader } from './components/measurement-detail-header/measurement-detail-header';
+import { MeasurementDetailSections } from './components/measurement-detail-sections/measurement-detail-sections';
+import { MeasurementHistoryDialog } from './components/measurement-history-dialog/measurement-history-dialog';
+import { MeasurementMediaDialog } from './components/measurement-media-dialog/measurement-media-dialog';
+import { SectionEntry } from './measurement-detail.types';
+import {
+  buildSections,
+  castValue,
+  extractMediaAttachments,
+  formatMediaSummary,
+  formatValue
+} from './measurement-detail.utils';
 
 @Component({
   selector: 'app-measurement-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, Header, Footer, MatIconModule, MediaUploadField],
+  imports: [
+    CommonModule,
+    Header,
+    Footer,
+    MeasurementDetailHeader,
+    MeasurementDetailSections,
+    MeasurementHistoryDialog,
+    MeasurementMediaDialog
+  ],
   templateUrl: './measurement-detail.html',
   styleUrl: './measurement-detail.scss'
 })
@@ -247,58 +247,21 @@ export class MeasurementDetail implements OnInit {
   getSections(dataSource?: Record<string, Record<string, unknown>> | null): SectionEntry[] {
     const measurement = this.measurement();
     const source = dataSource ?? measurement?.data;
-    if (!source) {
-      return [];
-    }
-
-    const sections: SectionEntry[] = [];
-
-    for (const [sectionName, fields] of Object.entries(source)) {
-      const cards = new Map<string, CardEntry>();
-
-      for (const [rawKey, value] of Object.entries(fields)) {
-        const separatorIndex = rawKey.indexOf(' - ');
-        const cardName = separatorIndex > -1 ? rawKey.slice(0, separatorIndex) : 'Allgemein';
-        const fieldLabel = separatorIndex > -1 ? rawKey.slice(separatorIndex + 3) : rawKey;
-
-        if (!cards.has(cardName)) {
-          cards.set(cardName, { name: cardName, fields: [] });
-        }
-
-        cards.get(cardName)!.fields.push({ key: fieldLabel, value, rawKey });
-      }
-
-      sections.push({
-        name: sectionName,
-        cards: Array.from(cards.values())
-      });
-    }
-
-    return sections;
+    return buildSections(source);
   }
 
   formatValue(value: unknown): string {
-    if (value === null || value === undefined) {
-      return '-';
-    }
-    if (typeof value === 'object') {
-      try {
-        return JSON.stringify(value, null, 2);
-      } catch {
-        return String(value);
-      }
-    }
-    return String(value);
+    return formatValue(value);
   }
 
   getMediaAttachments(value: unknown): MediaAttachment[] | null {
-    return this.extractMediaAttachments(value);
+    return extractMediaAttachments(value);
   }
 
   getEditableMediaAttachments(sectionName: string, rawKey: string): MediaAttachment[] | null {
     const data = this.editableData();
     const value = data?.[sectionName]?.[rawKey];
-    return this.extractMediaAttachments(value);
+    return extractMediaAttachments(value);
   }
 
   toggleMediaPreview(sectionName: string, rawKey: string): void {
@@ -326,7 +289,7 @@ export class MeasurementDetail implements OnInit {
     const measurement = this.measurement();
     const baseValue = measurement?.data?.[sectionOrType]?.[rawKey] ?? rawValue;
     const editableValue = this.editableData()?.[sectionOrType]?.[rawKey];
-    return this.extractMediaAttachments(baseValue) !== null || this.extractMediaAttachments(editableValue) !== null;
+    return extractMediaAttachments(baseValue) !== null || extractMediaAttachments(editableValue) !== null;
   }
 
   private buildMediaFieldKey(sectionName: string, rawKey: string): string {
@@ -398,17 +361,7 @@ export class MeasurementDetail implements OnInit {
   }
 
   private castValue(input: string, original: unknown): unknown {
-    if (original === null || original === undefined) {
-      return input;
-    }
-    if (typeof original === 'number') {
-      const parsed = Number(input);
-      return Number.isNaN(parsed) ? input : parsed;
-    }
-    if (typeof original === 'boolean') {
-      return input.toLowerCase() === 'true';
-    }
-    return input;
+    return castValue(input, original);
   }
 
   private cloneData(data: Record<string, Record<string, unknown>>): Record<string, Record<string, unknown>> {
@@ -431,28 +384,6 @@ export class MeasurementDetail implements OnInit {
       ...current,
       [sectionName]: nextSection
     });
-  }
-
-  private extractMediaAttachments(value: unknown): MediaAttachment[] | null {
-    let parsed: unknown = value;
-    if (typeof value === 'string') {
-      try {
-        parsed = JSON.parse(value);
-      } catch {
-        return null;
-      }
-    }
-    if (!Array.isArray(parsed)) {
-      return null;
-    }
-    const attachments = parsed.filter(
-      (item: unknown): item is MediaAttachment =>
-        !!item &&
-        typeof item === 'object' &&
-        'dataUrl' in item &&
-        typeof (item as MediaAttachment).dataUrl === 'string'
-    );
-    return attachments;
   }
 
   private showToast(message: string): void {
@@ -497,17 +428,10 @@ export class MeasurementDetail implements OnInit {
     if (!value) {
       return false;
     }
-    return this.extractMediaAttachments(value) !== null;
+    return extractMediaAttachments(value) !== null;
   }
 
   formatMediaSummary(value: unknown): string {
-    const attachments = this.extractMediaAttachments(value);
-    if (!attachments || attachments.length === 0) {
-      return '-';
-    }
-    if (attachments.length === 1) {
-      return attachments[0].name;
-    }
-    return `${attachments.length} Dateien (${attachments.map((a) => a.name).join(', ')})`;
+    return formatMediaSummary(value);
   }
 }
