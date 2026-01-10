@@ -1,4 +1,5 @@
 using eln.Backend.Application.DTOs;
+using System.Text.Json;
 
 namespace eln.Backend.Application.Services;
 
@@ -123,6 +124,162 @@ public class MeasurementValidationService
                 case "datetime":
                     if (value is not DateTime && !DateTime.TryParse(value.ToString(), out _))
                         return $"Expected type 'date', got '{value.GetType().Name}'";
+                    break;
+
+                default:
+                    return $"Unknown field type '{expectedType}'";
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            return $"Type validation failed: {ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// Validates measurement data (as JsonDocument) against template schema
+    /// Ensures ALL fields are filled and data types match
+    /// </summary>
+    public ValidationResultDto ValidateMeasurementDataStrict(
+        JsonDocument templateSchema,
+        JsonDocument measurementData)
+    {
+        var result = new ValidationResultDto { IsValid = true };
+        var errors = new List<ValidationErrorDto>();
+
+        try
+        {
+            // Parse template schema
+            var sectionsElement = templateSchema.RootElement.GetProperty("sections");
+            var sections = JsonSerializer.Deserialize<List<TemplateSectionDto>>(sectionsElement.GetRawText()) 
+                           ?? new List<TemplateSectionDto>();
+
+            // Parse measurement data
+            var measurementRoot = measurementData.RootElement;
+
+            foreach (var section in sections)
+            {
+                // Check if section exists in measurement data
+                if (!measurementRoot.TryGetProperty(section.Name, out var sectionElement))
+                {
+                    errors.Add(new ValidationErrorDto
+                    {
+                        Section = section.Name,
+                        Field = "",
+                        Error = $"Missing section '{section.Name}'"
+                    });
+                    continue;
+                }
+
+                foreach (var field in section.Fields)
+                {
+                    // Check if field exists
+                    if (!sectionElement.TryGetProperty(field.Name, out var fieldElement))
+                    {
+                        errors.Add(new ValidationErrorDto
+                        {
+                            Section = section.Name,
+                            Field = field.Name,
+                            Error = $"Field '{field.Name}' is missing (all fields must be filled)"
+                        });
+                        continue;
+                    }
+
+                    // Check for null or undefined
+                    if (fieldElement.ValueKind == JsonValueKind.Null || 
+                        fieldElement.ValueKind == JsonValueKind.Undefined)
+                    {
+                        errors.Add(new ValidationErrorDto
+                        {
+                            Section = section.Name,
+                            Field = field.Name,
+                            Error = $"Field '{field.Name}' cannot be null or empty"
+                        });
+                        continue;
+                    }
+
+                    // Validate data type
+                    var typeError = ValidateJsonFieldType(field.Type, fieldElement);
+                    if (typeError != null)
+                    {
+                        errors.Add(new ValidationErrorDto
+                        {
+                            Section = section.Name,
+                            Field = field.Name,
+                            Error = typeError
+                        });
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            errors.Add(new ValidationErrorDto
+            {
+                Section = "",
+                Field = "",
+                Error = $"Validation error: {ex.Message}"
+            });
+        }
+
+        result.Errors = errors;
+        result.IsValid = errors.Count == 0;
+        return result;
+    }
+
+    /// <summary>
+    /// Validates JSON field type against expected template type
+    /// </summary>
+    private string? ValidateJsonFieldType(string expectedType, JsonElement value)
+    {
+        try
+        {
+            switch (expectedType.ToLower())
+            {
+                case "int":
+                case "integer":
+                    if (value.ValueKind != JsonValueKind.Number)
+                        return $"Expected type 'number' for int field, got '{value.ValueKind}'";
+                    
+                    // Check if it's actually an integer (no decimal part)
+                    if (!value.TryGetInt32(out _) && !value.TryGetInt64(out _))
+                        return $"Expected integer value, got decimal";
+                    break;
+
+                case "float":
+                case "double":
+                case "number":
+                    if (value.ValueKind != JsonValueKind.Number)
+                        return $"Expected type 'number', got '{value.ValueKind}'";
+                    break;
+
+                case "string":
+                case "text":
+                    if (value.ValueKind != JsonValueKind.String)
+                        return $"Expected type 'string', got '{value.ValueKind}'";
+                    
+                    // Check for empty strings
+                    var strValue = value.GetString();
+                    if (string.IsNullOrWhiteSpace(strValue))
+                        return "String value cannot be empty or whitespace";
+                    break;
+
+                case "bool":
+                case "boolean":
+                    if (value.ValueKind != JsonValueKind.True && value.ValueKind != JsonValueKind.False)
+                        return $"Expected type 'boolean', got '{value.ValueKind}'";
+                    break;
+
+                case "date":
+                case "datetime":
+                    if (value.ValueKind != JsonValueKind.String)
+                        return $"Expected type 'string' for date field, got '{value.ValueKind}'";
+                    
+                    var dateStr = value.GetString();
+                    if (!DateTime.TryParse(dateStr, out _))
+                        return $"Invalid date format: '{dateStr}'";
                     break;
 
                 default:

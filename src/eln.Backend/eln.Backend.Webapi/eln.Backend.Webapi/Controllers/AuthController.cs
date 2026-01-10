@@ -55,52 +55,6 @@ namespace eln.Backend.Webapi.Controllers
             return Ok(users);
         }
 
-        /// <summary>
-        /// TEST ONLY: Generate a token for a test student (bypasses LDAP)
-        /// </summary>
-        [HttpPost("test-login-student")]
-        public async Task<ActionResult<LoginResponse>> TestLoginStudent()
-        {
-            var username = "test.student@technikum-wien.at";
-            var role = "Student";
-
-            // Create or get test user
-            var user = await _context.Users.SingleOrDefaultAsync(u => u.Username == username);
-            if (user == null)
-            {
-                user = new User(username, role);
-                _context.Users.Add(user);
-                await _context.SaveChangesAsync();
-            }
-
-            var token = GenerateJwtToken(username, role, out var expiresAt);
-
-            return Ok(new LoginResponse { Token = token, ExpiresAt = expiresAt });
-        }
-
-        /// <summary>
-        /// TEST ONLY: Generate a token for a test staff member (bypasses LDAP)
-        /// </summary>
-        [HttpPost("test-login-staff")]
-        public async Task<ActionResult<LoginResponse>> TestLoginStaff()
-        {
-            var username = "max.mustermann@technikum-wien.at";
-            var role = "Staff";
-
-            // Create or get test user
-            var user = await _context.Users.SingleOrDefaultAsync(u => u.Username == username);
-            if (user == null)
-            {
-                user = new User(username, role);
-                _context.Users.Add(user);
-                await _context.SaveChangesAsync();
-            }
-
-            var token = GenerateJwtToken(username, role, out var expiresAt);
-
-            return Ok(new LoginResponse { Token = token, ExpiresAt = expiresAt });
-        }
-
         [HttpGet("GetUser")]
         [Authorize] // nur mit gültigem JWT erreichbar
         public async Task<ActionResult<UserDto>> GetUser()
@@ -172,9 +126,9 @@ namespace eln.Backend.Webapi.Controllers
             var localPart = username.Split('@')[0];
 
             // Mitarbeiter: nur Buchstaben + ein Punkt, keine Ziffern
-            var isStaff = Regex.IsMatch(localPart, @"^[A-Za-z]+\.[A-Za-z]+$");
+            var isStudent = Regex.IsMatch(localPart, @"^[a-z]{2}[0-9]{2}[a-z][0-9]{3}$");
 
-            return isStaff ? "Staff" : "Student";
+            return isStudent ? "Student" : "Staff";
         }
     }
 }

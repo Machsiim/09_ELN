@@ -22,8 +22,14 @@ public class MeasurementSeries
     public string? Description { get; set; }
     public int CreatedBy { get; set; }
     public DateTime CreatedAt { get; set; }
+    
+    // Locking mechanism (for Staff to lock series)
+    public bool IsLocked { get; set; } = false;
+    public int? LockedBy { get; set; }
+    public DateTime? LockedAt { get; set; }
 
     // Navigation Properties
     public User? Creator { get; set; }
+    public User? Locker { get; set; } // User who locked the series
     public List<Measurement> Measurements { get; set; } = new();
 }

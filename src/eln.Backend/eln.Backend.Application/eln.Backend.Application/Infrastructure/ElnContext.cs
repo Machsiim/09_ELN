@@ -14,6 +14,7 @@ public class ElnContext : DbContext
     public DbSet<MeasurementSeries> MeasurementSeries => Set<MeasurementSeries>();
     public DbSet<Measurement> Measurements => Set<Measurement>();
     public DbSet<MeasurementHistory> MeasurementHistories => Set<MeasurementHistory>();
+    public DbSet<SeriesShareLink> SeriesShareLinks => Set<SeriesShareLink>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -94,6 +95,29 @@ public class ElnContext : DbContext
             .WithOne(mh => mh.Changer)
             .HasForeignKey(mh => mh.ChangedBy)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // SeriesShareLink relationships
+        modelBuilder.Entity<SeriesShareLink>()
+            .HasOne(ssl => ssl.Series)
+            .WithMany()
+            .HasForeignKey(ssl => ssl.SeriesId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<SeriesShareLink>()
+            .HasOne(ssl => ssl.Creator)
+            .WithMany()
+            .HasForeignKey(ssl => ssl.CreatedBy)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // SeriesShareLink: Store AllowedUserEmails as JSONB
+        modelBuilder.Entity<SeriesShareLink>()
+            .Property(ssl => ssl.AllowedUserEmails)
+            .HasColumnType("jsonb");
+
+        // SeriesShareLink: Unique index on Token
+        modelBuilder.Entity<SeriesShareLink>()
+            .HasIndex(ssl => ssl.Token)
+            .IsUnique();
     }
 
     private static string ToSnakeCase(string? name)
