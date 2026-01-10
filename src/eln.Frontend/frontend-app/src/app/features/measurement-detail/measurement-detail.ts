@@ -226,7 +226,7 @@ export class MeasurementDetail implements OnInit {
     this.saveInProgress.set(true);
     this.error.set(null);
     this.measurementService
-      .updateMeasurement(measurement.id, { data })
+      .updateMeasurement(measurement.id, { data: this.normalizeEditableData(data) })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (updated) => {
@@ -366,6 +366,28 @@ export class MeasurementDetail implements OnInit {
 
   private cloneData(data: Record<string, Record<string, unknown>>): Record<string, Record<string, unknown>> {
     return JSON.parse(JSON.stringify(data));
+  }
+
+  private normalizeEditableData(
+    data: Record<string, Record<string, unknown>>
+  ): Record<string, Record<string, unknown>> {
+    const normalized: Record<string, Record<string, unknown>> = {};
+
+    for (const [sectionName, fields] of Object.entries(data)) {
+      const nextFields: Record<string, unknown> = {};
+
+      for (const [fieldName, value] of Object.entries(fields)) {
+        if (Array.isArray(value) && extractMediaAttachments(value)) {
+          nextFields[fieldName] = JSON.stringify(value);
+        } else {
+          nextFields[fieldName] = value;
+        }
+      }
+
+      normalized[sectionName] = nextFields;
+    }
+
+    return normalized;
   }
 
   removeEditableAttachment(sectionName: string, rawKey: string, attachmentId: string): void {

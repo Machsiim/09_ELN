@@ -177,6 +177,24 @@
                                   <small>{{ field.hint }}</small>
                                 }
                               }
+                              @case ('date') {
+                                <label [attr.for]="controlName">
+                                  {{ field.label }}
+                                </label>
+                                <input type="date" [id]="controlName" [formControlName]="controlName" />
+                                @if (field.hint) {
+                                  <small>{{ field.hint }}</small>
+                                }
+                              }
+                              @case ('boolean') {
+                                <label class="checkbox-field">
+                                  <input type="checkbox" [id]="controlName" [formControlName]="controlName" />
+                                  <span>{{ field.label }}</span>
+                                </label>
+                                @if (field.hint) {
+                                  <small>{{ field.hint }}</small>
+                                }
+                              }
                               @case ('number') {
                                 <label [attr.for]="controlName">
                                   {{ field.label }}

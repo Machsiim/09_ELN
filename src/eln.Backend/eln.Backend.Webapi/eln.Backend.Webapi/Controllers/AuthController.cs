@@ -48,6 +48,23 @@ namespace eln.Backend.Webapi.Controllers
             return Ok(new LoginResponse { Token = token, ExpiresAt = expiresAt });
         }
 
+        // DEV ONLY: Quick staff login for frontend test button
+        [HttpPost("test-login-staff")]
+        public async Task<ActionResult<LoginResponse>> TestLoginStaff()
+        {
+            const string username = "staff.test";
+            var user = await _context.Users.SingleOrDefaultAsync(u => u.Username == username);
+            if (user == null)
+            {
+                user = new User(username, "Staff");
+                _context.Users.Add(user);
+                await _context.SaveChangesAsync();
+            }
+
+            var token = GenerateJwtToken(username, "Staff", out var expiresAt);
+            return Ok(new LoginResponse { Token = token, ExpiresAt = expiresAt });
+        }
+
         [HttpGet("debug-users")]
         public async Task<ActionResult<IEnumerable<User>>> GetUsers()
         {

@@ -24,6 +24,16 @@ import {
   TemplateSchema,
   TemplateSectionSchema
 } from '../../models/template-schema';
+import {
+  BackendTemplateSchema
+} from '../../models/backend-template-schema';
+import {
+  isBackendSchema,
+  isUiSchema,
+  mapBackendTypeToUiType,
+  mapUiTypeToBackendType,
+  splitFieldName
+} from '../../utils/template-schema';
 
 interface BuilderSection extends TemplateSectionSchema {
   cards: BuilderCard[];
@@ -61,7 +71,9 @@ export class Templates implements OnInit {
     { value: 'number', label: 'Zahl' },
     { value: 'multiline', label: 'Langtext' },
     { value: 'table', label: 'Tabelle' },
-    { value: 'media', label: 'Bilder / Medien' }
+    { value: 'media', label: 'Bilder / Medien' },
+    { value: 'date', label: 'Datum' },
+    { value: 'boolean', label: 'Ja/Nein' }
   ];
 
   readonly templateForm = this.fb.nonNullable.group({
@@ -301,32 +313,71 @@ export class Templates implements OnInit {
     return this.fieldTypeOptions.find((option) => option.value === type)?.label ?? type;
   }
 
-  private buildSchema(): TemplateSchema {
+  private buildSchema(): BackendTemplateSchema {
     return {
       sections: this.sections().map((section) => ({
-        id: section.id,
-        title: section.title,
-        cards: section.cards.map((card) => ({
-          id: card.id,
-          title: card.title,
-          subtitle: card.subtitle,
-          fields: card.fields.map((field) => ({
-            id: field.id,
-            label: field.label,
-            type: field.type,
-            hint: field.hint
+        Name: section.title,
+        Fields: section.cards.flatMap((card) =>
+          card.fields.map((field) => ({
+            Name: this.buildFieldName(card.title, field.label),
+            Type: mapUiTypeToBackendType(field.type),
+            Required: true,
+            Description: field.hint,
+            DefaultValue: null,
+            UiType: field.type
           }))
-        }))
+        )
       }))
     };
   }
 
   private decodeSchema(schema: string): TemplateSchema {
     const parsed = JSON.parse(schema);
-    if (!parsed.sections) {
-      throw new Error('Ungültiges Schema');
+    if (isUiSchema(parsed)) {
+      return parsed;
     }
-    return parsed as TemplateSchema;
+    if (isBackendSchema(parsed)) {
+      return this.convertBackendSchema(parsed);
+    }
+    throw new Error('Ungültiges Schema');
+  }
+
+  private convertBackendSchema(schema: BackendTemplateSchema): TemplateSchema {
+    return {
+      sections: schema.sections.map((section) => {
+        const cardMap = new Map<string, BuilderCard>();
+        const fields = section.fields ?? section.Fields ?? [];
+
+        fields.forEach((field) => {
+          const fieldName = field.name ?? field.Name ?? '';
+          const fieldType = field.type ?? field.Type;
+          const uiType = field.uiType ?? field.UiType;
+          const description = field.description ?? field.Description;
+          const { cardTitle, fieldLabel } = splitFieldName(fieldName);
+          if (!cardMap.has(cardTitle)) {
+            cardMap.set(cardTitle, {
+              id: this.createId('card'),
+              title: cardTitle,
+              subtitle: '',
+              fields: []
+            });
+          }
+
+          cardMap.get(cardTitle)!.fields.push({
+            id: this.createId('field'),
+            label: fieldLabel,
+            type: mapBackendTypeToUiType(fieldType, uiType),
+            hint: description ?? ''
+          });
+        });
+
+        return {
+          id: this.createId('section'),
+          title: section.name ?? section.Name ?? 'Ohne Titel',
+          cards: Array.from(cardMap.values())
+        };
+      })
+    };
   }
 
   private setSectionsFromSchema(schema: TemplateSchema): void {
@@ -360,6 +411,12 @@ export class Templates implements OnInit {
 
   private findSection(sectionId: string): BuilderSection | undefined {
     return this.sections().find((section) => section.id === sectionId);
+  }
+
+  private buildFieldName(cardTitle: string, fieldLabel: string): string {
+    const normalizedCard = cardTitle?.trim() || 'Allgemein';
+    const normalizedField = fieldLabel?.trim() || 'Feld';
+    return `${normalizedCard} - ${normalizedField}`;
   }
 
   private createId(scope: string): string {

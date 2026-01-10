@@ -153,7 +153,7 @@ public class MeasurementValidationService
         {
             // Parse template schema
             var sectionsElement = templateSchema.RootElement.GetProperty("sections");
-            var sections = JsonSerializer.Deserialize<List<TemplateSectionDto>>(sectionsElement.GetRawText()) 
+            var sections = JsonSerializer.Deserialize<List<TemplateSectionDto>>(sectionsElement.GetRawText())
                            ?? new List<TemplateSectionDto>();
 
             // Parse measurement data

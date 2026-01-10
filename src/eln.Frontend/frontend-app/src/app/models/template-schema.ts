@@ -1,4 +1,11 @@
-export type TemplateFieldType = 'text' | 'number' | 'multiline' | 'table' | 'media';
+export type TemplateFieldType =
+  | 'text'
+  | 'number'
+  | 'multiline'
+  | 'table'
+  | 'media'
+  | 'date'
+  | 'boolean';
 
 export interface TemplateFieldSchema {
   id: string;
