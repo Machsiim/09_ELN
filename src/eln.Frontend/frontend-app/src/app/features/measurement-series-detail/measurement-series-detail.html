@@ -193,13 +193,44 @@
 @if (shareDialogVisible()) {
   <div class="modal-backdrop">
     <div class="share-dialog">
-      <h2>Sharing-Link</h2>
+      <h2>Quick-Link teilen</h2>
+      <p class="hint">Der Link ist schreibgeschützt und läuft nach der angegebenen Zeit ab.</p>
+      <div class="form-group">
+        <label for="shareExpiry">Gültigkeit (Tage)</label>
+        <select id="shareExpiry"
+          class="form-control"
+          [value]="shareExpiresInDays()"
+          (change)="updateShareExpiry($any($event.target).value)">
+          <option [value]="1">1 Tag</option>
+          <option [value]="3">3 Tage</option>
+          <option [value]="7">7 Tage</option>
+          <option [value]="14">14 Tage</option>
+          <option [value]="30">30 Tage</option>
+          <option [value]="90">90 Tage</option>
+        </select>
+      </div>
+
       @if (shareLoading()) {
-        <p class="status info">Link wird geladen ...</p>
+        <p class="status info">Link wird erstellt ...</p>
+      } @else if (shareError(); as shareMessage) {
+        <p class="status error">{{ shareMessage }}</p>
       } @else {
         <p class="share-url">{{ shareLink() }}</p>
+        @if (shareExpiresAt()) {
+          <p class="hint">Gültig bis: {{ shareExpiresAt() | date: 'dd.MM.yyyy HH:mm' }}</p>
+        }
+        @if (shareCreatedBy()) {
+          <p class="hint">Erstellt von: {{ shareCreatedBy() }}</p>
+        }
       }
+
       <div class="modal-actions">
+        <button type="button" class="modal-button" (click)="generateShareLink()" [disabled]="shareLoading()">
+          Neu generieren
+        </button>
+        <button type="button" class="modal-button" (click)="copyShareLink()" [disabled]="!shareLink()">
+          Link kopieren
+        </button>
         <button type="button" class="modal-button" (click)="closeShareDialog()">Schließen</button>
       </div>
     </div>

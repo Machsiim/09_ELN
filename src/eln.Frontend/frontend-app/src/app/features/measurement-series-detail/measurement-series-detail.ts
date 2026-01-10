@@ -15,6 +15,11 @@ import {
   MeasurementResponseDto,
   MeasurementService
 } from '../../services/measurement.service';
+import {
+  CreateShareLinkPayload,
+  MeasurementSeriesService,
+  ShareLinkResponseDto
+} from '../../services/measurement-series.service';
 import { MediaAttachment } from '../../models/media-attachment';
 
 @Component({
@@ -25,6 +30,7 @@ import { MediaAttachment } from '../../models/media-attachment';
 })
 export class MeasurementSeriesDetail implements OnInit {
   private readonly measurementService = inject(MeasurementService);
+  private readonly seriesService = inject(MeasurementSeriesService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
@@ -49,6 +55,10 @@ export class MeasurementSeriesDetail implements OnInit {
   readonly shareDialogVisible = signal(false);
   readonly shareLink = signal<string | null>(null);
   readonly shareLoading = signal(false);
+  readonly shareError = signal<string | null>(null);
+  readonly shareExpiresInDays = signal(7);
+  readonly shareExpiresAt = signal<string | null>(null);
+  readonly shareCreatedBy = signal<string | null>(null);
 
   ngOnInit(): void {
     this.route.params
@@ -166,18 +176,76 @@ export class MeasurementSeriesDetail implements OnInit {
 
   openShareDialog(): void {
     this.shareDialogVisible.set(true);
-    this.shareLoading.set(true);
-    // Placeholder async behavior
-    setTimeout(() => {
-      this.shareLink.set('https://placeholder.example.com/share/series/' + (this.seriesId() ?? ''));
-      this.shareLoading.set(false);
-    }, 1200);
+    this.shareError.set(null);
+    this.shareLink.set(null);
+    this.shareExpiresAt.set(null);
+    this.shareCreatedBy.set(null);
+    this.generateShareLink();
   }
 
   closeShareDialog(): void {
     this.shareDialogVisible.set(false);
     this.shareLink.set(null);
     this.shareLoading.set(false);
+    this.shareError.set(null);
+    this.shareExpiresAt.set(null);
+    this.shareCreatedBy.set(null);
+  }
+
+  generateShareLink(): void {
+    const seriesId = this.seriesId();
+    if (!seriesId) {
+      this.shareError.set('Serien-ID fehlt.');
+      return;
+    }
+
+    const payload: CreateShareLinkPayload = {
+      expiresInDays: this.shareExpiresInDays(),
+      isPublic: true
+    };
+
+    this.shareLoading.set(true);
+    this.shareError.set(null);
+    this.seriesService
+      .createShareLink(seriesId, payload)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          this.shareLink.set(this.buildShareUrl(response));
+          this.shareExpiresAt.set(response.expiresAt);
+          this.shareCreatedBy.set(response.createdByUsername);
+          this.shareLoading.set(false);
+        },
+        error: () => {
+          this.shareLoading.set(false);
+          this.shareError.set('Quick-Link konnte nicht erstellt werden.');
+        }
+      });
+  }
+
+  copyShareLink(): void {
+    const link = this.shareLink();
+    if (!link || !navigator.clipboard) {
+      return;
+    }
+    navigator.clipboard.writeText(link);
+  }
+
+  updateShareExpiry(rawValue: string): void {
+    const parsed = Number(rawValue);
+    if (!Number.isNaN(parsed)) {
+      this.shareExpiresInDays.set(parsed);
+    }
+  }
+
+  private buildShareUrl(response: ShareLinkResponseDto): string {
+    if (!response.shareUrl) {
+      return '';
+    }
+    if (response.shareUrl.startsWith('http://') || response.shareUrl.startsWith('https://')) {
+      return response.shareUrl;
+    }
+    return `${window.location.origin}${response.shareUrl.startsWith('/') ? '' : '/'}${response.shareUrl}`;
   }
 
   onSearchChange(event: Event): void {
