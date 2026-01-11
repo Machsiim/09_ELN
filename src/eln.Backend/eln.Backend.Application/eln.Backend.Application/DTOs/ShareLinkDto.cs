@@ -47,6 +47,7 @@ public class SharedSeriesDto
     public string? SeriesDescription { get; set; }
     public DateTime SeriesCreatedAt { get; set; }
     public string CreatedByUsername { get; set; } = string.Empty;
+    public DateTime ExpiresAt { get; set; }
     
     // Read-only measurements
     public List<SharedMeasurementDto> Measurements { get; set; } = new();

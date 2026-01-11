@@ -1,0 +1,71 @@
+<div class="page-container">
+  <app-header />
+
+  <main class="main-content">
+    <section class="shared-series-card">
+      <header class="shared-series-header">
+        <p class="subtitle">Geteilte Messserie</p>
+        <h1>{{ series()?.seriesName || 'Lade ...' }}</h1>
+        @if (series()?.seriesDescription) {
+          <p class="description">{{ series()?.seriesDescription }}</p>
+        }
+        @if (series()) {
+          <div class="meta">
+            <span>Erstellt von: {{ series()?.createdByUsername }}</span>
+            <span>Erstellt am: {{ series()?.seriesCreatedAt | date: 'dd.MM.yyyy HH:mm' }}</span>
+            @if (series()?.expiresAt) {
+              <span>Gültig bis: {{ series()?.expiresAt | date: 'dd.MM.yyyy HH:mm' }}</span>
+            }
+          </div>
+        }
+      </header>
+
+      @if (loading()) {
+        <div class="status info">Quick-Link wird geladen ...</div>
+      }
+
+      @if (error(); as message) {
+        <div class="status error">{{ message }}</div>
+      }
+
+      @if (!loading() && series(); as shared) {
+        @if (shared.measurements.length === 0) {
+          <div class="empty-state">
+            <p class="empty-title">Keine Messungen vorhanden</p>
+            <p class="empty-text">Diese Messserie enthält noch keine Messungen.</p>
+          </div>
+        } @else {
+          <div class="measurement-list">
+            @for (measurement of shared.measurements; track measurement.id) {
+              <article class="measurement-card">
+                <header class="measurement-header">
+                  <div>
+                    <h2>Messung #{{ measurement.id }}</h2>
+                    <p class="template-name">{{ measurement.templateName }}</p>
+                  </div>
+                  <div class="measurement-meta">
+                    <span>{{ measurement.createdByUsername }}</span>
+                    <span>{{ measurement.createdAt | date: 'dd.MM.yyyy HH:mm' }}</span>
+                  </div>
+                </header>
+                <app-measurement-detail-sections
+                  [sections]="getSections(measurement)"
+                  [isEditing]="false"
+                  [saveInProgress]="false"
+                  [formatValue]="formatValue.bind(this)"
+                  [formatMediaSummary]="formatMediaSummary.bind(this)"
+                  [isMediaField]="isMediaField.bind(this)"
+                  [getMediaAttachments]="getMediaAttachments.bind(this)"
+                  [isMediaExpanded]="isMediaExpanded.bind(this, measurement.id)"
+                  (toggleMediaPreview)="toggleMediaPreview(measurement.id, $event.section, $event.field)">
+                </app-measurement-detail-sections>
+              </article>
+            }
+          </div>
+        }
+      }
+    </section>
+  </main>
+
+  <app-footer />
+</div>

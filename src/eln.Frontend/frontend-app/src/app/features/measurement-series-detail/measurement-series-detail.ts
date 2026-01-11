@@ -57,6 +57,8 @@ export class MeasurementSeriesDetail implements OnInit {
   readonly shareLoading = signal(false);
   readonly shareError = signal<string | null>(null);
   readonly shareExpiresInDays = signal(7);
+  readonly shareIsPublic = signal(true);
+  readonly shareAllowedEmails = signal<string>('');
   readonly shareExpiresAt = signal<string | null>(null);
   readonly shareCreatedBy = signal<string | null>(null);
 
@@ -180,7 +182,8 @@ export class MeasurementSeriesDetail implements OnInit {
     this.shareLink.set(null);
     this.shareExpiresAt.set(null);
     this.shareCreatedBy.set(null);
-    this.generateShareLink();
+    this.shareAllowedEmails.set('');
+    this.shareIsPublic.set(true);
   }
 
   closeShareDialog(): void {
@@ -190,6 +193,8 @@ export class MeasurementSeriesDetail implements OnInit {
     this.shareError.set(null);
     this.shareExpiresAt.set(null);
     this.shareCreatedBy.set(null);
+    this.shareAllowedEmails.set('');
+    this.shareIsPublic.set(true);
   }
 
   generateShareLink(): void {
@@ -201,7 +206,8 @@ export class MeasurementSeriesDetail implements OnInit {
 
     const payload: CreateShareLinkPayload = {
       expiresInDays: this.shareExpiresInDays(),
-      isPublic: true
+      isPublic: this.shareIsPublic(),
+      allowedUserEmails: this.shareIsPublic() ? [] : this.parseAllowedEmails()
     };
 
     this.shareLoading.set(true);
@@ -236,6 +242,21 @@ export class MeasurementSeriesDetail implements OnInit {
     if (!Number.isNaN(parsed)) {
       this.shareExpiresInDays.set(parsed);
     }
+  }
+
+  updateShareVisibility(rawValue: string): void {
+    this.shareIsPublic.set(rawValue === 'public');
+  }
+
+  updateAllowedEmails(value: string): void {
+    this.shareAllowedEmails.set(value);
+  }
+
+  private parseAllowedEmails(): string[] {
+    return this.shareAllowedEmails()
+      .split(',')
+      .map((email) => email.trim())
+      .filter((email) => email.length > 0);
   }
 
   private buildShareUrl(response: ShareLinkResponseDto): string {
@@ -411,10 +432,11 @@ export class MeasurementSeriesDetail implements OnInit {
   }
 
   private extractMediaAttachments(value: unknown): MediaAttachment[] | null {
-    if (!Array.isArray(value)) {
+    const normalized = this.parsePossibleJson(value);
+    if (!Array.isArray(normalized)) {
       return null;
     }
-    const attachments = value.filter(
+    const attachments = normalized.filter(
       (item: unknown): item is MediaAttachment =>
         !!item &&
         typeof item === 'object' &&
@@ -426,23 +448,35 @@ export class MeasurementSeriesDetail implements OnInit {
 
   getValueForColumn(measurement: MeasurementResponseDto, column: string): string {
     const value = this.resolveColumnValue(measurement, column);
-    if (value === null || value === undefined) {
+    const normalized = this.parsePossibleJson(value);
+    if (normalized === null || normalized === undefined) {
       return '-';
     }
 
-    const attachments = this.extractMediaAttachments(value);
+    const attachments = this.extractMediaAttachments(normalized);
     if (attachments) {
       return attachments.map((item) => item.name).join(', ');
     }
 
-    if (typeof value === 'object') {
+    if (typeof normalized === 'object') {
       try {
-        return JSON.stringify(value);
+        return JSON.stringify(normalized);
       } catch {
-        return String(value);
+        return String(normalized);
       }
     }
-    return String(value);
+    return String(normalized);
+  }
+
+  private parsePossibleJson(value: unknown): unknown {
+    if (typeof value !== 'string') {
+      return value;
+    }
+    try {
+      return JSON.parse(value);
+    } catch {
+      return value;
+    }
   }
 
   private fetchMeasurements(seriesId: number): void {

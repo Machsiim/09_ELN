@@ -135,6 +135,7 @@ public class ShareLinkService
             SeriesDescription = series.Description,
             SeriesCreatedAt = series.CreatedAt,
             CreatedByUsername = series.Creator?.Username ?? "Unknown",
+            ExpiresAt = shareLink.ExpiresAt,
             Measurements = measurements
         };
     }

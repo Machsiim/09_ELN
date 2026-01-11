@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -53,14 +54,24 @@ builder.Services.AddScoped<eln.Backend.Application.Services.MeasurementSeriesSer
 builder.Services.AddScoped<eln.Backend.Application.Services.ShareLinkService>();
 
 // Database Context - PostgreSQL
-builder.Services.AddDbContext<ElnContext>(opt =>
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
+    ?? builder.Configuration.GetConnectionString("Default")
+    ?? throw new InvalidOperationException("No connection string configured");
+
+// TEST ONLY: Enable dynamic JSON serialization for jsonb (used by AllowedUserEmails).
+builder.Services.AddSingleton<NpgsqlDataSource>(_ =>
 {
-    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
-        ?? builder.Configuration.GetConnectionString("Default")
-        ?? throw new InvalidOperationException("No connection string configured");
+    var dataSourceBuilder = new NpgsqlDataSourceBuilder(connectionString);
+    dataSourceBuilder.EnableDynamicJson();
+    return dataSourceBuilder.Build();
+});
+
+builder.Services.AddDbContext<ElnContext>((serviceProvider, opt) =>
+{
+    var dataSource = serviceProvider.GetRequiredService<NpgsqlDataSource>();
     
     opt.UseNpgsql(
-        connectionString,
+        dataSource,
         o => o.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery));
 });
 
