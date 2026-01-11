@@ -28,6 +28,9 @@ services:
     ports:
       - "5100:8080"
       - "5101:8081"
+    dns:
+      - 172.31.249.10
+      - 172.31.249.20
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8080
