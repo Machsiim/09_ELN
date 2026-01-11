@@ -131,15 +131,22 @@ public class ElnContext : DbContext
         ).ToLower();
     }
 
+    /// <summary>
+    /// Initialize the database.
+    /// In Development: Uses EnsureCreated (no migrations needed for rapid development)
+    /// In Production: Uses Migrate (requires EF migrations to be created)
+    /// </summary>
     public void CreateDatabase(bool isDevelopment)
     {
         if (isDevelopment)
         {
-            Database.EnsureDeleted();
+            // In Development: Create database schema if it doesn't exist
+            // NOTE: Does NOT delete existing data - just ensures schema exists
             Database.EnsureCreated();
         }
         else
         {
+            // In Production: Apply any pending migrations
             Database.Migrate();
         }
     }

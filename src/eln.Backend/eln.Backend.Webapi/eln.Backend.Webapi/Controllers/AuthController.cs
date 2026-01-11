@@ -21,18 +21,25 @@ namespace eln.Backend.Webapi.Controllers
         private readonly ILdapService _ldapService;
         private readonly JwtSettings _jwtSettings;
         private readonly ElnContext _context;
+        private readonly IHostEnvironment _environment;
 
-        public AuthController(ILdapService ldapService, IOptions<JwtSettings> jwtOptions, ElnContext context)
+        public AuthController(ILdapService ldapService, IOptions<JwtSettings> jwtOptions, ElnContext context, IHostEnvironment environment)
         {
             _ldapService = ldapService;
             _jwtSettings = jwtOptions.Value;
             _context = context;
+            _environment = environment;
         }
 
         [HttpPost("login")]
         public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginRequest request)
         {
-            if (!_ldapService.ValidateUser(request.Username, request.Password))
+            // Development-only: Allow local admin user (admin/11111111)
+            var isDevAdmin = _environment.IsDevelopment()
+                && request.Username == "admin"
+                && request.Password == "11111111";
+
+            if (!isDevAdmin && !_ldapService.ValidateUser(request.Username, request.Password))
                 return Unauthorized();
             var user = await _context.Users.SingleOrDefaultAsync(u => u.Username == request.Username);
             if (user == null)
@@ -46,13 +53,6 @@ namespace eln.Backend.Webapi.Controllers
             var token = GenerateJwtToken(request.Username, out var expiresAt);
 
             return Ok(new LoginResponse { Token = token, ExpiresAt = expiresAt });
-        }
-
-        [HttpGet("debug-users")]
-        public async Task<ActionResult<IEnumerable<User>>> GetUsers()
-        {
-            var users = await _context.Users.ToListAsync();
-            return Ok(users);
         }
 
         [HttpGet("GetUser")]

@@ -54,8 +54,13 @@ public class LdapService : ILdapService
             {
                 // Aktiviert SSL/TLS für die Verbindung.
                 connection.SessionOptions.SecureSocketLayer = true;
-                
-                connection.SessionOptions.VerifyServerCertificate += (conn, cert) => true;
+
+                // Only skip certificate validation if explicitly configured (e.g., for development)
+                if (!_settings.ValidateCertificate)
+                {
+                    _logger.LogWarning("LDAP certificate validation is disabled. This should not be used in production!");
+                    connection.SessionOptions.VerifyServerCertificate += (conn, cert) => true;
+                }
             }
 
             

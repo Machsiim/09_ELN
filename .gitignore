@@ -36,3 +36,12 @@ src/lookappweb.Webapi/obj/
 
 .DS_Store
 *.user
+
+# ELN Environment files with secrets
+.env
+.env.local
+.env.production
+src/eln.Backend/.env
+src/eln.Backend/.env.*
+!src/eln.Backend/.env.example
+!src/eln.Backend/.env.production.example

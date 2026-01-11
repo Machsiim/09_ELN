@@ -1,18 +1,16 @@
 using eln.Backend.Webapi;
+using eln.Backend.Webapi.Middleware;
 using eln.Backend.Application.Infrastructure;
 using eln.Backend.Application.Auth;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
-
-// FORCE Development Mode by default (unless explicitly set to Production)
-if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")))
-{
-    builder.Environment.EnvironmentName = "Development";
-}
 
 // Add services to the container
 builder.Services.AddControllers();
@@ -52,13 +50,19 @@ builder.Services.AddScoped<eln.Backend.Application.Services.MeasurementValidatio
 builder.Services.AddScoped<eln.Backend.Application.Services.MeasurementSeriesService>();
 builder.Services.AddScoped<eln.Backend.Application.Services.ShareLinkService>();
 
-// Database Context - PostgreSQL
+// Database Context - PostgreSQL (Connection String from Environment Variable or Config)
+var connectionString = Environment.GetEnvironmentVariable("ELN_DB_CONNECTION")
+    ?? builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? builder.Configuration.GetConnectionString("Default");
+
+if (string.IsNullOrEmpty(connectionString))
+{
+    throw new InvalidOperationException(
+        "Database connection string not configured. Set ELN_DB_CONNECTION environment variable or ConnectionStrings:Default in appsettings.json");
+}
+
 builder.Services.AddDbContext<ElnContext>(opt =>
 {
-    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
-        ?? builder.Configuration.GetConnectionString("Default")
-        ?? throw new InvalidOperationException("No connection string configured");
-    
     opt.UseNpgsql(
         connectionString,
         o => o.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery));
@@ -84,9 +88,16 @@ builder.Services.Configure<LdapSettings>(builder.Configuration.GetSection("Ldap"
 // F�r Entwicklung mit Fake-Usern:
 builder.Services.AddScoped<ILdapService, LdapService>();
 
-// Read JWT Settings from appsettings
-var jwtSecret = builder.Configuration["JwtSettings:Secret"] 
-    ?? throw new InvalidOperationException("JWT Secret not configured");
+// Read JWT Settings from Environment Variable or appsettings
+var jwtSecret = Environment.GetEnvironmentVariable("ELN_JWT_SECRET")
+    ?? builder.Configuration["JwtSettings:Secret"];
+
+if (string.IsNullOrEmpty(jwtSecret))
+{
+    throw new InvalidOperationException(
+        "JWT Secret not configured. Set ELN_JWT_SECRET environment variable or JwtSettings:Secret in appsettings.json");
+}
+
 var jwtIssuer = builder.Configuration["JwtSettings:Issuer"] ?? "eln.backend";
 var jwtAudience = builder.Configuration["JwtSettings:Audience"] ?? "eln.backend";
 
@@ -110,27 +121,61 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// CORS Policy
+// CORS Policy - Restrictive in Production, Permissive in Development
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("CorsPolicy", builder =>
+    options.AddPolicy("CorsPolicy", policy =>
     {
-        builder.AllowAnyOrigin()
-               .AllowAnyHeader()
-               .AllowAnyMethod();
+        if (builder.Environment.IsDevelopment())
+        {
+            policy.AllowAnyOrigin()
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        }
+        else
+        {
+            var allowedOrigins = builder.Configuration
+                .GetSection("Cors:AllowedOrigins")
+                .Get<string[]>() ?? Array.Empty<string>();
+
+            if (allowedOrigins.Length > 0)
+            {
+                policy.WithOrigins(allowedOrigins)
+                      .AllowAnyHeader()
+                      .AllowAnyMethod()
+                      .AllowCredentials();
+            }
+            else
+            {
+                // Fallback: No CORS allowed in production without explicit configuration
+                policy.WithOrigins("https://example.com")
+                      .AllowAnyHeader()
+                      .AllowAnyMethod();
+            }
+        }
     });
 });
+
+// Health Checks
+builder.Services.AddHealthChecks()
+    .AddNpgSql(connectionString, name: "database", tags: new[] { "db", "sql", "postgres" });
 
 var app = builder.Build();
 
 // Apply CORS policy FIRST
 app.UseCors("CorsPolicy");
 
-// ALWAYS show Swagger (because we're always in Development by default)
-app.UseSwagger();
-app.UseSwaggerUI();
+// Global exception handler - catches unhandled exceptions
+app.UseGlobalExceptionHandler();
 
-// PostgreSQL Container Setup (only when running locally, not in Docker)
+// Swagger only in Development
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
+// PostgreSQL Container Setup (only when running locally in Development, not in Docker)
 var runningInDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
 
 if (app.Environment.IsDevelopment() && !runningInDocker)
@@ -140,20 +185,23 @@ if (app.Environment.IsDevelopment() && !runningInDocker)
         await app.UsePostgresContainer(
             containerName: "eln_postgres",
             version: "latest",
-            connectionString: app.Configuration.GetConnectionString("Default"),
-            deleteAfterShutdown: true);
-        
+            connectionString: connectionString,
+            deleteAfterShutdown: false); // Keep data after shutdown
+
         // Initialize Database AFTER container is ready
         using (var scope = app.Services.CreateScope())
         {
             using (var db = scope.ServiceProvider.GetRequiredService<ElnContext>())
             {
                 db.CreateDatabase(isDevelopment: true);
-                
-                // Seed dummy user for testing (since we don't have auth yet)
-                var dummyUser = new eln.Backend.Application.Model.User("testuser", "admin");
-                db.Users.Add(dummyUser);
-                db.SaveChanges();
+
+                // Seed dummy user for testing only if no users exist
+                if (!db.Users.Any())
+                {
+                    var dummyUser = new eln.Backend.Application.Model.User("testuser", "admin");
+                    db.Users.Add(dummyUser);
+                    db.SaveChanges();
+                }
             }
         }
     }
@@ -163,17 +211,18 @@ if (app.Environment.IsDevelopment() && !runningInDocker)
         return;
     }
 }
-else if (runningInDocker)
+else
 {
-    // Running in Docker - just initialize the database
+    // Running in Docker or Production - initialize database
     using (var scope = app.Services.CreateScope())
     {
         using (var db = scope.ServiceProvider.GetRequiredService<ElnContext>())
         {
-            db.CreateDatabase(isDevelopment: true);
-            
-            // Seed dummy user for testing
-            if (!db.Users.Any())
+            var isDevelopment = app.Environment.IsDevelopment();
+            db.CreateDatabase(isDevelopment: isDevelopment);
+
+            // Seed dummy user only in Development
+            if (isDevelopment && !db.Users.Any())
             {
                 var dummyUser = new eln.Backend.Application.Model.User("testuser", "admin");
                 db.Users.Add(dummyUser);
@@ -188,5 +237,27 @@ app.UseCookiePolicy();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
+// Health Check Endpoint
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = "application/json";
+        var result = JsonSerializer.Serialize(new
+        {
+            status = report.Status.ToString(),
+            checks = report.Entries.Select(e => new
+            {
+                name = e.Key,
+                status = e.Value.Status.ToString(),
+                description = e.Value.Description,
+                duration = e.Value.Duration.TotalMilliseconds
+            }),
+            totalDuration = report.TotalDuration.TotalMilliseconds
+        });
+        await context.Response.WriteAsync(result);
+    }
+});
 
 app.Run();

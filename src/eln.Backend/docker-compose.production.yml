@@ -4,39 +4,52 @@ services:
   postgres:
     image: postgres:16-alpine
     container_name: eln-postgres
+    restart: always
     environment:
       POSTGRES_DB: elndb
-      POSTGRES_USER: ${DB_USER:-elnuser}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-elnpassword}
-    ports:
-      - "5432:5432"
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-elnuser} -d elndb"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d elndb"]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
       - eln-network
+    # No ports exposed - only accessible within docker network
 
   backend:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: eln-backend
+    restart: always
     ports:
       - "5100:8080"
-      - "5101:8081"
     environment:
-      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Production}
+      - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:8080
-      - ELN_DB_CONNECTION=Host=postgres;Database=elndb;Username=${DB_USER:-elnuser};Password=${DB_PASSWORD:-elnpassword}
+      - ELN_DB_CONNECTION=Host=postgres;Database=elndb;Username=${DB_USER};Password=${DB_PASSWORD}
       - ELN_JWT_SECRET=${JWT_SECRET}
-      - Cors__AllowedOrigins__0=${CORS_ORIGIN:-http://localhost:3000}
+      - Cors__AllowedOrigins__0=${CORS_ORIGIN}
     depends_on:
       postgres:
         condition: service_healthy
+    networks:
+      - eln-network
+
+  frontend:
+    build:
+      context: ../eln.Frontend/frontend-app
+      dockerfile: Dockerfile
+    container_name: eln-frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
     networks:
       - eln-network
 
