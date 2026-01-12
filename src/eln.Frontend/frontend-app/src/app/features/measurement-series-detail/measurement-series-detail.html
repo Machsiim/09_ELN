@@ -20,13 +20,13 @@
               @if (lockInProgress()) {
                 <span class="lock-icon">⏳</span>
               } @else if (isLocked()) {
-                <span class="lock-icon">🔒</span> Gesperrt
+                Gesperrt
               } @else {
-                <span class="lock-icon">🔓</span> Entsperrt
+                Entsperrt
               }
             </button>
           } @else if (isLocked()) {
-            <span class="lock-badge">🔒 Gesperrt von {{ lockedByUsername() }}</span>
+            <span class="lock-badge">Gesperrt von {{ lockedByUsername() }}</span>
           }
           <button type="button" class="share-button" (click)="openShareDialog()" title="Sharing-Link anzeigen">
             Link teilen
@@ -81,14 +81,16 @@
                 >
                 Spalten ({{ getVisibleColumns().length }})
               </button>
-              <button
-                type="button"
-                class="action-button danger"
-                [disabled]="!hasSelection() || deleteInProgress()"
-                (click)="requestDeletion()"
-                >
-                {{ deleteInProgress() ? 'Löschen ...' : 'Löschen' }}
-              </button>
+              @if (!isLocked() || isStaff) {
+                <button
+                  type="button"
+                  class="action-button danger"
+                  [disabled]="!hasSelection() || deleteInProgress()"
+                  (click)="requestDeletion()"
+                  >
+                  {{ deleteInProgress() ? 'Löschen ...' : 'Löschen' }}
+                </button>
+              }
             </div>
           </div>
         </div>
@@ -144,6 +146,7 @@
                       <input
                         type="checkbox"
                         [checked]="isSelected(measurement.id)"
+                        [disabled]="isLocked() && !isStaff"
                         (click)="$event.stopPropagation()"
                         (change)="toggleSelection(measurement.id, $any($event.target).checked)"
                         />

@@ -48,7 +48,10 @@ export class AuthService {
 
   // TESTCODE START - Zum Testen von Benutzerrollen
   testLoginStudent(): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(`${this.baseUrl}/test-login-student`, {}).pipe(
+    return this.http.post<LoginResponse>(`${this.baseUrl}/test-login-student`, {
+      username: 'test.student',
+      password: ''
+    }).pipe(
       tap(response => {
         this.setSession(response);
       })

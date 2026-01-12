@@ -13,6 +13,8 @@ export class MeasurementDetailHeader {
   @Input() measurement: MeasurementResponseDto | null = null;
   @Input() isEditing = false;
   @Input() saveInProgress = false;
+  @Input() isSeriesLocked = false;
+  @Input() isStaff = false;
 
   @Output() back = new EventEmitter<void>();
   @Output() openHistory = new EventEmitter<void>();

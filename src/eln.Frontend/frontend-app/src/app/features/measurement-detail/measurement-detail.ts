@@ -15,6 +15,8 @@ import {
   MeasurementService,
   MeasurementHistoryEntry
 } from '../../services/measurement.service';
+import { MeasurementSeriesService } from '../../services/measurement-series.service';
+import { AuthService } from '../../services/auth.service';
 import { MediaAttachment } from '../../models/media-attachment';
 import { MeasurementDetailHeader } from './components/measurement-detail-header/measurement-detail-header';
 import { MeasurementDetailSections } from './components/measurement-detail-sections/measurement-detail-sections';
@@ -46,6 +48,8 @@ import {
 })
 export class MeasurementDetail implements OnInit {
   private readonly measurementService = inject(MeasurementService);
+  private readonly seriesService = inject(MeasurementSeriesService);
+  private readonly authService = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
@@ -68,6 +72,8 @@ export class MeasurementDetail implements OnInit {
   readonly mediaDialogOpen = signal(false);
   readonly mediaDialogContext = signal<{ section: string; field: string } | null>(null);
   readonly pendingMediaAttachments = signal<MediaAttachment[]>([]);
+  readonly isSeriesLocked = signal(false);
+  readonly isStaff = this.authService.isStaff();
 
   private toastTimeout: number | null = null;
 
@@ -97,10 +103,25 @@ export class MeasurementDetail implements OnInit {
           }
           this.loading.set(false);
           this.fetchLatestUpdate(id, result);
+          this.fetchSeriesLockStatus(result.seriesId);
         },
         error: () => {
           this.loading.set(false);
           this.error.set('Messung konnte nicht geladen werden.');
+        }
+      });
+  }
+
+  private fetchSeriesLockStatus(seriesId: number): void {
+    this.seriesService
+      .getSeriesById(seriesId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (series) => {
+          this.isSeriesLocked.set(series.isLocked);
+        },
+        error: () => {
+          // Silently fail - lock status is not critical for display
         }
       });
   }

@@ -29,8 +29,10 @@
         </div>
         <div class="action-buttons">
           @if (!isEditing) {
-            <button class="action-button edit active" (click)="startEditing.emit()">Bearbeiten</button>
-            <button class="action-button danger" (click)="confirmDelete.emit()">Löschen</button>
+            @if (!isSeriesLocked || isStaff) {
+              <button class="action-button edit active" (click)="startEditing.emit()">Bearbeiten</button>
+              <button class="action-button danger" (click)="confirmDelete.emit()">Löschen</button>
+            }
           } @else {
             <button class="action-button" (click)="cancelEditing.emit()" [disabled]="saveInProgress">Abbrechen</button>
             <button class="action-button success" (click)="saveEdits.emit()" [disabled]="saveInProgress">
