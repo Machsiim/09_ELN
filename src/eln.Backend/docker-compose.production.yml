@@ -34,6 +34,7 @@ services:
       - ASPNETCORE_URLS=http://+:8080
       - ELN_DB_CONNECTION=Host=postgres;Database=elndb;Username=${DB_USER};Password=${DB_PASSWORD}
       - ELN_JWT_SECRET=${JWT_SECRET}
+      - JwtSettings__Secret=${JWT_SECRET}
       - Cors__AllowedOrigins__0=${CORS_ORIGIN}
       - ELN_UPLOAD_PATH=/app/uploads
     volumes:
