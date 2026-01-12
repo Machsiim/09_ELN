@@ -125,7 +125,7 @@ namespace eln.Backend.Webapi.Controllers
             // Wenn eine Mail kommt, nur den Teil vor dem @ betrachten
             var localPart = username.Split('@')[0];
 
-            // Mitarbeiter: nur Buchstaben + ein Punkt, keine Ziffern
+            // Studenten
             var isStudent = Regex.IsMatch(localPart, @"^[a-z]{2}[0-9]{2}[a-z][0-9]{3}$");
 
             return isStudent ? "Student" : "Staff";
