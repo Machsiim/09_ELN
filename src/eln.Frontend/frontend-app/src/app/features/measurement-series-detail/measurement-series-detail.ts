@@ -18,8 +18,10 @@ import {
 import {
   CreateShareLinkPayload,
   MeasurementSeriesService,
+  MeasurementSeriesDto,
   ShareLinkResponseDto
 } from '../../services/measurement-series.service';
+import { AuthService } from '../../services/auth.service';
 import { MediaAttachment } from '../../models/media-attachment';
 
 @Component({
@@ -31,6 +33,7 @@ import { MediaAttachment } from '../../models/media-attachment';
 export class MeasurementSeriesDetail implements OnInit {
   private readonly measurementService = inject(MeasurementService);
   private readonly seriesService = inject(MeasurementSeriesService);
+  private readonly authService = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
@@ -62,6 +65,12 @@ export class MeasurementSeriesDetail implements OnInit {
   readonly shareExpiresAt = signal<string | null>(null);
   readonly shareCreatedBy = signal<string | null>(null);
 
+  // Lock-related signals
+  readonly isLocked = signal(false);
+  readonly lockedByUsername = signal<string | null>(null);
+  readonly lockInProgress = signal(false);
+  readonly isStaff = this.authService.isStaff();
+
   ngOnInit(): void {
     this.route.params
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -69,11 +78,52 @@ export class MeasurementSeriesDetail implements OnInit {
         const id = Number(params['id']);
         if (!Number.isNaN(id)) {
           this.seriesId.set(id);
+          this.fetchSeriesInfo(id);
           this.fetchMeasurements(id);
         } else {
           this.error.set('Ungültige Serien-ID');
         }
       });
+  }
+
+  private fetchSeriesInfo(id: number): void {
+    this.seriesService.getSeriesById(id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (series) => {
+          this.isLocked.set(series.isLocked);
+          this.lockedByUsername.set(series.lockedByUsername ?? null);
+        },
+        error: (err) => {
+          console.error('Failed to load series info:', err);
+        }
+      });
+  }
+
+  async toggleLock(): Promise<void> {
+    const id = this.seriesId();
+    if (!id || this.lockInProgress()) return;
+
+    this.lockInProgress.set(true);
+
+    try {
+      if (this.isLocked()) {
+        const result = await firstValueFrom(this.seriesService.unlockSeries(id));
+        this.isLocked.set(result.isLocked);
+        this.lockedByUsername.set(result.lockedByUsername ?? null);
+        this.showSuccess('Messserie entsperrt.');
+      } else {
+        const result = await firstValueFrom(this.seriesService.lockSeries(id));
+        this.isLocked.set(result.isLocked);
+        this.lockedByUsername.set(result.lockedByUsername ?? null);
+        this.showSuccess('Messserie gesperrt.');
+      }
+    } catch (err) {
+      console.error('Failed to toggle lock:', err);
+      this.error.set('Sperrstatus konnte nicht geändert werden.');
+    } finally {
+      this.lockInProgress.set(false);
+    }
   }
 
   isSelected(measurementId: number): boolean {

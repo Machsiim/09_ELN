@@ -12,7 +12,12 @@ namespace eln.Backend.Application.Auth
         public int Port { get; set; } = 636;
         public bool UseSsl { get; set; } = true;
 
-        public string BaseDn { get; set; } = string.Empty;      
-        public string UserAttribute { get; set; } = "uid";      
+        public string BaseDn { get; set; } = string.Empty;
+        public string UserAttribute { get; set; } = "uid";
+
+        /// <summary>
+        /// Validate SSL certificate. Should be true in production, can be false for development.
+        /// </summary>
+        public bool ValidateCertificate { get; set; } = true;
     }
 }

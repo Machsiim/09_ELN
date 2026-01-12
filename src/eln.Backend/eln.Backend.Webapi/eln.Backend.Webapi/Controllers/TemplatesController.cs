@@ -1,7 +1,9 @@
 using System.ComponentModel.DataAnnotations;
+using System.Security.Claims;
 using System.Text.Json;
 using eln.Backend.Application.Infrastructure;
 using eln.Backend.Application.Model;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,6 +11,7 @@ namespace eln.Backend.Webapi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class TemplatesController : ControllerBase
 {
     private readonly ElnContext _context;
@@ -59,9 +62,16 @@ public class TemplatesController : ControllerBase
         }
 
         var schema = request.Schema ?? JsonDocument.Parse("{}");
-        
-        // TODO: Replace hardcoded createdBy with actual user ID from authentication
-        var template = new Template(request.Name, schema, createdBy: 1);
+
+        // Get user ID from JWT claims
+        var username = User.FindFirst(ClaimTypes.Name)?.Value;
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == username, cancellationToken);
+        if (user == null)
+        {
+            return Unauthorized(new { error = "User not found" });
+        }
+
+        var template = new Template(request.Name, schema, createdBy: user.Id);
         _context.Templates.Add(template);
         await _context.SaveChangesAsync(cancellationToken);
 

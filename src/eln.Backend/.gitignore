@@ -1,0 +1,22 @@
+# Build outputs
+bin/
+obj/
+out/
+
+# IDE
+.idea/
+.vs/
+*.user
+*.suo
+
+# Environment files with secrets
+.env
+.env.production
+.env.local
+
+# Test results
+TestResults/
+
+# OS files
+.DS_Store
+Thumbs.db
