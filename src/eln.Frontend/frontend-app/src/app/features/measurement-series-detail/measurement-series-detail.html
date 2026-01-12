@@ -17,16 +17,16 @@
               (click)="toggleLock()"
               [title]="isLocked() ? 'Klicken zum Entsperren' : 'Klicken zum Sperren'"
             >
-              @if (lockInProgress()) {
-                <span class="lock-icon">⏳</span>
-              } @else if (isLocked()) {
-                Gesperrt
-              } @else {
-                Entsperrt
-              }
-            </button>
+            @if (lockInProgress()) {
+            <span class="lock-icon">⏳</span>
+            } @else if (isLocked()) {
+            Entsperren
+            } @else {
+            Sperren
+            }
+          </button>
           } @else if (isLocked()) {
-            <span class="lock-badge">Gesperrt von {{ lockedByUsername() }}</span>
+          <span class="lock-badge">Gesperrt von {{ lockedByUsername() }}</span>
           }
           <button type="button" class="share-button" (click)="openShareDialog()" title="Sharing-Link anzeigen">
             Link teilen
@@ -39,22 +39,22 @@
         <p class="hint">
           Alle Messungen dieser Serie in tabellarischer Übersicht.
           @if (isLocked() && !isStaff) {
-            <strong class="lock-warning">Diese Serie ist gesperrt - Bearbeitung nicht möglich.</strong>
+          <strong class="lock-warning">Diese Serie ist gesperrt - Bearbeitung nicht möglich.</strong>
           }
         </p>
       </header>
 
       @if (error(); as message) {
-        <div class="status error">{{ message }}</div>
+      <div class="status error">{{ message }}</div>
       }
 
       @if (loading()) {
-        <div class="status info">Messungen werden geladen ...</div>
+      <div class="status info">Messungen werden geladen ...</div>
       }
 
       @if (!loading() && measurements().length > 0) {
-        <div class="search-container">
-          <div class="search-input-wrapper">
+      <div class="search-container">
+        <div class="search-input-wrapper">
             <input
               type="text"
               class="search-input"
@@ -62,131 +62,131 @@
               [value]="searchQuery()"
               (input)="onSearchChange($event)"
               />
-            @if (searchQuery()) {
-              <button type="button" class="clear-button" (click)="clearSearch()" title="Suche löschen">
-                ✕
-              </button>
-            }
-          </div>
-          <div class="results-actions">
-            <div class="results-meta">
+          @if (searchQuery()) {
+          <button type="button" class="clear-button" (click)="clearSearch()" title="Suche löschen">
+            ✕
+          </button>
+          }
+        </div>
+        <div class="results-actions">
+          <div class="results-meta">
               {{ filteredMeasurements().length }} von {{ measurements().length }} Messung{{ measurements().length !== 1 ? 'en' : '' }}
-            </div>
-            <div class="action-buttons">
+          </div>
+          <div class="action-buttons">
               <button
                 type="button"
                 class="action-button"
                 (click)="toggleColumnPicker()"
                 title="Spalten ein-/ausblenden"
                 >
-                Spalten ({{ getVisibleColumns().length }})
-              </button>
-              @if (!isLocked() || isStaff) {
+              Spalten ({{ getVisibleColumns().length }})
+            </button>
+            @if (!isLocked() || isStaff) {
                 <button
                   type="button"
                   class="action-button danger"
                   [disabled]="!hasSelection() || deleteInProgress()"
                   (click)="requestDeletion()"
                   >
-                  {{ deleteInProgress() ? 'Löschen ...' : 'Löschen' }}
-                </button>
-              }
-            </div>
+              {{ deleteInProgress() ? 'Löschen ...' : 'Löschen' }}
+            </button>
+            }
           </div>
         </div>
+      </div>
 
-        @if (columnPickerVisible()) {
-          <div class="column-picker">
-            <div class="column-picker-header">
-              <h3>Spalten auswählen</h3>
-              <div class="column-picker-actions">
-                <button type="button" class="picker-action-button" (click)="showAllColumns()">Alle anzeigen</button>
-                <button type="button" class="picker-action-button" (click)="hideAllColumns()">Alle ausblenden</button>
-              </div>
-            </div>
-            <div class="column-list">
-              @for (column of getAllColumns(); track column) {
-                <label class="column-item">
+      @if (columnPickerVisible()) {
+      <div class="column-picker">
+        <div class="column-picker-header">
+          <h3>Spalten auswählen</h3>
+          <div class="column-picker-actions">
+            <button type="button" class="picker-action-button" (click)="showAllColumns()">Alle anzeigen</button>
+            <button type="button" class="picker-action-button" (click)="hideAllColumns()">Alle ausblenden</button>
+          </div>
+        </div>
+        <div class="column-list">
+          @for (column of getAllColumns(); track column) {
+          <label class="column-item">
                   <input
                     type="checkbox"
                     [checked]="isColumnVisible(column)"
                     (change)="toggleColumnVisibility(column)"
                   />
-                  <span>{{ column }}</span>
-                </label>
-              }
-            </div>
-          </div>
-        }
+            <span>{{ column }}</span>
+          </label>
+          }
+        </div>
+      </div>
+      }
 
-        @if (filteredMeasurements().length > 0) {
-          <div class="table-container">
-            <table class="measurements-table">
-              <thead>
-                <tr>
-                  <th class="select-column"></th>
-                  @if (isBaseColumnVisible('Mess-ID')) {
-                    <th>Mess-ID</th>
-                  }
-                  @if (isBaseColumnVisible('Erstellt von')) {
-                    <th>Erstellt von</th>
-                  }
-                  @if (isBaseColumnVisible('Erstellt am')) {
-                    <th>Erstellt am</th>
-                  }
-                  @for (column of getVisibleDataColumns(); track column) {
-                    <th>{{ column }}</th>
-                  }
-                </tr>
-              </thead>
-              <tbody>
-                @for (measurement of filteredMeasurements(); track trackById($index, measurement)) {
-                  <tr (click)="goToMeasurement(measurement)" class="measurement-row">
-                    <td class="select-column" (click)="$event.stopPropagation()">
+      @if (filteredMeasurements().length > 0) {
+      <div class="table-container">
+        <table class="measurements-table">
+          <thead>
+            <tr>
+              <th class="select-column"></th>
+              @if (isBaseColumnVisible('Mess-ID')) {
+              <th>Mess-ID</th>
+              }
+              @if (isBaseColumnVisible('Erstellt von')) {
+              <th>Erstellt von</th>
+              }
+              @if (isBaseColumnVisible('Erstellt am')) {
+              <th>Erstellt am</th>
+              }
+              @for (column of getVisibleDataColumns(); track column) {
+              <th>{{ column }}</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (measurement of filteredMeasurements(); track trackById($index, measurement)) {
+            <tr (click)="goToMeasurement(measurement)" class="measurement-row">
+              <td class="select-column" (click)="$event.stopPropagation()">
                       <input
                         type="checkbox"
                         [checked]="isSelected(measurement.id)"
                         [disabled]="isLocked() && !isStaff"
-                        (click)="$event.stopPropagation()"
+                  (click)="$event.stopPropagation()"
                         (change)="toggleSelection(measurement.id, $any($event.target).checked)"
                         />
-                    </td>
-                    @if (isBaseColumnVisible('Mess-ID')) {
-                      <td class="cell-id">#{{ measurement.id }}</td>
-                    }
-                    @if (isBaseColumnVisible('Erstellt von')) {
-                      <td class="cell-author">{{ measurement.createdByUsername }}</td>
-                    }
-                    @if (isBaseColumnVisible('Erstellt am')) {
-                      <td class="cell-date">{{ measurement.createdAt | date: 'dd.MM.yyyy HH:mm' }}</td>
-                    }
-                    @for (column of getVisibleDataColumns(); track column) {
-                      <td class="cell-value">
-                        {{ getValueForColumn(measurement, column) }}
-                      </td>
-                    }
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        } @else {
-          <div class="empty-state">
-            <p class="empty-title">Keine Ergebnisse</p>
-            <p class="empty-text">
-              Keine Messungen gefunden für "{{ searchQuery() }}".
-            </p>
-          </div>
-        }
+              </td>
+              @if (isBaseColumnVisible('Mess-ID')) {
+              <td class="cell-id">#{{ measurement.id }}</td>
+              }
+              @if (isBaseColumnVisible('Erstellt von')) {
+              <td class="cell-author">{{ measurement.createdByUsername }}</td>
+              }
+              @if (isBaseColumnVisible('Erstellt am')) {
+              <td class="cell-date">{{ measurement.createdAt | date: 'dd.MM.yyyy HH:mm' }}</td>
+              }
+              @for (column of getVisibleDataColumns(); track column) {
+              <td class="cell-value">
+                {{ getValueForColumn(measurement, column) }}
+              </td>
+              }
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
       } @else {
-        @if (!loading()) {
-          <div class="empty-state">
-            <p class="empty-title">Keine Messungen vorhanden</p>
-            <p class="empty-text">
-              Diese Messserie enthält noch keine Messungen.
-            </p>
-          </div>
-        }
+      <div class="empty-state">
+        <p class="empty-title">Keine Ergebnisse</p>
+        <p class="empty-text">
+          Keine Messungen gefunden für "{{ searchQuery() }}".
+        </p>
+      </div>
+      }
+      } @else {
+      @if (!loading()) {
+      <div class="empty-state">
+        <p class="empty-title">Keine Messungen vorhanden</p>
+        <p class="empty-text">
+          Diese Messserie enthält noch keine Messungen.
+        </p>
+      </div>
+      }
       }
     </section>
   </main>
@@ -195,99 +195,99 @@
 </div>
 
 @if (confirmVisible()) {
-  <div class="modal-backdrop">
-    <div class="modal-dialog">
-      <h2>Aktion bestätigen</h2>
-      <p>{{ confirmMessage() }}</p>
-      <div class="modal-actions">
-        <button type="button" class="modal-button" (click)="cancelDeletion()" [disabled]="deleteInProgress()">
-          Abbrechen
-        </button>
+<div class="modal-backdrop">
+  <div class="modal-dialog">
+    <h2>Aktion bestätigen</h2>
+    <p>{{ confirmMessage() }}</p>
+    <div class="modal-actions">
+      <button type="button" class="modal-button" (click)="cancelDeletion()" [disabled]="deleteInProgress()">
+        Abbrechen
+      </button>
         <button
           type="button"
           class="modal-button danger"
           (click)="confirmDeletion()"
           [disabled]="deleteInProgress()"
           >
-          {{ deleteInProgress() ? 'Löschen ...' : 'Löschen' }}
-        </button>
-      </div>
+        {{ deleteInProgress() ? 'Löschen ...' : 'Löschen' }}
+      </button>
     </div>
   </div>
+</div>
 }
 
 @if (shareDialogVisible()) {
-  <div class="modal-backdrop">
-    <div class="share-dialog">
-      <h2>Quick-Link teilen</h2>
-      <p class="hint">Stelle zuerst Gültigkeit und Sichtbarkeit ein, danach kannst du den Link generieren.</p>
-      <div class="form-group">
-        <label for="shareExpiry">Gültigkeit (Tage)</label>
+<div class="modal-backdrop">
+  <div class="share-dialog">
+    <h2>Quick-Link teilen</h2>
+    <p class="hint">Stelle zuerst Gültigkeit und Sichtbarkeit ein, danach kannst du den Link generieren.</p>
+    <div class="form-group">
+      <label for="shareExpiry">Gültigkeit (Tage)</label>
         <select id="shareExpiry"
           class="form-control"
           [value]="shareExpiresInDays()"
-          (change)="updateShareExpiry($any($event.target).value)">
-          <option [value]="1">1 Tag</option>
-          <option [value]="3">3 Tage</option>
-          <option [value]="7">7 Tage</option>
-          <option [value]="14">14 Tage</option>
-          <option [value]="30">30 Tage</option>
-          <option [value]="90">90 Tage</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label for="shareVisibility">Sichtbarkeit</label>
+        (change)="updateShareExpiry($any($event.target).value)">
+        <option [value]="1">1 Tag</option>
+        <option [value]="3">3 Tage</option>
+        <option [value]="7">7 Tage</option>
+        <option [value]="14">14 Tage</option>
+        <option [value]="30">30 Tage</option>
+        <option [value]="90">90 Tage</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="shareVisibility">Sichtbarkeit</label>
         <select id="shareVisibility"
           class="form-control"
           [value]="shareIsPublic() ? 'public' : 'private'"
-          (change)="updateShareVisibility($any($event.target).value)">
-          <option value="public">Öffentlich</option>
-          <option value="private">Nur bestimmte E-Mail-Adressen</option>
-        </select>
-      </div>
-      @if (!shareIsPublic()) {
-        <div class="form-group">
-          <label for="shareEmails">Erlaubte E-Mails (kommagetrennt)</label>
+        (change)="updateShareVisibility($any($event.target).value)">
+        <option value="public">Öffentlich</option>
+        <option value="private">Nur bestimmte E-Mail-Adressen</option>
+      </select>
+    </div>
+    @if (!shareIsPublic()) {
+    <div class="form-group">
+      <label for="shareEmails">Erlaubte E-Mails (kommagetrennt)</label>
           <input id="shareEmails"
             class="form-control"
             type="text"
             [value]="shareAllowedEmails()"
             (input)="updateAllowedEmails($any($event.target).value)"
             placeholder="alice@example.com, bob@example.com" />
-        </div>
-      }
+    </div>
+    }
 
-      @if (shareLoading()) {
-        <p class="status info">Link wird erstellt ...</p>
-      } @else if (shareError(); as shareMessage) {
-        <p class="status error">{{ shareMessage }}</p>
-      } @else if (shareLink()) {
-        <p class="share-url">{{ shareLink() }}</p>
-        @if (shareExpiresAt()) {
-          <p class="hint">Gültig bis: {{ shareExpiresAt() | date: 'dd.MM.yyyy HH:mm' }}</p>
-        }
-        @if (shareCreatedBy()) {
-          <p class="hint">Erstellt von: {{ shareCreatedBy() }}</p>
-        }
-      } @else {
-        <p class="status info">Noch kein Link generiert.</p>
-      }
+    @if (shareLoading()) {
+    <p class="status info">Link wird erstellt ...</p>
+    } @else if (shareError(); as shareMessage) {
+    <p class="status error">{{ shareMessage }}</p>
+    } @else if (shareLink()) {
+    <p class="share-url">{{ shareLink() }}</p>
+    @if (shareExpiresAt()) {
+    <p class="hint">Gültig bis: {{ shareExpiresAt() | date: 'dd.MM.yyyy HH:mm' }}</p>
+    }
+    @if (shareCreatedBy()) {
+    <p class="hint">Erstellt von: {{ shareCreatedBy() }}</p>
+    }
+    } @else {
+    <p class="status info">Noch kein Link generiert.</p>
+    }
 
-      <div class="modal-actions">
-        <button type="button" class="modal-button" (click)="generateShareLink()" [disabled]="shareLoading()">
-          Link generieren
-        </button>
-        <button type="button" class="modal-button" (click)="copyShareLink()" [disabled]="!shareLink()">
-          Link kopieren
-        </button>
-        <button type="button" class="modal-button" (click)="closeShareDialog()">Schließen</button>
-      </div>
+    <div class="modal-actions">
+      <button type="button" class="modal-button" (click)="generateShareLink()" [disabled]="shareLoading()">
+        Link generieren
+      </button>
+      <button type="button" class="modal-button" (click)="copyShareLink()" [disabled]="!shareLink()">
+        Link kopieren
+      </button>
+      <button type="button" class="modal-button" (click)="closeShareDialog()">Schließen</button>
     </div>
   </div>
+</div>
 }
 
 @if (successMessage()) {
-  <div class="toast toast-success">
-    {{ successMessage() }}
-  </div>
+<div class="toast toast-success">
+  {{ successMessage() }}
+</div>
 }

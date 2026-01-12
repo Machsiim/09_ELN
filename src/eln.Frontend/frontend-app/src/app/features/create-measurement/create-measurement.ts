@@ -117,7 +117,7 @@ export class CreateMeasurement implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (templates) => {
-          this.templates.set(templates);
+          this.templates.set(templates.filter((t) => !t.isArchived));
           this.loading.set(false);
         },
         error: () => {

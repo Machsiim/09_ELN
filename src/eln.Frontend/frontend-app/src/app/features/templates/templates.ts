@@ -64,6 +64,10 @@ export class Templates implements OnInit {
   readonly error = signal<string | null>(null);
   readonly successMessage = signal<string | null>(null);
   readonly toastMessage = signal<string | null>(null);
+  readonly confirmModalVisible = signal(false);
+  readonly confirmModalMode = signal<'delete' | 'archive'>('delete');
+  readonly templateForAction = signal<TemplateDto | null>(null);
+
   private toastTimeout: number | null = null;
 
   readonly fieldTypeOptions: { value: TemplateFieldType; label: string }[] = [
@@ -201,13 +205,13 @@ export class Templates implements OnInit {
       current.map((section) =>
         section.id === sectionId
           ? {
-              ...section,
-              cards: section.cards.map((card) =>
-                card.id === cardId
-                  ? { ...card, fields: card.fields.filter((field) => field.id !== fieldId) }
-                  : card
-              )
-            }
+            ...section,
+            cards: section.cards.map((card) =>
+              card.id === cardId
+                ? { ...card, fields: card.fields.filter((field) => field.id !== fieldId) }
+                : card
+            )
+          }
           : section
       )
     );
@@ -234,6 +238,73 @@ export class Templates implements OnInit {
           this.error.set('Templates konnten nicht geladen werden.');
         }
       });
+  }
+
+  deleteTemplate(template: TemplateDto): void {
+    this.templateForAction.set(template);
+    this.confirmModalMode.set('delete');
+    this.confirmModalVisible.set(true);
+  }
+
+  archiveTemplate(template: TemplateDto): void {
+    this.templateForAction.set(template);
+    this.confirmModalMode.set('archive');
+    this.confirmModalVisible.set(true);
+  }
+
+  confirmAction(): void {
+    const template = this.templateForAction();
+    if (!template) return;
+
+    const mode = this.confirmModalMode();
+    this.loading.set(true);
+
+    if (mode === 'delete') {
+      this.templateService
+        .deleteTemplate(template.id)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: () => {
+            this.templates.update((current) => current.filter((t) => t.id !== template.id));
+            this.loading.set(false);
+            this.confirmModalVisible.set(false);
+            this.templateForAction.set(null);
+            this.showToast('Template wurde gelöscht.');
+          },
+          error: () => {
+            this.loading.set(false);
+            this.confirmModalVisible.set(false);
+            this.templateForAction.set(null);
+            this.error.set('Fehler beim Löschen des Templates.');
+          }
+        });
+    } else {
+      this.templateService
+        .archiveTemplate(template.id)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: (archivedTemplate) => {
+            this.templates.update((current) =>
+              current.map(t => t.id === template.id ? archivedTemplate : t)
+            );
+            this.loading.set(false);
+            this.confirmModalVisible.set(false);
+            this.templateForAction.set(null);
+            this.showToast('Template wurde archiviert.');
+          },
+          error: () => {
+            this.loading.set(false);
+            this.confirmModalVisible.set(false);
+            this.templateForAction.set(null);
+            this.error.set('Fehler beim Archivieren des Templates.');
+          }
+        });
+    }
+  }
+
+  closeConfirmModal(): void {
+    this.confirmModalVisible.set(false);
+    this.templateForAction.set(null);
   }
 
   saveTemplate(): void {
