@@ -286,3 +286,133 @@
     transform: translateY(10px);
   }
 }
+
+.template-row.archived {
+  background-color: #f1f5f9;
+  border-color: #e2e8f0;
+  opacity: 0.75;
+}
+
+.template-row.archived h3 {
+  color: #64748b;
+}
+
+.template-info-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.badge-archived {
+  background-color: #94a3b8;
+  color: white;
+  font-size: 0.7rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.delete-btn {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+  transition: all 0.2s;
+}
+
+.delete-btn:hover:not(:disabled) {
+  background: #ef4444;
+  color: white;
+}
+
+.delete-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.archive-btn {
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+  transition: all 0.2s;
+}
+
+.archive-btn:hover {
+  background: #f59e0b;
+  color: white;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-dialog {
+  background: #fff;
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 420px;
+  width: 90%;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  text-align: center;
+
+  h2 {
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+    font-size: 1.5rem;
+  }
+
+  p {
+    margin: 0 0 1.5rem 0;
+    color: #555;
+    line-height: 1.4;
+  }
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.modal-button {
+  flex: 1;
+  min-width: 120px;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  border: none;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s, opacity 0.2s;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  &.danger {
+    background: #f44336;
+    color: #fff;
+
+    &:hover:not(:disabled) {
+      background: #d32f2f;
+    }
+  }
+
+  &:not(.danger) {
+    background: #e0e0e0;
+    color: #333;
+
+    &:hover:not(:disabled) {
+      background: #d5d5d5;
+    }
+  }
+}

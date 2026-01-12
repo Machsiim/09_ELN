@@ -178,51 +178,6 @@
   }
 }
 
-.media-thumb {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  border: 1px solid #cbd5f5;
-  border-radius: 16px;
-  padding: 1rem;
-  background: #fff;
-
-  img {
-    width: 420px;
-    height: 260px;
-    object-fit: contain;
-    border-radius: 14px;
-    background: #f8fafc;
-  }
-
-  figcaption {
-    font-size: 1rem;
-    color: #1f2937;
-    font-weight: 600;
-    text-align: left;
-  }
-
-  &.media-thumb-editable {
-    justify-content: space-between;
-  }
-}
-
-.media-remove-button {
-  border: none;
-  border-radius: 10px;
-  padding: 0.2rem;
-  background: #fee2e2;
-  color: #b91c1c;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-
-  mat-icon {
-    font-size: 20px;
-  }
-}
-
 .field-input {
   width: 100%;
   padding: 0.6rem 0.8rem;

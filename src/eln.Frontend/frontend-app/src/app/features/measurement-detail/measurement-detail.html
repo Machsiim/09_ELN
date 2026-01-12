@@ -7,6 +7,8 @@
         [measurement]="measurement()"
         [isEditing]="isEditing()"
         [saveInProgress]="saveInProgress()"
+        [isSeriesLocked]="isSeriesLocked()"
+        [isStaff]="isStaff"
         (back)="goBack()"
         (openHistory)="openHistory()"
         (startEditing)="startEditing()"
@@ -16,11 +18,11 @@
       </app-measurement-detail-header>
 
       @if (error(); as message) {
-        <div class="status error">{{ message }}</div>
+      <div class="status error">{{ message }}</div>
       }
 
       @if (loading()) {
-        <div class="status info">Messung wird geladen ...</div>
+      <div class="status info">Messung wird geladen ...</div>
       }
 
       @if (!loading() && measurement()) {
@@ -31,15 +33,19 @@
           [formatValue]="formatValue.bind(this)"
           [formatMediaSummary]="formatMediaSummary.bind(this)"
           [isMediaField]="isMediaField.bind(this)"
-          [getMediaAttachments]="getMediaAttachments.bind(this)"
-          [getEditableMediaAttachments]="getEditableMediaAttachments.bind(this)"
+        [getMediaAttachments]="getMediaAttachments.bind(this)"
+        [getEditableMediaAttachments]="getEditableMediaAttachments.bind(this)"
           [isMediaExpanded]="isMediaExpanded.bind(this)"
           [getEditableValue]="getEditableValue.bind(this)"
-          (toggleMediaPreview)="toggleMediaPreview($event.section, $event.field)"
-          (openMediaDialog)="openMediaDialog($event.section, $event.field)"
-          (updateFieldValue)="updateFieldValue($event.section, $event.field, $event.value)"
-          (removeEditableAttachment)="removeEditableAttachment($event.section, $event.field, $event.attachmentId)">
-        </app-measurement-detail-sections>
+        (toggleMediaPreview)="toggleMediaPreview($event.section, $event.field)"
+        (openMediaDialog)="openMediaDialog($event.section, $event.field)"
+        (updateFieldValue)="updateFieldValue($event.section, $event.field, $event.value)"
+        (removeEditableAttachment)="removeEditableAttachment($event.section, $event.field, $event.attachmentId)">
+      </app-measurement-detail-sections>
+
+      <app-measurement-image-gallery [measurementId]="measurement()!.id" [readOnly]="!canEditImages()"
+        [isEditing]="isEditing()" (openAddDialog)="openGalleryDialog()">
+      </app-measurement-image-gallery>
       }
     </section>
   </main>
@@ -48,48 +54,48 @@
 </div>
 
 @if (deleteConfirmVisible()) {
-  <div class="modal-backdrop">
-    <div class="modal-dialog">
-      <h2>Aktion bestätigen</h2>
+<div class="modal-backdrop">
+  <div class="modal-dialog">
+    <h2>Aktion bestätigen</h2>
       <p>Soll die Messung #{{ measurement()?.id }} wirklich gelöscht werden? Diese Aktion kann nicht widerrufen werden.</p>
-      <div class="modal-actions">
-        <button class="modal-button" type="button" (click)="closeDeleteModal()" [disabled]="deleteInProgress()">
-          Abbrechen
-        </button>
+    <div class="modal-actions">
+      <button class="modal-button" type="button" (click)="closeDeleteModal()" [disabled]="deleteInProgress()">
+        Abbrechen
+      </button>
         <button
           class="modal-button danger"
           type="button"
           (click)="deleteMeasurement()"
           [disabled]="deleteInProgress()"
         >
-          {{ deleteInProgress() ? 'Löschen ...' : 'Löschen' }}
-        </button>
-      </div>
+        {{ deleteInProgress() ? 'Löschen ...' : 'Löschen' }}
+      </button>
     </div>
   </div>
+</div>
 }
 
 @if (cancelEditVisible()) {
-  <div class="modal-backdrop">
-    <div class="modal-dialog">
-      <h2>Bearbeitung abbrechen?</h2>
-      <p>Sind Sie sicher, die Bearbeitung abzubrechen? Änderungen werden verworfen.</p>
-      <div class="modal-actions">
-        <button class="modal-button" type="button" (click)="closeCancelModal()">
-          Zurück
-        </button>
-        <button class="modal-button danger" type="button" (click)="confirmCancelEditing()">
-          Verwerfen
-        </button>
-      </div>
+<div class="modal-backdrop">
+  <div class="modal-dialog">
+    <h2>Bearbeitung abbrechen?</h2>
+    <p>Sind Sie sicher, die Bearbeitung abzubrechen? Änderungen werden verworfen.</p>
+    <div class="modal-actions">
+      <button class="modal-button" type="button" (click)="closeCancelModal()">
+        Zurück
+      </button>
+      <button class="modal-button danger" type="button" (click)="confirmCancelEditing()">
+        Verwerfen
+      </button>
     </div>
   </div>
+</div>
 }
 
 @if (toastMessage()) {
-  <div class="toast toast-success">
-    {{ toastMessage() }}
-  </div>
+<div class="toast toast-success">
+  {{ toastMessage() }}
+</div>
 }
 
 @if (historyVisible()) {
@@ -99,8 +105,8 @@
     [entries]="historyEntries()"
     [isMediaChange]="isMediaChange.bind(this)"
     [formatMediaSummary]="formatMediaSummary.bind(this)"
-    (close)="closeHistory()">
-  </app-measurement-history-dialog>
+  (close)="closeHistory()">
+</app-measurement-history-dialog>
 }
 
 @if (mediaDialogOpen()) {
@@ -109,5 +115,12 @@
     (attachmentsChange)="onDialogAttachmentsChange($event)"
     (save)="saveDialogAttachments()"
     (close)="closeMediaDialog()">
-  </app-measurement-media-dialog>
+</app-measurement-media-dialog>
+}
+
+@if (galleryDialogOpen()) {
+<app-measurement-media-dialog [attachments]="pendingMediaAttachments()"
+  (attachmentsChange)="onDialogAttachmentsChange($event)" (save)="saveGalleryAttachments()"
+  (close)="closeGalleryDialog()">
+</app-measurement-media-dialog>
 }

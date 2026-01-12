@@ -7,6 +7,8 @@ export interface TemplateDto {
   id: number;
   name: string;
   schema: string;
+  isArchived: boolean;
+  hasExistingMeasurements: boolean;
 }
 
 export interface SaveTemplateDto {
@@ -31,5 +33,13 @@ export class TemplateService {
 
   updateTemplate(id: number, payload: SaveTemplateDto): Observable<TemplateDto> {
     return this.http.put<TemplateDto>(`${this.baseUrl}/${id}`, payload);
+  }
+
+  deleteTemplate(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${id}`);
+  }
+
+  archiveTemplate(id: number): Observable<TemplateDto> {
+    return this.http.put<TemplateDto>(`${this.baseUrl}/${id}/archive`, {});
   }
 }

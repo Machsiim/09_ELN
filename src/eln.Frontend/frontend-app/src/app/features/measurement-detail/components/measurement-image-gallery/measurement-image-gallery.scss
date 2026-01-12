@@ -1,0 +1,30 @@
+.images-gallery-container {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+  .gallery-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+
+    h3 {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+  }
+}
+
+.media-add-button {
+  border: none;
+  border-radius: 999px;
+  padding: 0.35rem 1rem;
+  background: #c1f1d0;
+  color: #065f46;
+  font-weight: 600;
+  cursor: pointer;
+}

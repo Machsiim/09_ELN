@@ -164,13 +164,31 @@
       } @else {
       <div class="templates-table">
         @for (template of templates(); track template.id) {
-        <article class="template-row">
+        <article class="template-row" [class.archived]="template.isArchived">
           <div>
-            <h3>{{ template.name }}</h3>
+            <div class="template-info-header">
+              <h3>{{ template.name }}</h3>
+              @if (template.isArchived) {
+              <span class="badge-archived">Archiviert</span>
+              }
+            </div>
             <small>ID: {{ template.id }}</small>
           </div>
           <div class="template-row-actions">
-            <button class="btn btn-secondary" type="button" (click)="loadTemplateIntoBuilder(template)">In Builder laden</button>
+            <button class="btn btn-secondary" type="button" (click)="loadTemplateIntoBuilder(template)">In Builder
+              laden</button>
+            @if (template.hasExistingMeasurements && !template.isArchived) {
+            <button class="btn btn-icon archive-btn" type="button" (click)="archiveTemplate(template)"
+              title="Template archivieren">
+              <span class="material-icons">archive</span>
+            </button>
+            }
+            @if (!template.isArchived) {
+            <button class="btn btn-icon delete-btn" type="button" (click)="deleteTemplate(template)"
+              title="Template löschen" [disabled]="template.isArchived || template.hasExistingMeasurements">
+              <span class="material-icons">delete</span>
+            </button>
+            }
           </div>
         </article>
         }
@@ -182,8 +200,29 @@
   <app-footer />
 </div>
 
-@if (toastMessage()) {
-  <div class="toast toast-success">
-    {{ toastMessage() }}
+@if (confirmModalVisible()) {
+<div class="modal-backdrop">
+  <div class="modal-dialog">
+    <h2>Aktion bestätigen</h2>
+    @if (confirmModalMode() === 'delete') {
+    <p>Möchten Sie das Template "{{ templateForAction()?.name }}" wirklich löschen?</p>
+    } @else {
+    <p>Möchten Sie das Template "{{ templateForAction()?.name }}" wirklich archivieren? Archivierte Templates können nicht mehr verwendet werden.</p>
+    }
+    <div class="modal-actions">
+      <button class="modal-button" type="button" (click)="closeConfirmModal()" [disabled]="loading()">
+        Abbrechen
+      </button>
+      <button class="modal-button danger" type="button" (click)="confirmAction()" [disabled]="loading()">
+        {{ loading() ? (confirmModalMode() === 'delete' ? 'Löschen ...' : 'Archivieren ...') : (confirmModalMode() === 'delete' ? 'Löschen' : 'Archivieren') }}
+      </button>
+    </div>
   </div>
+</div>
+}
+
+@if (toastMessage()) {
+<div class="toast toast-success">
+  {{ toastMessage() }}
+</div>
 }

@@ -1,0 +1,44 @@
+@if (items.length === 0) {
+<div class="empty-state">{{ emptyText }}</div>
+} @else {
+<div class="media-grid">
+    @for (item of items; track item.id) {
+    <div class="media-card" (click)="openPreview(item)">
+        @if (editable) {
+        <button class="media-delete" type="button" (click)="onDelete(item, $event)">
+            <mat-icon fontIcon="delete"></mat-icon>
+        </button>
+        }
+        <img [src]="item.src" [alt]="item.name" />
+        <div class="media-info">
+            <div class="media-name" [title]="item.name">{{ item.name }}</div>
+            <div class="media-meta">
+                <div>
+                    @if (item.size) { {{ formatFileSize(item.size) }} }
+                    @if (item.date) { - {{ formatDate(item.date) }} }
+                </div>
+                @if (item.user) { <div>von {{ item.user }}</div> }
+            </div>
+        </div>
+    </div>
+    }
+</div>
+}
+
+@if (selectedItem()) {
+<div class="media-preview-overlay" (click)="closePreview()">
+    <div class="media-preview-dialog" (click)="$event.stopPropagation()">
+        <img [src]="selectedItem()!.src" [alt]="selectedItem()!.name" />
+        <div class="media-preview-details">
+            <div class="media-name">{{ selectedItem()!.name }}</div>
+            <div class="media-meta">
+                <div>
+                    @if (selectedItem()!.size) { {{ formatFileSize(selectedItem()!.size) }} }
+                    @if (selectedItem()!.date) { - {{ formatDate(selectedItem()!.date) }} }
+                </div>
+                @if (selectedItem()!.user) { <div>von {{ selectedItem()!.user }}</div> }
+            </div>
+        </div>
+    </div>
+</div>
+}

@@ -3,11 +3,13 @@ import {
   Component,
   DestroyRef,
   OnInit,
+  ViewChild,
   inject,
   signal
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { forkJoin, of } from 'rxjs';
 import { Header } from '../../components/header/header';
 import { Footer } from '../../components/footer/footer';
 import {
@@ -15,11 +17,14 @@ import {
   MeasurementService,
   MeasurementHistoryEntry
 } from '../../services/measurement.service';
+import { MeasurementSeriesService } from '../../services/measurement-series.service';
+import { AuthService } from '../../services/auth.service';
 import { MediaAttachment } from '../../models/media-attachment';
 import { MeasurementDetailHeader } from './components/measurement-detail-header/measurement-detail-header';
 import { MeasurementDetailSections } from './components/measurement-detail-sections/measurement-detail-sections';
 import { MeasurementHistoryDialog } from './components/measurement-history-dialog/measurement-history-dialog';
 import { MeasurementMediaDialog } from './components/measurement-media-dialog/measurement-media-dialog';
+import { MeasurementImageGallery } from './components/measurement-image-gallery/measurement-image-gallery';
 import { SectionEntry } from './measurement-detail.types';
 import {
   buildSections,
@@ -39,16 +44,21 @@ import {
     MeasurementDetailHeader,
     MeasurementDetailSections,
     MeasurementHistoryDialog,
-    MeasurementMediaDialog
+    MeasurementMediaDialog,
+    MeasurementImageGallery
   ],
   templateUrl: './measurement-detail.html',
   styleUrl: './measurement-detail.scss'
 })
 export class MeasurementDetail implements OnInit {
   private readonly measurementService = inject(MeasurementService);
+  private readonly seriesService = inject(MeasurementSeriesService);
+  private readonly authService = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+
+  @ViewChild(MeasurementImageGallery) imageGallery?: MeasurementImageGallery;
 
   readonly measurement = signal<MeasurementResponseDto | null>(null);
   readonly loading = signal(false);
@@ -66,8 +76,11 @@ export class MeasurementDetail implements OnInit {
   readonly historyEntries = signal<MeasurementHistoryEntry[]>([]);
   readonly expandedMediaFields = signal<Set<string>>(new Set());
   readonly mediaDialogOpen = signal(false);
+  readonly galleryDialogOpen = signal(false);
   readonly mediaDialogContext = signal<{ section: string; field: string } | null>(null);
   readonly pendingMediaAttachments = signal<MediaAttachment[]>([]);
+  readonly isSeriesLocked = signal(false);
+  readonly isStaff = this.authService.isStaff();
 
   private toastTimeout: number | null = null;
 
@@ -97,10 +110,29 @@ export class MeasurementDetail implements OnInit {
           }
           this.loading.set(false);
           this.fetchLatestUpdate(id, result);
+          this.fetchSeriesLockStatus(result.seriesId);
         },
         error: () => {
           this.loading.set(false);
           this.error.set('Messung konnte nicht geladen werden.');
+        }
+      });
+  }
+
+  canEditImages(): boolean {
+    return !this.isSeriesLocked() || this.isStaff;
+  }
+
+  private fetchSeriesLockStatus(seriesId: number): void {
+    this.seriesService
+      .getSeriesById(seriesId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (series) => {
+          this.isSeriesLocked.set(series.isLocked);
+        },
+        error: () => {
+          // Silently fail - lock status is not critical for display
         }
       });
   }
@@ -200,6 +232,10 @@ export class MeasurementDetail implements OnInit {
     this.editableData.set(null);
     this.saveInProgress.set(false);
     this.cancelEditVisible.set(false);
+
+    if (this.imageGallery) {
+      this.imageGallery.reset();
+    }
   }
 
   updateFieldValue(sectionName: string, rawKey: string, value: string): void {
@@ -225,17 +261,27 @@ export class MeasurementDetail implements OnInit {
 
     this.saveInProgress.set(true);
     this.error.set(null);
-    this.measurementService
-      .updateMeasurement(measurement.id, { data: this.normalizeEditableData(data) })
+
+    const measurementUpdate$ = this.measurementService
+      .updateMeasurement(measurement.id, { data: this.normalizeEditableData(data) });
+
+    const gallerySave$ = this.imageGallery ? this.imageGallery.save() : of(void 0);
+
+    forkJoin([measurementUpdate$, gallerySave$])
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (updated) => {
+        next: ([updatedMeasurement]) => {
           this.saveInProgress.set(false);
-          this.measurement.set(updated);
+          if (updatedMeasurement) {
+            this.measurement.set(updatedMeasurement);
+            this.fetchLatestUpdate(measurement.id, updatedMeasurement);
+          } else {
+            this.fetchMeasurement(measurement.id);
+          }
+
           this.editableData.set(null);
           this.isEditing.set(false);
           this.showToast('Messung wurde aktualisiert.');
-          this.fetchLatestUpdate(measurement.id, updated);
         },
         error: () => {
           this.saveInProgress.set(false);
@@ -306,6 +352,25 @@ export class MeasurementDetail implements OnInit {
     this.mediaDialogOpen.set(false);
     this.mediaDialogContext.set(null);
     this.pendingMediaAttachments.set([]);
+  }
+
+  openGalleryDialog(): void {
+    this.pendingMediaAttachments.set([]);
+    this.galleryDialogOpen.set(true);
+  }
+
+  closeGalleryDialog(): void {
+    this.galleryDialogOpen.set(false);
+    this.pendingMediaAttachments.set([]);
+  }
+
+  saveGalleryAttachments(): void {
+    if (!this.imageGallery) {
+      this.closeGalleryDialog();
+      return;
+    }
+    this.imageGallery.addPendingAssets(this.pendingMediaAttachments());
+    this.closeGalleryDialog();
   }
 
   onDialogAttachmentsChange(attachments: MediaAttachment[]): void {

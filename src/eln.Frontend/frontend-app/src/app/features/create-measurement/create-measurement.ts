@@ -8,6 +8,7 @@ import {
 } from '@angular/core';
 import {
   FormBuilder,
+  FormControl,
   FormGroup,
   ReactiveFormsModule,
   ValidatorFn,
@@ -42,6 +43,7 @@ import {
 } from '../../services/measurement-series.service';
 import { MediaAttachment } from '../../models/media-attachment';
 import { MediaUploadField } from '../../components/media-upload-field/media-upload-field';
+import { ImageService } from '../../services/image.service';
 
 interface MeasurementFieldSchema extends TemplateFieldSchema {
   backendName: string;
@@ -76,6 +78,7 @@ export class CreateMeasurement implements OnInit {
   private readonly templateService = inject(TemplateService);
   private readonly measurementService = inject(MeasurementService);
   private readonly seriesService = inject(MeasurementSeriesService);
+  private readonly imageService = inject(ImageService);
   private readonly fb = inject(FormBuilder);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -102,6 +105,7 @@ export class CreateMeasurement implements OnInit {
     name: ['', [Validators.required, Validators.maxLength(200)]],
     description: ['']
   });
+  readonly measurementImagesControl = new FormControl<MediaAttachment[]>([]);
 
   ngOnInit(): void {
     this.fetchTemplates();
@@ -117,7 +121,7 @@ export class CreateMeasurement implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (templates) => {
-          this.templates.set(templates);
+          this.templates.set(templates.filter((t) => !t.isArchived));
           this.loading.set(false);
         },
         error: () => {
@@ -147,7 +151,7 @@ export class CreateMeasurement implements OnInit {
         },
         error: () => {
           this.seriesLoading.set(false);
-          this.seriesError.set('Messreihen konnten nicht geladen werden.');
+          this.seriesError.set('Messserien konnten nicht geladen werden.');
         }
       });
   }
@@ -184,11 +188,11 @@ export class CreateMeasurement implements OnInit {
           this.selectedSeriesId.set(series.id);
           this.seriesForm.reset({ name: '', description: '' });
           this.showSeriesForm.set(false);
-          this.showToast(`Messreihe "${series.name}" wurde angelegt.`);
+          this.showToast(`Messserie "${series.name}" wurde angelegt.`);
         },
         error: () => {
           this.createSeriesLoading.set(false);
-          this.createSeriesError.set('Messreihe konnte nicht erstellt werden.');
+          this.createSeriesError.set('Messserie konnte nicht erstellt werden.');
         }
       });
   }
@@ -253,7 +257,7 @@ export class CreateMeasurement implements OnInit {
     }
 
     if (!this.selectedSeriesId()) {
-      this.submitError.set('Wähle eine Messreihe aus.');
+      this.submitError.set('Wähle eine Messserie aus.');
       return;
     }
 
@@ -270,9 +274,43 @@ export class CreateMeasurement implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (response) => {
-          this.submitting.set(false);
-          this.showToast(`Messung #${response.id} wurde gespeichert.`);
-          this.measurementForm?.reset();
+          const images = this.measurementImagesControl.value ?? [];
+          if (images.length === 0) {
+            this.submitting.set(false);
+            this.showToast(`Messung #${response.id} wurde gespeichert.`);
+            this.measurementForm?.reset();
+            this.measurementImagesControl.reset();
+            return;
+          }
+
+          let uploaded = 0;
+          images.forEach((img) => {
+            fetch(img.dataUrl)
+              .then((r) => r.blob())
+              .then((blob) => {
+                const file = new File([blob], img.name, { type: img.type });
+                this.imageService.uploadImage(response.id, file)
+                  .pipe(takeUntilDestroyed(this.destroyRef))
+                  .subscribe({
+                    next: () => {
+                      if (++uploaded === images.length) {
+                        this.submitting.set(false);
+                        this.showToast("Messung #${response.id} mit ${images.length} Bild(ern) gespeichert.");
+                        this.measurementForm?.reset();
+                        this.measurementImagesControl.reset();
+                      }
+                    },
+                    error: () => {
+                      if (++uploaded === images.length) {
+                        this.submitting.set(false);
+                        this.showToast("Messung #${response.id} gespeichert (Bilder teilweise fehlgeschlagen).");
+                        this.measurementForm?.reset();
+                        this.measurementImagesControl.reset();
+                      }
+                    }
+                  });
+              });
+          });
         },
         error: () => {
           this.submitting.set(false);
