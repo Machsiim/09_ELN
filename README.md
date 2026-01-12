@@ -53,51 +53,168 @@ Frontend läuft dann auf `http://localhost:4200`
 
 ---
 
-## Production Deployment
+## Production Deployment (Ubuntu Server)
 
-### 1. Repository auf Server klonen
+### Voraussetzungen auf Ubuntu installieren
+
+```bash
+# System updaten
+sudo apt update && sudo apt upgrade -y
+
+# Docker installieren
+sudo apt install -y docker.io docker-compose
+
+# Docker ohne sudo (optional, erfordert Re-Login)
+sudo usermod -aG docker $USER
+
+# Prüfen ob Docker läuft
+sudo systemctl start docker
+sudo systemctl enable docker
+docker --version
+docker-compose --version
+```
+
+### Schritt-für-Schritt Deployment
+
+#### 1. Repository klonen
 
 ```bash
 git clone <repository-url>
 cd 09_eln/src/eln.Backend
 ```
 
-### 2. Environment-Datei erstellen
+#### 2. Environment-Datei erstellen
 
 ```bash
 cp .env.production.example .env.production
+nano .env.production   # oder vim/editor deiner Wahl
 ```
 
-### 3. `.env.production` bearbeiten
+#### 3. Secrets generieren und eintragen
 
-Öffne die Datei und fülle alle Werte aus (siehe [Environment Variables Guide](#environment-variables-guide) unten).
+```bash
+# Datenbank-Passwort generieren
+openssl rand -base64 32
 
-### 4. Deployment starten
+# JWT Secret generieren (MUSS 64+ Bytes sein!)
+openssl rand -base64 64
+```
+
+Trage die generierten Werte in `.env.production` ein:
+
+```bash
+DB_USER=elnuser
+DB_PASSWORD=<HIER_GENERIERTES_DB_PASSWORT>
+JWT_SECRET=<HIER_GENERIERTES_JWT_SECRET>
+CORS_ORIGIN=http://localhost
+ASPNETCORE_ENVIRONMENT=Production
+```
+
+#### 4. Deployment starten
 
 ```bash
 chmod +x deploy.sh
 ./deploy.sh
 ```
 
-### 5. Zugriff nach Deployment
+#### 5. Warten & Prüfen
+
+```bash
+# Warten bis alles läuft (~1-2 Minuten beim ersten Mal wegen Build)
+docker-compose -f docker-compose.production.yml logs -f
+
+# In neuem Terminal: Health Check
+curl http://localhost/health
+# Erwartete Antwort: {"status":"Healthy"...}
+```
+
+#### 6. Zugriff
 
 | Service | URL |
 |---------|-----|
-| Frontend | `http://localhost` |
+| Frontend | `http://localhost` oder `http://<SERVER-IP>` |
 | Backend API | `http://localhost:5100` |
 | Health Check | `http://localhost/health` |
 
-### Logs anzeigen
+---
 
+### Häufige Probleme auf Ubuntu
+
+#### Docker Permission Denied
 ```bash
-docker-compose -f docker-compose.production.yml logs -f
+# Fehler: permission denied while trying to connect to Docker daemon
+sudo usermod -aG docker $USER
+# WICHTIG: Danach ausloggen und wieder einloggen!
 ```
 
-### Container stoppen
-
+#### Port 80 bereits belegt
 ```bash
+# Prüfen was Port 80 nutzt
+sudo lsof -i :80
+
+# Apache/Nginx stoppen falls installiert
+sudo systemctl stop apache2
+sudo systemctl stop nginx
+```
+
+#### Container starten nicht
+```bash
+# Logs prüfen
+docker-compose -f docker-compose.production.yml logs backend
+docker-compose -f docker-compose.production.yml logs postgres
+
+# Komplett neu starten
 docker-compose -f docker-compose.production.yml down
+docker-compose -f docker-compose.production.yml up -d --build
 ```
+
+#### Datenbank-Fehler "column does not exist"
+Das passiert NUR wenn eine alte Datenbank existiert. Bei frischer Installation nicht relevant.
+```bash
+# Migration ausführen (nur bei Updates bestehender Systeme!)
+docker exec eln-postgres psql -U elnuser -d elndb -f /scripts/migrate.sql
+```
+
+---
+
+### Nützliche Befehle
+
+```bash
+# Status aller Container
+docker-compose -f docker-compose.production.yml ps
+
+# Logs live verfolgen
+docker-compose -f docker-compose.production.yml logs -f
+
+# Nur Backend-Logs
+docker-compose -f docker-compose.production.yml logs -f backend
+
+# Container neustarten
+docker-compose -f docker-compose.production.yml restart
+
+# Alles stoppen
+docker-compose -f docker-compose.production.yml down
+
+# Alles stoppen + Daten löschen (ACHTUNG!)
+docker-compose -f docker-compose.production.yml down -v
+
+# In Postgres-Container einloggen
+docker exec -it eln-postgres psql -U elnuser -d elndb
+```
+
+---
+
+### Checkliste für morgen
+
+- [ ] Ubuntu hat Docker + Docker-Compose installiert
+- [ ] Repository geklont
+- [ ] `.env.production` erstellt mit:
+  - [ ] `DB_PASSWORD` generiert (`openssl rand -base64 32`)
+  - [ ] `JWT_SECRET` generiert (`openssl rand -base64 64`)
+  - [ ] `CORS_ORIGIN` gesetzt (z.B. `http://localhost` oder Server-IP)
+- [ ] `./deploy.sh` ausgeführt
+- [ ] Health Check funktioniert: `curl http://localhost/health`
+- [ ] Frontend erreichbar: `http://localhost`
 
 ---
 
@@ -262,6 +379,23 @@ CORS_ORIGIN=https://eln.meine-firma.de
 # Environment
 ASPNETCORE_ENVIRONMENT=Production
 ```
+
+---
+
+## Database Migration (nur bei Updates)
+
+Wenn du eine **bestehende** Datenbank aktualisierst (nicht bei Neuinstallation):
+
+```bash
+# Migration-Script ausführen
+docker exec eln-postgres psql -U elnuser -d elndb -f /scripts/migrate.sql
+
+# Oder manuell:
+docker exec -it eln-postgres psql -U elnuser -d elndb
+\i /scripts/migrate.sql
+```
+
+**Hinweis:** Bei einer frischen Installation ist dies NICHT nötig - das Schema wird automatisch erstellt.
 
 ---
 

@@ -15,6 +15,7 @@ public class ElnContext : DbContext
     public DbSet<Measurement> Measurements => Set<Measurement>();
     public DbSet<MeasurementHistory> MeasurementHistories => Set<MeasurementHistory>();
     public DbSet<SeriesShareLink> SeriesShareLinks => Set<SeriesShareLink>();
+    public DbSet<MeasurementImage> MeasurementImages => Set<MeasurementImage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -118,6 +119,27 @@ public class ElnContext : DbContext
         modelBuilder.Entity<SeriesShareLink>()
             .HasIndex(ssl => ssl.Token)
             .IsUnique();
+
+        // MeasurementSeries -> Locker (User who locked)
+        modelBuilder.Entity<MeasurementSeries>()
+            .HasOne(ms => ms.Locker)
+            .WithMany()
+            .HasForeignKey(ms => ms.LockedBy)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // MeasurementImage -> Measurement
+        modelBuilder.Entity<MeasurementImage>()
+            .HasOne(mi => mi.Measurement)
+            .WithMany()
+            .HasForeignKey(mi => mi.MeasurementId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // MeasurementImage -> User (Uploader)
+        modelBuilder.Entity<MeasurementImage>()
+            .HasOne(mi => mi.Uploader)
+            .WithMany()
+            .HasForeignKey(mi => mi.UploadedBy)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 
     private static string ToSnakeCase(string? name)

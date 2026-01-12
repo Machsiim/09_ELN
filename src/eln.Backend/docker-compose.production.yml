@@ -11,6 +11,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./scripts:/scripts:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d elndb"]
       interval: 10s
@@ -34,6 +35,9 @@ services:
       - ELN_DB_CONNECTION=Host=postgres;Database=elndb;Username=${DB_USER};Password=${DB_PASSWORD}
       - ELN_JWT_SECRET=${JWT_SECRET}
       - Cors__AllowedOrigins__0=${CORS_ORIGIN}
+      - ELN_UPLOAD_PATH=/app/uploads
+    volumes:
+      - uploads_data:/app/uploads
     depends_on:
       postgres:
         condition: service_healthy
@@ -59,3 +63,4 @@ networks:
 
 volumes:
   postgres_data:
+  uploads_data:

@@ -12,6 +12,11 @@ export interface MeasurementSeriesDto {
   createdByUsername: string;
   createdAt: string;
   measurementCount: number;
+  // Lock information
+  isLocked: boolean;
+  lockedBy?: number | null;
+  lockedByUsername?: string | null;
+  lockedAt?: string | null;
 }
 
 export interface CreateMeasurementSeriesDto {
@@ -49,5 +54,17 @@ export class MeasurementSeriesService {
 
   createSeries(payload: CreateMeasurementSeriesDto): Observable<MeasurementSeriesDto> {
     return this.http.post<MeasurementSeriesDto>(this.baseUrl, payload);
+  }
+
+  getSeriesById(id: number): Observable<MeasurementSeriesDto> {
+    return this.http.get<MeasurementSeriesDto>(`${this.baseUrl}/${id}`);
+  }
+
+  lockSeries(id: number): Observable<MeasurementSeriesDto> {
+    return this.http.put<MeasurementSeriesDto>(`${this.baseUrl}/${id}/lock`, {});
+  }
+
+  unlockSeries(id: number): Observable<MeasurementSeriesDto> {
+    return this.http.put<MeasurementSeriesDto>(`${this.baseUrl}/${id}/unlock`, {});
   }
 }

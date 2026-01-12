@@ -140,7 +140,7 @@ public class MeasurementValidationService
 
     /// <summary>
     /// Validates measurement data (as JsonDocument) against template schema
-    /// Ensures ALL fields are filled and data types match
+    /// Handles the actual schema format: sections[].title, sections[].cards[].fields[].label
     /// </summary>
     public ValidationResultDto ValidateMeasurementDataStrict(
         JsonDocument templateSchema,
@@ -151,63 +151,127 @@ public class MeasurementValidationService
 
         try
         {
-            // Parse template schema
+            // Parse template schema - handles actual format with title/cards/label
             var sectionsElement = templateSchema.RootElement.GetProperty("sections");
-            var sections = JsonSerializer.Deserialize<List<TemplateSectionDto>>(sectionsElement.GetRawText()) 
-                           ?? new List<TemplateSectionDto>();
-
-            // Parse measurement data
             var measurementRoot = measurementData.RootElement;
 
-            foreach (var section in sections)
+            foreach (var section in sectionsElement.EnumerateArray())
             {
+                // Get section name from "title" (actual schema format)
+                var sectionName = section.TryGetProperty("title", out var titleProp)
+                    ? titleProp.GetString() ?? ""
+                    : section.TryGetProperty("name", out var nameProp)
+                        ? nameProp.GetString() ?? ""
+                        : "";
+
+                if (string.IsNullOrEmpty(sectionName))
+                    continue;
+
                 // Check if section exists in measurement data
-                if (!measurementRoot.TryGetProperty(section.Name, out var sectionElement))
+                if (!measurementRoot.TryGetProperty(sectionName, out var sectionDataElement))
                 {
                     errors.Add(new ValidationErrorDto
                     {
-                        Section = section.Name,
+                        Section = sectionName,
                         Field = "",
-                        Error = $"Missing section '{section.Name}'"
+                        Error = $"Missing section '{sectionName}'"
                     });
                     continue;
                 }
 
-                foreach (var field in section.Fields)
+                // Get fields - either from cards[].fields[] or direct fields[]
+                var fields = new List<(string label, string type)>();
+
+                if (section.TryGetProperty("cards", out var cardsElement))
                 {
-                    // Check if field exists
-                    if (!sectionElement.TryGetProperty(field.Name, out var fieldElement))
+                    // Schema format: sections[].cards[].fields[]
+                    // Frontend builds key as: "${cardTitle} - ${fieldLabel}"
+                    foreach (var card in cardsElement.EnumerateArray())
+                    {
+                        var cardTitle = card.TryGetProperty("title", out var cardTitleProp)
+                            ? cardTitleProp.GetString() ?? ""
+                            : "";
+
+                        if (card.TryGetProperty("fields", out var cardFields))
+                        {
+                            foreach (var field in cardFields.EnumerateArray())
+                            {
+                                var fieldLabel = field.TryGetProperty("label", out var labelProp)
+                                    ? labelProp.GetString() ?? ""
+                                    : field.TryGetProperty("name", out var fnProp)
+                                        ? fnProp.GetString() ?? ""
+                                        : "";
+                                var type = field.TryGetProperty("type", out var typeProp)
+                                    ? typeProp.GetString() ?? "string"
+                                    : "string";
+
+                                if (!string.IsNullOrEmpty(fieldLabel))
+                                {
+                                    // Build composite key like frontend does: "cardTitle - fieldLabel"
+                                    var compositeKey = !string.IsNullOrEmpty(cardTitle)
+                                        ? $"{cardTitle} - {fieldLabel}"
+                                        : fieldLabel;
+                                    fields.Add((compositeKey, type));
+                                }
+                            }
+                        }
+                    }
+                }
+                else if (section.TryGetProperty("fields", out var directFields))
+                {
+                    // Schema format: sections[].fields[] (simpler format)
+                    foreach (var field in directFields.EnumerateArray())
+                    {
+                        var label = field.TryGetProperty("name", out var fnProp)
+                            ? fnProp.GetString() ?? ""
+                            : field.TryGetProperty("label", out var labelProp)
+                                ? labelProp.GetString() ?? ""
+                                : "";
+                        var type = field.TryGetProperty("type", out var typeProp)
+                            ? typeProp.GetString() ?? "string"
+                            : "string";
+
+                        if (!string.IsNullOrEmpty(label))
+                            fields.Add((label, type));
+                    }
+                }
+
+                // Validate each field
+                foreach (var (fieldLabel, fieldType) in fields)
+                {
+                    // Check if field exists in measurement data
+                    if (!sectionDataElement.TryGetProperty(fieldLabel, out var fieldElement))
                     {
                         errors.Add(new ValidationErrorDto
                         {
-                            Section = section.Name,
-                            Field = field.Name,
-                            Error = $"Field '{field.Name}' is missing (all fields must be filled)"
+                            Section = sectionName,
+                            Field = fieldLabel,
+                            Error = $"Field '{fieldLabel}' is missing"
                         });
                         continue;
                     }
 
                     // Check for null or undefined
-                    if (fieldElement.ValueKind == JsonValueKind.Null || 
+                    if (fieldElement.ValueKind == JsonValueKind.Null ||
                         fieldElement.ValueKind == JsonValueKind.Undefined)
                     {
                         errors.Add(new ValidationErrorDto
                         {
-                            Section = section.Name,
-                            Field = field.Name,
-                            Error = $"Field '{field.Name}' cannot be null or empty"
+                            Section = sectionName,
+                            Field = fieldLabel,
+                            Error = $"Field '{fieldLabel}' cannot be null or empty"
                         });
                         continue;
                     }
 
                     // Validate data type
-                    var typeError = ValidateJsonFieldType(field.Type, fieldElement);
+                    var typeError = ValidateJsonFieldType(fieldType, fieldElement);
                     if (typeError != null)
                     {
                         errors.Add(new ValidationErrorDto
                         {
-                            Section = section.Name,
-                            Field = field.Name,
+                            Section = sectionName,
+                            Field = fieldLabel,
                             Error = typeError
                         });
                     }
@@ -257,9 +321,11 @@ public class MeasurementValidationService
 
                 case "string":
                 case "text":
+                case "multiline":
+                case "media":
                     if (value.ValueKind != JsonValueKind.String)
                         return $"Expected type 'string', got '{value.ValueKind}'";
-                    
+
                     // Check for empty strings
                     var strValue = value.GetString();
                     if (string.IsNullOrWhiteSpace(strValue))
