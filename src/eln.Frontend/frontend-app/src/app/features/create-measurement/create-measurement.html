@@ -144,42 +144,75 @@
                       </header>
                       <div class="schema-fields">
                         @for (field of card.fields; track trackById($index, field)) {
-                          <div
-                            class="schema-field">
-                            <label [attr.for]="getControlName(section.id, card.id, field.id, field.label)">
-                              {{ field.label }}
-                            </label>
+                          @let controlName = getControlName(section.id, card.id, field.id, field.label);
+                          <div class="schema-field">
                             @switch (field.type) {
+                              @case ('media') {
+                                <app-media-upload-field
+                                  [id]="controlName"
+                                  [formControlName]="controlName"
+                                  [label]="field.label"
+                                  [hint]="field.hint"
+                                  [showLabel]="true">
+                                </app-media-upload-field>
+                              }
                               @case ('multiline') {
-                                <textarea rows="3"
-                                  [id]="getControlName(section.id, card.id, field.id, field.label)"
-                                [formControlName]="getControlName(section.id, card.id, field.id, field.label)"></textarea>
+                                <label [attr.for]="controlName">
+                                  {{ field.label }}
+                                </label>
+                                <textarea rows="3" [id]="controlName" [formControlName]="controlName"></textarea>
+                                @if (field.hint) {
+                                  <small>{{ field.hint }}</small>
+                                }
                               }
                               @case ('table') {
+                                <label [attr.for]="controlName">
+                                  {{ field.label }}
+                                </label>
                                 <textarea rows="3"
                                   placeholder="Tabellendaten (CSV oder Markdown)"
-                                  [id]="getControlName(section.id, card.id, field.id, field.label)"
-                                [formControlName]="getControlName(section.id, card.id, field.id, field.label)"></textarea>
+                                  [id]="controlName"
+                                  [formControlName]="controlName"></textarea>
+                                @if (field.hint) {
+                                  <small>{{ field.hint }}</small>
+                                }
+                              }
+                              @case ('date') {
+                                <label [attr.for]="controlName">
+                                  {{ field.label }}
+                                </label>
+                                <input type="date" [id]="controlName" [formControlName]="controlName" />
+                                @if (field.hint) {
+                                  <small>{{ field.hint }}</small>
+                                }
+                              }
+                              @case ('boolean') {
+                                <label class="checkbox-field">
+                                  <input type="checkbox" [id]="controlName" [formControlName]="controlName" />
+                                  <span>{{ field.label }}</span>
+                                </label>
+                                @if (field.hint) {
+                                  <small>{{ field.hint }}</small>
+                                }
                               }
                               @case ('number') {
-                                <input type="number"
-                                  [id]="getControlName(section.id, card.id, field.id, field.label)"
-                                  [formControlName]="getControlName(section.id, card.id, field.id, field.label)" />
-                              }
-                              @case ('media') {
-                                <input type="text"
-                                  placeholder="Pfad oder Referenz zu Medien"
-                                  [id]="getControlName(section.id, card.id, field.id, field.label)"
-                                  [formControlName]="getControlName(section.id, card.id, field.id, field.label)" />
+                                <label [attr.for]="controlName">
+                                  {{ field.label }}
+                                </label>
+                                <input type="number" [id]="controlName" [formControlName]="controlName" />
+                                @if (field.hint) {
+                                  <small>{{ field.hint }}</small>
+                                }
                               }
                               @default {
-                                <input type="text"
-                                  [id]="getControlName(section.id, card.id, field.id, field.label)"
-                                  [formControlName]="getControlName(section.id, card.id, field.id, field.label)" />
+                                <label [attr.for]="controlName">
+                                  {{ field.label }}
+                                </label>
+                                <input type="text" [id]="controlName" [formControlName]="controlName" />
+                                @if (field.hint) {
+                                  <small>{{ field.hint }}</small>
+                                }
                               }
-                            }
-                            @if (field.hint) {
-                              <small>{{ field.hint }}</small>
                             }
                           </div>
                         }

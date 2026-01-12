@@ -61,6 +61,11 @@ export const routes: Routes = [
     canActivate: [authGuard]
   },
   {
+    path: 'shared/:token',
+    loadComponent: () => import('./features/shared-series/shared-series').then(m => m.SharedSeries),
+    title: 'Geteilte Messserie - Biomedical Research Notebook'
+  },
+  {
     path: '**',
     redirectTo: '/login'
   }

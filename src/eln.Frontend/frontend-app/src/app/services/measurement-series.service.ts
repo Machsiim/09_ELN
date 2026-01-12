@@ -24,6 +24,25 @@ export interface CreateMeasurementSeriesDto {
   description?: string | null;
 }
 
+export interface CreateShareLinkPayload {
+  expiresInDays: number;
+  isPublic: boolean;
+  allowedUserEmails?: string[];
+}
+
+export interface ShareLinkResponseDto {
+  id: number;
+  token: string;
+  shareUrl: string;
+  isPublic: boolean;
+  allowedUserEmails: string[];
+  createdAt: string;
+  expiresAt: string;
+  isActive: boolean;
+  createdBy: number;
+  createdByUsername: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -66,5 +85,21 @@ export class MeasurementSeriesService {
 
   unlockSeries(id: number): Observable<MeasurementSeriesDto> {
     return this.http.put<MeasurementSeriesDto>(`${this.baseUrl}/${id}/unlock`, {});
+  }
+
+  createShareLink(seriesId: number, payload: CreateShareLinkPayload): Observable<ShareLinkResponseDto> {
+    return this.http.post<ShareLinkResponseDto>(`${this.baseUrl}/${seriesId}/share`, payload);
+  }
+
+  getShareLinks(seriesId: number): Observable<ShareLinkResponseDto[]> {
+    return this.http.get<ShareLinkResponseDto[]>(`${this.baseUrl}/${seriesId}/shares`);
+  }
+
+  deleteShareLink(seriesId: number, shareId: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${seriesId}/share/${shareId}`);
+  }
+
+  deactivateShareLink(seriesId: number, shareId: number): Observable<void> {
+    return this.http.put<void>(`${this.baseUrl}/${seriesId}/share/${shareId}/deactivate`, {});
   }
 }

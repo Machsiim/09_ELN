@@ -10,21 +10,65 @@ import {
   FormBuilder,
   FormGroup,
   ReactiveFormsModule,
+  ValidatorFn,
   Validators
 } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Header } from '../../components/header/header';
 import { Footer } from '../../components/footer/footer';
 import { TemplateDto, TemplateService } from '../../services/template.service';
-import { TemplateSchema } from '../../models/template-schema';
+import {
+  TemplateCardSchema,
+  TemplateFieldSchema,
+  TemplateFieldType,
+  TemplateSchema,
+  TemplateSectionSchema
+} from '../../models/template-schema';
+import {
+  BackendFieldType,
+  BackendTemplateSchema
+} from '../../models/backend-template-schema';
+import {
+  isBackendSchema,
+  isUiSchema,
+  mapBackendTypeToUiType,
+  mapUiTypeToBackendType,
+  splitFieldName
+} from '../../utils/template-schema';
 import { MeasurementService, CreateMeasurementPayload } from '../../services/measurement.service';
 import {
   MeasurementSeriesDto,
   MeasurementSeriesService
 } from '../../services/measurement-series.service';
+import { MediaAttachment } from '../../models/media-attachment';
+import { MediaUploadField } from '../../components/media-upload-field/media-upload-field';
+
+interface MeasurementFieldSchema extends TemplateFieldSchema {
+  backendName: string;
+  backendType: BackendFieldType;
+}
+
+interface MeasurementCardSchema extends TemplateCardSchema {
+  fields: MeasurementFieldSchema[];
+}
+
+interface MeasurementSectionSchema extends TemplateSectionSchema {
+  cards: MeasurementCardSchema[];
+}
+
+interface MeasurementTemplateSchema {
+  sections: MeasurementSectionSchema[];
+}
+
+interface FieldMeta {
+  section: string;
+  fieldName: string;
+  backendType: BackendFieldType;
+  uiType: TemplateFieldType;
+}
 @Component({
   selector: 'app-create-measurement',
-  imports: [ReactiveFormsModule, Header, Footer],
+  imports: [ReactiveFormsModule, Header, Footer, MediaUploadField],
   templateUrl: './create-measurement.html',
   styleUrl: './create-measurement.scss'
 })
@@ -39,7 +83,7 @@ export class CreateMeasurement implements OnInit {
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
   readonly selectedTemplateId = signal<number | null>(null);
-  readonly activeSchema = signal<TemplateSchema | null>(null);
+  readonly activeSchema = signal<MeasurementTemplateSchema | null>(null);
   readonly measurementSeries = signal<MeasurementSeriesDto[]>([]);
   readonly seriesLoading = signal(false);
   readonly seriesError = signal<string | null>(null);
@@ -53,7 +97,7 @@ export class CreateMeasurement implements OnInit {
   private toastTimeout: number | null = null;
 
   measurementForm: FormGroup | null = null;
-  private controlMap = new Map<string, { section: string; card: string; field: string }>();
+  private controlMap = new Map<string, FieldMeta>();
   readonly seriesForm = this.fb.nonNullable.group({
     name: ['', [Validators.required, Validators.maxLength(200)]],
     description: ['']
@@ -252,7 +296,7 @@ export class CreateMeasurement implements OnInit {
     return `${normalizedSection}-${normalizedCard}-${sanitizedLabel}`;
   }
 
-  private buildForm(schema: TemplateSchema): void {
+  private buildForm(schema: MeasurementTemplateSchema): void {
     const controls: Record<string, unknown> = {};
     this.controlMap.clear();
 
@@ -260,12 +304,16 @@ export class CreateMeasurement implements OnInit {
       section.cards?.forEach((card) => {
         card.fields?.forEach((field) => {
           const controlName = this.getControlName(section.id, card.id, field.id, field.label);
-          const validators = field.type === 'number' ? [Validators.pattern(/^-?\d+(\.\d+)?$/)] : [];
-          controls[controlName] = this.fb.control('', validators);
-          const sectionKey = section.title?.trim() || 'Sektion';
-          const cardKey = card.title?.trim() || 'Bereich';
-          const fieldKey = field.label?.trim() || 'Feld';
-          this.controlMap.set(controlName, { section: sectionKey, card: cardKey, field: fieldKey });
+          const validators = this.getValidators(field.backendType, field.type);
+          const control = this.buildControl(field.type, validators);
+          controls[controlName] = control;
+          const sectionKey = section.title || 'Sektion';
+          this.controlMap.set(controlName, {
+            section: sectionKey,
+            fieldName: field.backendName,
+            backendType: field.backendType,
+            uiType: field.type
+          });
         });
       });
     });
@@ -285,17 +333,14 @@ export class CreateMeasurement implements OnInit {
       if (!control) {
         continue;
       }
-      const value = control.value;
+      const value = this.normalizeValue(control.value, meta.backendType, meta.uiType);
       const sectionName = meta.section || 'Sektion';
-      const cardName = meta.card || 'Bereich';
-      const fieldName = meta.field || 'Feld';
 
       if (!data[sectionName]) {
         data[sectionName] = {};
       }
 
-      const compositeField = cardName ? `${cardName} - ${fieldName}` : fieldName;
-      data[sectionName][compositeField] = value;
+      data[sectionName][meta.fieldName] = value;
     }
 
     return data;
@@ -312,11 +357,155 @@ export class CreateMeasurement implements OnInit {
     }, 4000);
   }
 
-  private parseSchema(schema: string): TemplateSchema {
+  private parseSchema(schema: string): MeasurementTemplateSchema {
     const parsed = JSON.parse(schema);
-    if (!parsed.sections) {
-      throw new Error('Ungültiges Schema');
+    if (isUiSchema(parsed)) {
+      return this.convertUiSchema(parsed);
     }
-    return parsed as TemplateSchema;
+    if (isBackendSchema(parsed)) {
+      return this.convertBackendSchema(parsed);
+    }
+    throw new Error('Ungültiges Schema');
+  }
+
+  private convertUiSchema(schema: TemplateSchema): MeasurementTemplateSchema {
+    return {
+      sections: schema.sections.map((section) => ({
+        id: section.id,
+        title: section.title,
+        cards: section.cards.map((card) => ({
+          id: card.id,
+          title: card.title,
+          subtitle: card.subtitle,
+          fields: card.fields.map((field) => ({
+            id: field.id,
+            label: field.label,
+            type: field.type,
+            hint: field.hint,
+            backendName: this.buildFieldName(card.title, field.label),
+            backendType: mapUiTypeToBackendType(field.type)
+          }))
+        }))
+      }))
+    };
+  }
+
+  private convertBackendSchema(schema: BackendTemplateSchema): MeasurementTemplateSchema {
+    return {
+      sections: schema.sections.map((section) => {
+        const cardMap = new Map<string, MeasurementCardSchema>();
+        const fields = section.fields ?? section.Fields ?? [];
+
+        fields.forEach((field) => {
+          const fieldName = field.name ?? field.Name ?? '';
+          const fieldType = field.type ?? field.Type ?? 'text';
+          const uiType = field.uiType ?? field.UiType;
+          const description = field.description ?? field.Description;
+          const { cardTitle, fieldLabel } = splitFieldName(fieldName);
+          if (!cardMap.has(cardTitle)) {
+            cardMap.set(cardTitle, {
+              id: this.createId('card'),
+              title: cardTitle,
+              subtitle: '',
+              fields: []
+            });
+          }
+
+          cardMap.get(cardTitle)!.fields.push({
+            id: this.createId('field'),
+            label: fieldLabel,
+            type: mapBackendTypeToUiType(fieldType, uiType),
+            hint: description ?? '',
+            backendName: fieldName,
+            backendType: fieldType
+          });
+        });
+
+        return {
+          id: this.createId('section'),
+          title: section.name ?? section.Name ?? 'Ohne Titel',
+          cards: Array.from(cardMap.values())
+        };
+      })
+    };
+  }
+
+  private buildFieldName(cardTitle: string, fieldLabel: string): string {
+    const normalizedCard = cardTitle?.trim() || 'Allgemein';
+    const normalizedField = fieldLabel?.trim() || 'Feld';
+    return `${normalizedCard} - ${normalizedField}`;
+  }
+
+  private getValidators(backendType: BackendFieldType, uiType: TemplateFieldType): ValidatorFn[] {
+    const validators: ValidatorFn[] = [];
+
+    if (uiType !== 'boolean') {
+      validators.push(Validators.required);
+    }
+
+    if (uiType === 'number') {
+      const integerOnly = this.isIntegerType(backendType);
+      validators.push(Validators.pattern(integerOnly ? /^-?\d+$/ : /^-?\d+(\.\d+)?$/));
+    }
+
+    return validators;
+  }
+
+  private buildControl(type: TemplateFieldType, validators: ValidatorFn[]): unknown {
+    if (type === 'media') {
+      return this.fb.control<MediaAttachment[]>([], { validators });
+    }
+    if (type === 'boolean') {
+      return this.fb.control(false);
+    }
+    return this.fb.control('', validators);
+  }
+
+  private normalizeValue(
+    value: unknown,
+    backendType: BackendFieldType,
+    uiType: TemplateFieldType
+  ): unknown {
+    if (value === null || value === undefined) {
+      return value;
+    }
+
+    const normalizedType = backendType.toLowerCase();
+    if (normalizedType === 'int' || normalizedType === 'integer') {
+      const parsed = Number(value);
+      return Number.isNaN(parsed) ? value : Math.trunc(parsed);
+    }
+    if (
+      normalizedType === 'float' ||
+      normalizedType === 'double' ||
+      normalizedType === 'number'
+    ) {
+      const parsed = Number(value);
+      return Number.isNaN(parsed) ? value : parsed;
+    }
+    if (normalizedType === 'bool' || normalizedType === 'boolean') {
+      if (typeof value === 'boolean') {
+        return value;
+      }
+      return String(value).toLowerCase() === 'true';
+    }
+    if (normalizedType === 'date' || normalizedType === 'datetime') {
+      return typeof value === 'string' ? value : String(value);
+    }
+
+    if (uiType === 'media') {
+      return typeof value === 'string' ? value : JSON.stringify(value ?? []);
+    }
+
+    return value;
+  }
+
+  private isIntegerType(backendType: BackendFieldType): boolean {
+    const normalizedType = backendType.toLowerCase();
+    return normalizedType === 'int' || normalizedType === 'integer';
+  }
+
+  private createId(scope: string): string {
+    return `${scope}-${Math.random().toString(36).slice(2, 9)}`;
   }
 }

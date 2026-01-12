@@ -1,0 +1,52 @@
+<div class="modal-backdrop">
+  <div class="history-dialog">
+    <header class="history-header">
+      <h2>Änderungsverlauf</h2>
+      <button type="button" (click)="close.emit()" class="close-button">×</button>
+    </header>
+    @if (loading) {
+      <p class="history-status">Verlauf wird geladen ...</p>
+    } @else {
+      @if (error; as historyMessage) {
+        <p class="history-status error">{{ historyMessage }}</p>
+      } @else if (entries.length === 0) {
+        <p class="history-status">Für diese Messung wurden keine Änderungen erfasst.</p>
+      } @else {
+        <div class="history-list">
+          @for (entry of entries; track entry.id) {
+            <article class="history-entry">
+              <header>
+                <h3>{{ entry.changeType }}</h3>
+                <small>
+                  {{ entry.changedByUsername }} · {{ entry.changedAt | date: 'dd.MM.yyyy HH:mm' }}
+                </small>
+                @if (entry.changeDescription) {
+                  <p class="history-description">{{ entry.changeDescription }}</p>
+                }
+              </header>
+              @if (entry.changes.length === 0) {
+                <p class="history-nochange">Keine Feldänderungen.</p>
+              } @else {
+                <ul>
+                  @for (change of entry.changes; track change.section + change.field) {
+                    <li>
+                      <strong>{{ change.section }} – {{ change.field }}:</strong>
+                      <div class="change-value old" *ngIf="change.oldValue">
+                        <strong>Alt:</strong>
+                        {{ isMediaChange(change.field, change.oldValue) ? formatMediaSummary(change.oldValue) : change.oldValue }}
+                      </div>
+                      <div class="change-value new" *ngIf="change.newValue">
+                        <strong>Neu:</strong>
+                        {{ isMediaChange(change.field, change.newValue) ? formatMediaSummary(change.newValue) : change.newValue }}
+                      </div>
+                    </li>
+                  }
+                </ul>
+              }
+            </article>
+          }
+        </div>
+      }
+    }
+  </div>
+</div>

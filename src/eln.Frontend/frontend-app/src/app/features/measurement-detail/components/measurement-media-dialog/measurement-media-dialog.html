@@ -1,0 +1,14 @@
+<div class="modal-backdrop">
+  <div class="media-dialog">
+    <h3>Neue Bilder hinzufügen</h3>
+    <app-media-upload-field
+      [showLabel]="false"
+      [ngModel]="attachments"
+      (ngModelChange)="attachmentsChange.emit($event)">
+    </app-media-upload-field>
+    <div class="media-dialog-actions">
+      <button type="button" class="media-add-button" (click)="save.emit()">Speichern</button>
+      <button type="button" class="media-remove-button" (click)="close.emit()">Abbrechen</button>
+    </div>
+  </div>
+</div>

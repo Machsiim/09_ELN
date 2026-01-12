@@ -1,9 +1,9 @@
+@use './measurement-series-detail.share';
 .page-container {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
 }
-
 .main-content {
   flex: 1;
   padding: 2rem 1rem;
@@ -18,11 +18,9 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   padding: 2rem;
 }
-
 .series-detail-header {
   margin-bottom: 2rem;
 }
-
 .header-top {
   margin-bottom: 1rem;
   display: flex;
@@ -30,7 +28,6 @@
   gap: 1rem;
   flex-wrap: wrap;
 }
-
 .back-button {
   background: none;
   border: 1px solid #ddd;
@@ -48,6 +45,19 @@
 
   &:active {
     transform: translateY(1px);
+  }
+}
+.share-button {
+  background: #e0edff;
+  border: none;
+  padding: 0.5rem 1.25rem;
+  border-radius: 999px;
+  font-weight: 600;
+  color: #1d4ed8;
+  cursor: pointer;
+
+  &:hover {
+    background: #c7dcff;
   }
 }
 
@@ -299,7 +309,6 @@ h1 {
   font-weight: 600;
   text-transform: uppercase;
   font-size: 0.85rem;
-  letter-spacing: 0.05em;
   cursor: pointer;
   transition: background-color 0.2s, color 0.2s, opacity 0.2s;
 

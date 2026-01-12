@@ -28,6 +28,9 @@
           } @else if (isLocked()) {
             <span class="lock-badge">🔒 Gesperrt von {{ lockedByUsername() }}</span>
           }
+          <button type="button" class="share-button" (click)="openShareDialog()" title="Sharing-Link anzeigen">
+            Link teilen
+          </button>
         </div>
         <div>
           <p class="subtitle">Messserie #{{ seriesId() }}</p>
@@ -205,6 +208,76 @@
           >
           {{ deleteInProgress() ? 'Löschen ...' : 'Löschen' }}
         </button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (shareDialogVisible()) {
+  <div class="modal-backdrop">
+    <div class="share-dialog">
+      <h2>Quick-Link teilen</h2>
+      <p class="hint">Stelle zuerst Gültigkeit und Sichtbarkeit ein, danach kannst du den Link generieren.</p>
+      <div class="form-group">
+        <label for="shareExpiry">Gültigkeit (Tage)</label>
+        <select id="shareExpiry"
+          class="form-control"
+          [value]="shareExpiresInDays()"
+          (change)="updateShareExpiry($any($event.target).value)">
+          <option [value]="1">1 Tag</option>
+          <option [value]="3">3 Tage</option>
+          <option [value]="7">7 Tage</option>
+          <option [value]="14">14 Tage</option>
+          <option [value]="30">30 Tage</option>
+          <option [value]="90">90 Tage</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="shareVisibility">Sichtbarkeit</label>
+        <select id="shareVisibility"
+          class="form-control"
+          [value]="shareIsPublic() ? 'public' : 'private'"
+          (change)="updateShareVisibility($any($event.target).value)">
+          <option value="public">Öffentlich</option>
+          <option value="private">Nur bestimmte E-Mail-Adressen</option>
+        </select>
+      </div>
+      @if (!shareIsPublic()) {
+        <div class="form-group">
+          <label for="shareEmails">Erlaubte E-Mails (kommagetrennt)</label>
+          <input id="shareEmails"
+            class="form-control"
+            type="text"
+            [value]="shareAllowedEmails()"
+            (input)="updateAllowedEmails($any($event.target).value)"
+            placeholder="alice@example.com, bob@example.com" />
+        </div>
+      }
+
+      @if (shareLoading()) {
+        <p class="status info">Link wird erstellt ...</p>
+      } @else if (shareError(); as shareMessage) {
+        <p class="status error">{{ shareMessage }}</p>
+      } @else if (shareLink()) {
+        <p class="share-url">{{ shareLink() }}</p>
+        @if (shareExpiresAt()) {
+          <p class="hint">Gültig bis: {{ shareExpiresAt() | date: 'dd.MM.yyyy HH:mm' }}</p>
+        }
+        @if (shareCreatedBy()) {
+          <p class="hint">Erstellt von: {{ shareCreatedBy() }}</p>
+        }
+      } @else {
+        <p class="status info">Noch kein Link generiert.</p>
+      }
+
+      <div class="modal-actions">
+        <button type="button" class="modal-button" (click)="generateShareLink()" [disabled]="shareLoading()">
+          Link generieren
+        </button>
+        <button type="button" class="modal-button" (click)="copyShareLink()" [disabled]="!shareLink()">
+          Link kopieren
+        </button>
+        <button type="button" class="modal-button" (click)="closeShareDialog()">Schließen</button>
       </div>
     </div>
   </div>

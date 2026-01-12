@@ -1,0 +1,57 @@
+<div class="media-upload-field" [class.is-disabled]="disabled">
+  <label class="field-label" *ngIf="showLabel">{{ label }}</label>
+  <div class="dropzone"
+    [class.is-dragging]="isDragging()"
+    (dragover)="handleDragOver($event)"
+    (dragleave)="handleDragLeave($event)"
+    (drop)="handleDrop($event)"
+    (click)="openFileDialog(fileInput)">
+    <mat-icon fontIcon="cloud_upload" aria-hidden="true"></mat-icon>
+    <p class="dropzone-title">Dateien hierher ziehen</p>
+    <p class="dropzone-subtitle">oder</p>
+    <button type="button" class="browse-link" (click)="openFileDialog(fileInput); $event.stopPropagation()">
+      Dateien auswählen
+    </button>
+    <small class="dropzone-hint" *ngIf="hint">{{ hint }}</small>
+  </div>
+  <input #fileInput
+    type="file"
+    class="sr-only"
+    [attr.accept]="accept"
+    [attr.multiple]="multiple ? '' : null"
+    (change)="handleFileInput($event)"
+    [disabled]="disabled" />
+
+  <div class="preview-list" *ngIf="attachments().length > 0">
+    <article class="preview-item" *ngFor="let attachment of attachments(); trackBy: trackById">
+      <div class="preview-meta">
+        <div>
+          <strong>{{ attachment.name }}</strong>
+          <small>{{ attachment.size / 1024 | number: '1.0-0' }} KB</small>
+        </div>
+      </div>
+      <div class="preview-actions">
+        <button type="button"
+          class="btn-preview"
+          (click)="togglePreview(attachment.id)"
+          [disabled]="disabled">
+          {{ isPreviewExpanded(attachment.id) ? 'Vorschau schließen' : 'Vorschau anzeigen' }}
+        </button>
+        <button type="button"
+          class="btn-remove"
+          (click)="removeAttachment(attachment.id)"
+          [disabled]="disabled">
+          Entfernen
+        </button>
+      </div>
+      <div class="preview-image" *ngIf="isPreviewExpanded(attachment.id)">
+        <img *ngIf="attachment.dataUrl.startsWith('data:image')" [src]="attachment.dataUrl" [alt]="attachment.name">
+        <span *ngIf="!attachment.dataUrl.startsWith('data:image')">{{ attachment.type || 'Keine Vorschau verfügbar' }}</span>
+      </div>
+    </article>
+  </div>
+
+  <p class="error" *ngIf="errorMessage()">
+    {{ errorMessage() }}
+  </p>
+</div>

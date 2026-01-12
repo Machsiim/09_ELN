@@ -29,7 +29,7 @@ public class LdapService : ILdapService
             var identifier = new LdapDirectoryIdentifier(
                 _settings.Server,
                 _settings.Port,
-                false,
+                true,
                 false);
 
             using var connection = new LdapConnection(identifier)

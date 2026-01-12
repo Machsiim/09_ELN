@@ -15,8 +15,14 @@ import {
   MeasurementResponseDto,
   MeasurementService
 } from '../../services/measurement.service';
-import { MeasurementSeriesService, MeasurementSeriesDto } from '../../services/measurement-series.service';
+import {
+  CreateShareLinkPayload,
+  MeasurementSeriesService,
+  MeasurementSeriesDto,
+  ShareLinkResponseDto
+} from '../../services/measurement-series.service';
 import { AuthService } from '../../services/auth.service';
+import { MediaAttachment } from '../../models/media-attachment';
 
 @Component({
   selector: 'app-measurement-series-detail',
@@ -49,6 +55,15 @@ export class MeasurementSeriesDetail implements OnInit {
   private successTimeout: number | null = null;
   readonly columnPickerVisible = signal(false);
   readonly visibleColumns = signal<Set<string>>(new Set());
+  readonly shareDialogVisible = signal(false);
+  readonly shareLink = signal<string | null>(null);
+  readonly shareLoading = signal(false);
+  readonly shareError = signal<string | null>(null);
+  readonly shareExpiresInDays = signal(7);
+  readonly shareIsPublic = signal(true);
+  readonly shareAllowedEmails = signal<string>('');
+  readonly shareExpiresAt = signal<string | null>(null);
+  readonly shareCreatedBy = signal<string | null>(null);
 
   // Lock-related signals
   readonly isLocked = signal(false);
@@ -211,6 +226,99 @@ export class MeasurementSeriesDetail implements OnInit {
     this.router.navigate(['/messungen']);
   }
 
+  openShareDialog(): void {
+    this.shareDialogVisible.set(true);
+    this.shareError.set(null);
+    this.shareLink.set(null);
+    this.shareExpiresAt.set(null);
+    this.shareCreatedBy.set(null);
+    this.shareAllowedEmails.set('');
+    this.shareIsPublic.set(true);
+  }
+
+  closeShareDialog(): void {
+    this.shareDialogVisible.set(false);
+    this.shareLink.set(null);
+    this.shareLoading.set(false);
+    this.shareError.set(null);
+    this.shareExpiresAt.set(null);
+    this.shareCreatedBy.set(null);
+    this.shareAllowedEmails.set('');
+    this.shareIsPublic.set(true);
+  }
+
+  generateShareLink(): void {
+    const seriesId = this.seriesId();
+    if (!seriesId) {
+      this.shareError.set('Serien-ID fehlt.');
+      return;
+    }
+
+    const payload: CreateShareLinkPayload = {
+      expiresInDays: this.shareExpiresInDays(),
+      isPublic: this.shareIsPublic(),
+      allowedUserEmails: this.shareIsPublic() ? [] : this.parseAllowedEmails()
+    };
+
+    this.shareLoading.set(true);
+    this.shareError.set(null);
+    this.seriesService
+      .createShareLink(seriesId, payload)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          this.shareLink.set(this.buildShareUrl(response));
+          this.shareExpiresAt.set(response.expiresAt);
+          this.shareCreatedBy.set(response.createdByUsername);
+          this.shareLoading.set(false);
+        },
+        error: () => {
+          this.shareLoading.set(false);
+          this.shareError.set('Quick-Link konnte nicht erstellt werden.');
+        }
+      });
+  }
+
+  copyShareLink(): void {
+    const link = this.shareLink();
+    if (!link || !navigator.clipboard) {
+      return;
+    }
+    navigator.clipboard.writeText(link);
+  }
+
+  updateShareExpiry(rawValue: string): void {
+    const parsed = Number(rawValue);
+    if (!Number.isNaN(parsed)) {
+      this.shareExpiresInDays.set(parsed);
+    }
+  }
+
+  updateShareVisibility(rawValue: string): void {
+    this.shareIsPublic.set(rawValue === 'public');
+  }
+
+  updateAllowedEmails(value: string): void {
+    this.shareAllowedEmails.set(value);
+  }
+
+  private parseAllowedEmails(): string[] {
+    return this.shareAllowedEmails()
+      .split(',')
+      .map((email) => email.trim())
+      .filter((email) => email.length > 0);
+  }
+
+  private buildShareUrl(response: ShareLinkResponseDto): string {
+    if (!response.shareUrl) {
+      return '';
+    }
+    if (response.shareUrl.startsWith('http://') || response.shareUrl.startsWith('https://')) {
+      return response.shareUrl;
+    }
+    return `${window.location.origin}${response.shareUrl.startsWith('/') ? '' : '/'}${response.shareUrl}`;
+  }
+
   onSearchChange(event: Event): void {
     const input = event.target as HTMLInputElement;
     const value = input.value;
@@ -356,25 +464,69 @@ export class MeasurementSeriesDetail implements OnInit {
     this.visibleColumns.set(new Set());
   }
 
-  getValueForColumn(measurement: MeasurementResponseDto, column: string): string {
+  private resolveColumnValue(measurement: MeasurementResponseDto, column: string): unknown {
     const separatorIndex = column.indexOf(' - ');
     const sectionName = separatorIndex > -1 ? column.slice(0, separatorIndex) : column;
     const fieldKey = separatorIndex > -1 ? column.slice(separatorIndex + 3) : '';
 
-    if (!sectionName || !fieldKey) return '-';
+    if (!sectionName || !fieldKey) {
+      return null;
+    }
 
     const section = measurement.data[sectionName];
-    if (!section) return '-';
+    if (!section) {
+      return null;
+    }
 
-    const value = section[fieldKey];
+    return section[fieldKey];
+  }
 
-    if (value === null || value === undefined) {
+  private extractMediaAttachments(value: unknown): MediaAttachment[] | null {
+    const normalized = this.parsePossibleJson(value);
+    if (!Array.isArray(normalized)) {
+      return null;
+    }
+    const attachments = normalized.filter(
+      (item: unknown): item is MediaAttachment =>
+        !!item &&
+        typeof item === 'object' &&
+        'dataUrl' in item &&
+        typeof (item as MediaAttachment).dataUrl === 'string'
+    );
+    return attachments.length > 0 ? attachments : null;
+  }
+
+  getValueForColumn(measurement: MeasurementResponseDto, column: string): string {
+    const value = this.resolveColumnValue(measurement, column);
+    const normalized = this.parsePossibleJson(value);
+    if (normalized === null || normalized === undefined) {
       return '-';
     }
-    if (typeof value === 'object') {
-      return JSON.stringify(value);
+
+    const attachments = this.extractMediaAttachments(normalized);
+    if (attachments) {
+      return attachments.map((item) => item.name).join(', ');
     }
-    return String(value);
+
+    if (typeof normalized === 'object') {
+      try {
+        return JSON.stringify(normalized);
+      } catch {
+        return String(normalized);
+      }
+    }
+    return String(normalized);
+  }
+
+  private parsePossibleJson(value: unknown): unknown {
+    if (typeof value !== 'string') {
+      return value;
+    }
+    try {
+      return JSON.parse(value);
+    } catch {
+      return value;
+    }
   }
 
   private fetchMeasurements(seriesId: number): void {

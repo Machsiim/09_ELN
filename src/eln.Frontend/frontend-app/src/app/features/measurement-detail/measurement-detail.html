@@ -3,50 +3,17 @@
 
   <main class="main-content">
     <section class="detail-card">
-      <header class="detail-header">
-        <div class="header-top">
-          <button class="back-button" type="button" (click)="goBack()">
-            ← Zurück
-          </button>
-          <button class="history-button" type="button" (click)="openHistory()" title="Änderungsverlauf anzeigen">
-            Verlauf
-          </button>
-        </div>
-        <div class="header-main">
-          <div class="titles">
-            <p class="eyebrow">Messung</p>
-            <h1>#{{ measurement()?.id || '...' }}</h1>
-          </div>
-          @if (measurement(); as data) {
-            <div class="header-meta">
-              <div class="meta-info">
-                <p class="meta">
-                  Serie #{{ data.seriesId }} · Template: {{ data.templateName }}
-                </p>
-                <p class="meta">
-                  Erstellt von {{ data.createdByUsername }} am {{ data.createdAt | date: 'dd.MM.yyyy HH:mm' }} Uhr
-                </p>
-                @if (data.updatedAt) {
-                  <p class="meta updated">
-                    Zuletzt geändert von {{ data.updatedByUsername || 'Unbekannt' }} am {{ data.updatedAt | date: 'dd.MM.yyyy HH:mm' }} Uhr
-                  </p>
-                }
-              </div>
-              <div class="action-buttons">
-                @if (!isEditing()) {
-                  <button class="action-button edit active" (click)="startEditing()">Bearbeiten</button>
-                  <button class="action-button danger" (click)="confirmDelete()">Löschen</button>
-                } @else {
-                  <button class="action-button" (click)="cancelEditing()" [disabled]="saveInProgress()">Abbrechen</button>
-                  <button class="action-button success" (click)="saveEdits()" [disabled]="saveInProgress()">
-                    {{ saveInProgress() ? 'Speichern ...' : 'Speichern' }}
-                  </button>
-                }
-              </div>
-            </div>
-          }
-        </div>
-      </header>
+      <app-measurement-detail-header
+        [measurement]="measurement()"
+        [isEditing]="isEditing()"
+        [saveInProgress]="saveInProgress()"
+        (back)="goBack()"
+        (openHistory)="openHistory()"
+        (startEditing)="startEditing()"
+        (cancelEditing)="cancelEditing()"
+        (saveEdits)="saveEdits()"
+        (confirmDelete)="confirmDelete()">
+      </app-measurement-detail-header>
 
       @if (error(); as message) {
         <div class="status error">{{ message }}</div>
@@ -57,50 +24,22 @@
       }
 
       @if (!loading() && measurement()) {
-        <div class="measurement-preview">
-          <div class="preview-sections">
-            @for (section of getSections(isEditing() ? editableData() : null); track section.name) {
-              <article class="preview-section">
-                <header class="preview-section-header">
-                  <h2>{{ section.name }}</h2>
-                </header>
-                <div class="preview-cards">
-                  @for (card of section.cards; track card.name) {
-                    <div class="preview-card">
-                      <header class="preview-card-header">
-                        <div>
-                          <h3>{{ card.name }}</h3>
-                          <small>{{ card.fields.length }} Feld{{ card.fields.length === 1 ? '' : 'er' }}</small>
-                        </div>
-                      </header>
-                      <ul class="preview-fields">
-                        @for (field of card.fields; track field.key) {
-                          <li>
-                            <div class="field-meta">
-                              <span class="field-label">{{ field.key }}</span>
-                              <span class="field-type">{{ isEditing() ? 'Eingabe' : 'Wert' }}</span>
-                            </div>
-                            @if (isEditing()) {
-                              <input
-                                class="field-input"
-                                type="text"
-                                [value]="getEditableValue(section.name, field.rawKey)"
-                                (input)="updateFieldValue(section.name, field.rawKey, $any($event.target).value)"
-                                [disabled]="saveInProgress()"
-                              />
-                            } @else {
-                              <span class="field-value">{{ formatValue(field.value) }}</span>
-                            }
-                          </li>
-                        }
-                      </ul>
-                    </div>
-                  }
-                </div>
-              </article>
-            }
-          </div>
-        </div>
+        <app-measurement-detail-sections
+          [sections]="getSections(isEditing() ? editableData() : null)"
+          [isEditing]="isEditing()"
+          [saveInProgress]="saveInProgress()"
+          [formatValue]="formatValue.bind(this)"
+          [formatMediaSummary]="formatMediaSummary.bind(this)"
+          [isMediaField]="isMediaField.bind(this)"
+          [getMediaAttachments]="getMediaAttachments.bind(this)"
+          [getEditableMediaAttachments]="getEditableMediaAttachments.bind(this)"
+          [isMediaExpanded]="isMediaExpanded.bind(this)"
+          [getEditableValue]="getEditableValue.bind(this)"
+          (toggleMediaPreview)="toggleMediaPreview($event.section, $event.field)"
+          (openMediaDialog)="openMediaDialog($event.section, $event.field)"
+          (updateFieldValue)="updateFieldValue($event.section, $event.field, $event.value)"
+          (removeEditableAttachment)="removeEditableAttachment($event.section, $event.field, $event.attachmentId)">
+        </app-measurement-detail-sections>
       }
     </section>
   </main>
@@ -154,50 +93,21 @@
 }
 
 @if (historyVisible()) {
-  <div class="modal-backdrop">
-    <div class="history-dialog">
-      <header class="history-header">
-        <h2>Änderungsverlauf</h2>
-        <button type="button" (click)="closeHistory()" class="close-button">×</button>
-      </header>
-      @if (historyLoading()) {
-        <p class="history-status">Verlauf wird geladen ...</p>
-      } @else {
-        @if (historyError(); as historyMessage) {
-          <p class="history-status error">{{ historyMessage }}</p>
-        } @else if (historyEntries().length === 0) {
-          <p class="history-status">Für diese Messung wurden keine Änderungen erfasst.</p>
-        } @else {
-          <div class="history-list">
-            @for (entry of historyEntries(); track entry.id) {
-              <article class="history-entry">
-                <header>
-                  <h3>{{ entry.changeType }}</h3>
-                  <small>
-                    {{ entry.changedByUsername }} · {{ entry.changedAt | date: 'dd.MM.yyyy HH:mm' }}
-                  </small>
-                  @if (entry.changeDescription) {
-                    <p class="history-description">{{ entry.changeDescription }}</p>
-                  }
-                </header>
-                @if (entry.changes.length === 0) {
-                  <p class="history-nochange">Keine Feldänderungen.</p>
-                } @else {
-                  <ul>
-                    @for (change of entry.changes; track change.section + change.field) {
-                      <li>
-                        <strong>{{ change.section }} – {{ change.field }}:</strong>
-                        <span class="change-value old" *ngIf="change.oldValue">Alt: {{ change.oldValue }}</span>
-                        <span class="change-value new" *ngIf="change.newValue">Neu: {{ change.newValue }}</span>
-                      </li>
-                    }
-                  </ul>
-                }
-              </article>
-            }
-          </div>
-        }
-      }
-    </div>
-  </div>
+  <app-measurement-history-dialog
+    [loading]="historyLoading()"
+    [error]="historyError()"
+    [entries]="historyEntries()"
+    [isMediaChange]="isMediaChange.bind(this)"
+    [formatMediaSummary]="formatMediaSummary.bind(this)"
+    (close)="closeHistory()">
+  </app-measurement-history-dialog>
+}
+
+@if (mediaDialogOpen()) {
+  <app-measurement-media-dialog
+    [attachments]="pendingMediaAttachments()"
+    (attachmentsChange)="onDialogAttachmentsChange($event)"
+    (save)="saveDialogAttachments()"
+    (close)="closeMediaDialog()">
+  </app-measurement-media-dialog>
 }

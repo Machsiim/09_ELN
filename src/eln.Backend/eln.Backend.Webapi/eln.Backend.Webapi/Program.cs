@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using System.Text.Json;
+using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -61,10 +62,20 @@ if (string.IsNullOrEmpty(connectionString))
         "Database connection string not configured. Set ELN_DB_CONNECTION environment variable or ConnectionStrings:Default in appsettings.json");
 }
 
-builder.Services.AddDbContext<ElnContext>(opt =>
+// Enable dynamic JSON serialization for jsonb (used by AllowedUserEmails)
+builder.Services.AddSingleton<NpgsqlDataSource>(_ =>
 {
+    var dataSourceBuilder = new NpgsqlDataSourceBuilder(connectionString);
+    dataSourceBuilder.EnableDynamicJson();
+    return dataSourceBuilder.Build();
+});
+
+builder.Services.AddDbContext<ElnContext>((serviceProvider, opt) =>
+{
+    var dataSource = serviceProvider.GetRequiredService<NpgsqlDataSource>();
+
     opt.UseNpgsql(
-        connectionString,
+        dataSource,
         o => o.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery));
 });
 

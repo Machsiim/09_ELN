@@ -21,6 +21,11 @@
         </div>
 
         <div class="form-section">
+          <p class="template-hint">
+            Bitte nutzen Sie die bereitgestellte Excel-Vorlage
+            <br><a href="/assets/templates/Vorlage_leer.xlsx" download="Vorlage_leer.xlsx">Mustervorlage herunterladen</a>
+            und tragen Sie alle Messwerte direkt in dieses Dokument ein, bevor Sie es hier hochladen.
+          </p>
           <label class="form-label">Dokument anhängen</label>
           <div class="upload-area" [class.drag-over]="isDragOver()" (click)="triggerFileInput()"
             (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)" (drop)="onDrop($event)">

@@ -15,27 +15,32 @@ import {
   MeasurementService,
   MeasurementHistoryEntry
 } from '../../services/measurement.service';
-
-interface SectionEntry {
-  name: string;
-  cards: CardEntry[];
-}
-
-interface CardEntry {
-  name: string;
-  fields: FieldEntry[];
-}
-
-interface FieldEntry {
-  key: string;
-  value: unknown;
-  rawKey: string;
-}
+import { MediaAttachment } from '../../models/media-attachment';
+import { MeasurementDetailHeader } from './components/measurement-detail-header/measurement-detail-header';
+import { MeasurementDetailSections } from './components/measurement-detail-sections/measurement-detail-sections';
+import { MeasurementHistoryDialog } from './components/measurement-history-dialog/measurement-history-dialog';
+import { MeasurementMediaDialog } from './components/measurement-media-dialog/measurement-media-dialog';
+import { SectionEntry } from './measurement-detail.types';
+import {
+  buildSections,
+  castValue,
+  extractMediaAttachments,
+  formatMediaSummary,
+  formatValue
+} from './measurement-detail.utils';
 
 @Component({
   selector: 'app-measurement-detail',
   standalone: true,
-  imports: [CommonModule, Header, Footer],
+  imports: [
+    CommonModule,
+    Header,
+    Footer,
+    MeasurementDetailHeader,
+    MeasurementDetailSections,
+    MeasurementHistoryDialog,
+    MeasurementMediaDialog
+  ],
   templateUrl: './measurement-detail.html',
   styleUrl: './measurement-detail.scss'
 })
@@ -59,6 +64,10 @@ export class MeasurementDetail implements OnInit {
   readonly historyLoading = signal(false);
   readonly historyError = signal<string | null>(null);
   readonly historyEntries = signal<MeasurementHistoryEntry[]>([]);
+  readonly expandedMediaFields = signal<Set<string>>(new Set());
+  readonly mediaDialogOpen = signal(false);
+  readonly mediaDialogContext = signal<{ section: string; field: string } | null>(null);
+  readonly pendingMediaAttachments = signal<MediaAttachment[]>([]);
 
   private toastTimeout: number | null = null;
 
@@ -82,6 +91,7 @@ export class MeasurementDetail implements OnInit {
       .subscribe({
         next: (result) => {
           this.measurement.set(result);
+          this.expandedMediaFields.set(new Set());
           if (this.isEditing()) {
             this.editableData.set(this.cloneData(result.data));
           }
@@ -216,7 +226,7 @@ export class MeasurementDetail implements OnInit {
     this.saveInProgress.set(true);
     this.error.set(null);
     this.measurementService
-      .updateMeasurement(measurement.id, { data })
+      .updateMeasurement(measurement.id, { data: this.normalizeEditableData(data) })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (updated) => {
@@ -237,48 +247,101 @@ export class MeasurementDetail implements OnInit {
   getSections(dataSource?: Record<string, Record<string, unknown>> | null): SectionEntry[] {
     const measurement = this.measurement();
     const source = dataSource ?? measurement?.data;
-    if (!source) {
-      return [];
-    }
-
-    const sections: SectionEntry[] = [];
-
-    for (const [sectionName, fields] of Object.entries(source)) {
-      const cards = new Map<string, CardEntry>();
-
-      for (const [rawKey, value] of Object.entries(fields)) {
-        const separatorIndex = rawKey.indexOf(' - ');
-        const cardName = separatorIndex > -1 ? rawKey.slice(0, separatorIndex) : 'Allgemein';
-        const fieldLabel = separatorIndex > -1 ? rawKey.slice(separatorIndex + 3) : rawKey;
-
-        if (!cards.has(cardName)) {
-          cards.set(cardName, { name: cardName, fields: [] });
-        }
-
-        cards.get(cardName)!.fields.push({ key: fieldLabel, value, rawKey });
-      }
-
-      sections.push({
-        name: sectionName,
-        cards: Array.from(cards.values())
-      });
-    }
-
-    return sections;
+    return buildSections(source);
   }
 
   formatValue(value: unknown): string {
-    if (value === null || value === undefined) {
-      return '-';
-    }
-    if (typeof value === 'object') {
-      try {
-        return JSON.stringify(value, null, 2);
-      } catch {
-        return String(value);
+    return formatValue(value);
+  }
+
+  getMediaAttachments(value: unknown): MediaAttachment[] | null {
+    return extractMediaAttachments(value);
+  }
+
+  getEditableMediaAttachments(sectionName: string, rawKey: string): MediaAttachment[] | null {
+    const data = this.editableData();
+    const value = data?.[sectionName]?.[rawKey];
+    return extractMediaAttachments(value);
+  }
+
+  toggleMediaPreview(sectionName: string, rawKey: string): void {
+    const key = this.buildMediaFieldKey(sectionName, rawKey);
+    this.expandedMediaFields.update((current) => {
+      const next = new Set(current);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
       }
+      return next;
+    });
+  }
+
+  isMediaExpanded(sectionName: string, rawKey: string): boolean {
+    const key = this.buildMediaFieldKey(sectionName, rawKey);
+    return this.expandedMediaFields().has(key);
+  }
+
+  isMediaField(sectionOrType: string, rawKey?: string, rawValue?: unknown): boolean {
+    if (rawKey === undefined) {
+      return sectionOrType === 'media';
     }
-    return String(value);
+    const measurement = this.measurement();
+    const baseValue = measurement?.data?.[sectionOrType]?.[rawKey] ?? rawValue;
+    const editableValue = this.editableData()?.[sectionOrType]?.[rawKey];
+    return extractMediaAttachments(baseValue) !== null || extractMediaAttachments(editableValue) !== null;
+  }
+
+  private buildMediaFieldKey(sectionName: string, rawKey: string): string {
+    return `${sectionName}::${rawKey}`;
+  }
+
+  openMediaDialog(sectionName: string, rawKey: string): void {
+    this.mediaDialogContext.set({ section: sectionName, field: rawKey });
+    this.pendingMediaAttachments.set([]);
+    this.mediaDialogOpen.set(true);
+  }
+
+  closeMediaDialog(): void {
+    this.mediaDialogOpen.set(false);
+    this.mediaDialogContext.set(null);
+    this.pendingMediaAttachments.set([]);
+  }
+
+  onDialogAttachmentsChange(attachments: MediaAttachment[]): void {
+    this.pendingMediaAttachments.set(attachments ?? []);
+  }
+
+  saveDialogAttachments(): void {
+    const context = this.mediaDialogContext();
+    const attachments = this.pendingMediaAttachments();
+    if (!context || attachments.length === 0) {
+      this.closeMediaDialog();
+      return;
+    }
+
+    const current = this.editableData();
+    if (!current || !current[context.section]) {
+      this.closeMediaDialog();
+      return;
+    }
+
+    const existing = this.getEditableMediaAttachments(context.section, context.field) ?? [];
+    const updatedSection = {
+      ...current[context.section],
+      [context.field]: [...existing, ...attachments]
+    };
+
+    this.editableData.set({
+      ...current,
+      [context.section]: updatedSection
+    });
+    this.expandedMediaFields.update((set) => {
+      const clone = new Set(set);
+      clone.add(this.buildMediaFieldKey(context.section, context.field));
+      return clone;
+    });
+    this.closeMediaDialog();
   }
 
   getEditableValue(sectionName: string, rawKey: string): string {
@@ -298,21 +361,51 @@ export class MeasurementDetail implements OnInit {
   }
 
   private castValue(input: string, original: unknown): unknown {
-    if (original === null || original === undefined) {
-      return input;
-    }
-    if (typeof original === 'number') {
-      const parsed = Number(input);
-      return Number.isNaN(parsed) ? input : parsed;
-    }
-    if (typeof original === 'boolean') {
-      return input.toLowerCase() === 'true';
-    }
-    return input;
+    return castValue(input, original);
   }
 
   private cloneData(data: Record<string, Record<string, unknown>>): Record<string, Record<string, unknown>> {
     return JSON.parse(JSON.stringify(data));
+  }
+
+  private normalizeEditableData(
+    data: Record<string, Record<string, unknown>>
+  ): Record<string, Record<string, unknown>> {
+    const normalized: Record<string, Record<string, unknown>> = {};
+
+    for (const [sectionName, fields] of Object.entries(data)) {
+      const nextFields: Record<string, unknown> = {};
+
+      for (const [fieldName, value] of Object.entries(fields)) {
+        if (Array.isArray(value) && extractMediaAttachments(value)) {
+          nextFields[fieldName] = JSON.stringify(value);
+        } else {
+          nextFields[fieldName] = value;
+        }
+      }
+
+      normalized[sectionName] = nextFields;
+    }
+
+    return normalized;
+  }
+
+  removeEditableAttachment(sectionName: string, rawKey: string, attachmentId: string): void {
+    const current = this.editableData();
+    if (!current || !current[sectionName]) return;
+
+    const attachments = this.getEditableMediaAttachments(sectionName, rawKey);
+    if (!attachments) {
+      return;
+    }
+
+    const filtered = attachments.filter((attachment) => attachment.id !== attachmentId);
+    const nextSection = { ...current[sectionName], [rawKey]: filtered };
+
+    this.editableData.set({
+      ...current,
+      [sectionName]: nextSection
+    });
   }
 
   private showToast(message: string): void {
@@ -351,5 +444,16 @@ export class MeasurementDetail implements OnInit {
 
   closeHistory(): void {
     this.historyVisible.set(false);
+  }
+
+  isMediaChange(fieldName: string, value?: unknown): boolean {
+    if (!value) {
+      return false;
+    }
+    return extractMediaAttachments(value) !== null;
+  }
+
+  formatMediaSummary(value: unknown): string {
+    return formatMediaSummary(value);
   }
 }

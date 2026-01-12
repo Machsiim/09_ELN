@@ -32,7 +32,8 @@ EXPOSE 8081
 
 # Install LDAP client libraries required for System.DirectoryServices.Protocols
 RUN apt-get update && \
-    apt-get install -y libldap-2.5-0 && \
+    apt-get install -y libldap-2.5-0 ca-certificates && \
+    update-ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
 COPY --from=publish /app/publish .
