@@ -42,7 +42,7 @@
 
       @if (seriesLoading()) {
         <div class="status info">
-          Messreihen werden geladen ...
+          Messserien werden geladen ...
         </div>
       }
       @if (seriesError(); as seriesMessage) {
@@ -53,10 +53,10 @@
 
       <div class="form-group series-select">
         <div class="label-row">
-          <label for="seriesSelect">Messreihe auswählen</label>
+          <label for="seriesSelect">Messserien auswählen</label>
           @if (!showSeriesForm()) {
             <button type="button" class="ghost-button" (click)="startCreateSeries()">
-              Neue Messreihe erstellen
+              Neue Messserien erstellen
             </button>
           }
         </div>
@@ -78,13 +78,13 @@
 
       @if (!seriesLoading() && measurementSeries().length === 0) {
         <div class="status hint">
-          Es wurde noch keine Messreihe angelegt. Bitte zuerst eine Serie erstellen.
+          Es wurde noch keine Messserie angelegt. Bitte zuerst eine Messserie erstellen.
         </div>
       }
 
       @if (showSeriesForm()) {
         <div class="series-create-card">
-          <h2>Neue Messreihe</h2>
+          <h2>Neue Messserie</h2>
           <form [formGroup]="seriesForm" (ngSubmit)="submitSeries()">
             <div class="form-group">
               <label for="seriesName">Name</label>
@@ -116,7 +116,7 @@
             </div>
           </form>
           @if (createSeriesLoading()) {
-            <p class="status info">Messreihe wird gespeichert ...</p>
+            <p class="status info">Messserie wird gespeichert ...</p>
           }
           @if (createSeriesError(); as createError) {
             <p class="status error">{{ createError }}</p>
@@ -223,11 +223,17 @@
               }
             </div>
 
+            <div class="form-group">
+              <label>Bilder zur Messung hinzufügen (optional)</label>
+              <app-media-upload-field [formControl]="measurementImagesControl">
+              </app-media-upload-field>
+            </div>
+
             <div class="actions">
               <button type="submit"
                 class="btn btn-primary"
                 [disabled]="!form.valid || submitting() || !selectedSeriesId()">
-                Messung vorbereiten
+                Messung erstellen
               </button>
             </div>
           </form>

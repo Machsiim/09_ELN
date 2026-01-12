@@ -110,3 +110,20 @@
     }
   }
 }
+
+.toast {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 1.5rem;
+  padding: 1rem 1.25rem;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1100;
+  animation: fadeInOut 4s forwards;
+}
+
+.toast-success {
+  background: #388e3c;
+}

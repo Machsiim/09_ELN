@@ -1,0 +1,19 @@
+<div class="images-gallery-container">
+    <div class="gallery-header">
+        <h3>Bilder</h3>
+        @if (isEditing) {
+        <button type="button" class="media-add-button" (click)="openFileUpload()" [disabled]="uploading()">
+            {{ uploading() ? 'Hochladen...' : 'Bilder hinzufügen' }}
+        </button>
+        }
+    </div>
+
+    @if (loading()) { <div class="status info">Bilder werden geladen...</div> }
+    @if (error()) { <div class="status error">{{ error() }}</div> }
+
+    @if (!loading() && !error()) {
+    <app-media-grid [items]="gridItems()" [editable]="isEditing" [emptyText]="'Keine Bilder vorhanden.'"
+        (delete)="onGridDelete($event)">
+    </app-media-grid>
+    }
+</div>
