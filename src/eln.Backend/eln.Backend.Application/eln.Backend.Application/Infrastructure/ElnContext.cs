@@ -15,6 +15,7 @@ public class ElnContext : DbContext
     public DbSet<Measurement> Measurements => Set<Measurement>();
     public DbSet<MeasurementHistory> MeasurementHistories => Set<MeasurementHistory>();
     public DbSet<SeriesShareLink> SeriesShareLinks => Set<SeriesShareLink>();
+    public DbSet<MeasurementImage> MeasurementImages => Set<MeasurementImage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -118,6 +119,27 @@ public class ElnContext : DbContext
         modelBuilder.Entity<SeriesShareLink>()
             .HasIndex(ssl => ssl.Token)
             .IsUnique();
+
+        // MeasurementSeries -> Locker (User who locked)
+        modelBuilder.Entity<MeasurementSeries>()
+            .HasOne(ms => ms.Locker)
+            .WithMany()
+            .HasForeignKey(ms => ms.LockedBy)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // MeasurementImage -> Measurement
+        modelBuilder.Entity<MeasurementImage>()
+            .HasOne(mi => mi.Measurement)
+            .WithMany()
+            .HasForeignKey(mi => mi.MeasurementId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // MeasurementImage -> User (Uploader)
+        modelBuilder.Entity<MeasurementImage>()
+            .HasOne(mi => mi.Uploader)
+            .WithMany()
+            .HasForeignKey(mi => mi.UploadedBy)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 
     private static string ToSnakeCase(string? name)
@@ -131,15 +153,22 @@ public class ElnContext : DbContext
         ).ToLower();
     }
 
+    /// <summary>
+    /// Initialize the database.
+    /// In Development: Uses EnsureCreated (no migrations needed for rapid development)
+    /// In Production: Uses Migrate (requires EF migrations to be created)
+    /// </summary>
     public void CreateDatabase(bool isDevelopment)
     {
         if (isDevelopment)
         {
-            Database.EnsureDeleted();
+            // In Development: Create database schema if it doesn't exist
+            // NOTE: Does NOT delete existing data - just ensures schema exists
             Database.EnsureCreated();
         }
         else
         {
+            // In Production: Apply any pending migrations
             Database.Migrate();
         }
     }

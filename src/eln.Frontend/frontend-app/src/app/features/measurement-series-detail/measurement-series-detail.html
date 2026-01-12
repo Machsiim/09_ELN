@@ -8,6 +8,26 @@
           <button type="button" class="back-button" (click)="goBack()" title="Zurück zur Übersicht">
             ← Zurück
           </button>
+          @if (isStaff) {
+            <button
+              type="button"
+              class="lock-toggle-button"
+              [class.locked]="isLocked()"
+              [disabled]="lockInProgress()"
+              (click)="toggleLock()"
+              [title]="isLocked() ? 'Klicken zum Entsperren' : 'Klicken zum Sperren'"
+            >
+              @if (lockInProgress()) {
+                <span class="lock-icon">⏳</span>
+              } @else if (isLocked()) {
+                <span class="lock-icon">🔒</span> Gesperrt
+              } @else {
+                <span class="lock-icon">🔓</span> Entsperrt
+              }
+            </button>
+          } @else if (isLocked()) {
+            <span class="lock-badge">🔒 Gesperrt von {{ lockedByUsername() }}</span>
+          }
           <button type="button" class="share-button" (click)="openShareDialog()" title="Sharing-Link anzeigen">
             Link teilen
           </button>
@@ -18,6 +38,9 @@
         </div>
         <p class="hint">
           Alle Messungen dieser Serie in tabellarischer Übersicht.
+          @if (isLocked() && !isStaff) {
+            <strong class="lock-warning">Diese Serie ist gesperrt - Bearbeitung nicht möglich.</strong>
+          }
         </p>
       </header>
 

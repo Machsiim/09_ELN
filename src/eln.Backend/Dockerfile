@@ -8,6 +8,7 @@ COPY eln.Backend.sln ./
 # Copy project files
 COPY eln.Backend.Application/eln.Backend.Application/*.csproj ./eln.Backend.Application/eln.Backend.Application/
 COPY eln.Backend.Webapi/eln.Backend.Webapi/*.csproj ./eln.Backend.Webapi/eln.Backend.Webapi/
+COPY eln.Backend.Tests/*.csproj ./eln.Backend.Tests/
 
 # Restore dependencies
 RUN dotnet restore
