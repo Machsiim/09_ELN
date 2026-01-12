@@ -87,32 +87,6 @@
         </button>
       </form>
 
-      <!-- TESTCODE START - Zum Testen von Benutzerrollen -->
-      <div class="test-login-section">
-        <div class="divider">
-          <span>Testbereich</span>
-        </div>
-        <div class="test-buttons">
-          <button
-            type="button"
-            class="btn btn-test"
-            (click)="testLoginStudent()"
-            [disabled]="loading()"
-          >
-            Test-Login als Student
-          </button>
-          <button
-            type="button"
-            class="btn btn-test"
-            (click)="testLoginStaff()"
-            [disabled]="loading()"
-          >
-            Test-Login als Lektor
-          </button>
-        </div>
-      </div>
-      <!-- TESTCODE END -->
-
       <div class="login-footer">
         <p>Biomedical Research Notebook &copy; 2025</p>
       </div>

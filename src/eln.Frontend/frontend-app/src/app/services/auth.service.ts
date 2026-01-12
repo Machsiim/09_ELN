@@ -46,27 +46,6 @@ export class AuthService {
     );
   }
 
-  // TESTCODE START - Zum Testen von Benutzerrollen
-  testLoginStudent(): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(`${this.baseUrl}/test-login-student`, {
-      username: 'test.student',
-      password: ''
-    }).pipe(
-      tap(response => {
-        this.setSession(response);
-      })
-    );
-  }
-
-  testLoginStaff(): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(`${this.baseUrl}/test-login-staff`, {}).pipe(
-      tap(response => {
-        this.setSession(response);
-      })
-    );
-  }
-  // TESTCODE END
-
   logout(): void {
     localStorage.removeItem(this.TOKEN_KEY);
     localStorage.removeItem(this.USER_KEY);
