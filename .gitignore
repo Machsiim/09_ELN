@@ -25,6 +25,11 @@ src/lookappweb.client/*.swo
 **/.vscode
 **/.idea
 **/node_modules
+**/.venv
+**/venv
+**/__pycache__
+**/.pytest_cache
+*.pyc
 **/azure_secrets.txt
 **/ad_secret.json
 **/wwwroot
