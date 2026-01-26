@@ -48,6 +48,16 @@ services:
       - backend
     networks:
       - eln-network
+  
+  python-service:
+    build:
+      context: ./src/eln.Python/ExcelMicroservice
+      dockerfile: Dockerfile
+    container_name: eln-python-service
+    ports:
+      - "8001:8001"
+    networks:
+      - eln-network
 
 networks:
   eln-network:

@@ -14,9 +14,10 @@
         <div class="form-section">
           <label for="template" class="form-label">Template</label>
           <select id="template" class="form-select" [(ngModel)]="selectedTemplate" (change)="onTemplateChange()">
-            <option value="">Bitte wählen...</option>
-            <option value="lungenmessung">Lungenmessung</option>
-            <option value="partikelmessung">Partikelmessung</option>
+            <option value="">Bitte waehlen...</option>
+            @for (template of templates(); track template.id) {
+            <option [value]="template.id">{{ template.name }}</option>
+            }
           </select>
         </div>
 
@@ -60,12 +61,53 @@
 
         <div class="button-group">
           <button type="button" class="btn btn-primary" [disabled]="!canProceed()" (click)="onUpload()">
-            Upload
+            Vorschau laden
+          </button>
+          <button type="button" class="btn btn-secondary"
+            [disabled]="!canImport() || getDuplicateMappings().length > 0"
+            (click)="onImport()">
+            Import starten
           </button>
         </div>
+
+        @if (importStatus() === 'ready' && getDuplicateMappings().length > 0) {
+        <p>Bitte behebe doppelte Zuordnungen, bevor du den Import startest.</p>
+        }
+
+        @if (importStatus() === 'ready') {
+        <div class="form-section">
+          <div class="mapping-header">
+            <h2>Spalten zuordnen</h2>
+            <button type="button" class="btn btn-text" (click)="autoMap()">Auto-Mapping</button>
+          </div>
+          @for (column of previewColumns(); track column) {
+          <div class="mapping-row">
+            <div class="mapping-column">{{ column }}</div>
+            <select class="form-select" [ngModel]="getMappingValue(column)"
+              (ngModelChange)="setMappingValue(column, $event)">
+              <option value="">Nicht zuordnen</option>
+              @for (entry of templateCatalog(); track entry.fieldKey) {
+              <option [value]="entry.fieldKey">{{ entry.fieldKey }}</option>
+              }
+            </select>
+          </div>
+          }
+        </div>
+        }
+
+        <p>Import-Status: {{ importStatus() }}</p>
+        <p>Importiert: {{ importedCount() }} / {{ totalCount() }}</p>
+        @if (previewWarning()) {
+        <p>{{ previewWarning() }}</p>
+        }
+        @if (globalError()) {
+        <p>{{ globalError() }}</p>
+        }
       </div>
     </div>
   </main>
 
   <app-footer></app-footer>
 </div>
+
+

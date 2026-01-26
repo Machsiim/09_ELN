@@ -19,13 +19,20 @@ export class ExcelParseService {
 
   constructor(private readonly http: HttpClient) {}
 
-  parseExcel(file: File, headerRow: number): Observable<ExcelParseResponse> {
+  parseExcel(
+    file: File,
+    headerRow: number,
+    mapping?: Record<string, string>
+  ): Observable<ExcelParseResponse> {
     const formData = new FormData();
     formData.append('file', file);
 
     const url = `${this.baseUrl}/parse-excel`;
     return this.http.post<ExcelParseResponse>(url, formData, {
-      params: { headerRow: String(headerRow) }
+      params: {
+        headerRow: String(headerRow),
+        ...(mapping ? { mapping: JSON.stringify(mapping) } : {})
+      }
     });
   }
 }
