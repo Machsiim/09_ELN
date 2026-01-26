@@ -86,8 +86,8 @@ cd 09_eln/src/eln.Backend
 #### 2. Environment-Datei erstellen
 
 ```bash
-cp .env.production.example .env.production
-nano .env.production   # oder vim/editor deiner Wahl
+cp .env.production.example .env
+nano .env   # oder vim/editor deiner Wahl
 ```
 
 #### 3. Secrets generieren und eintragen
@@ -100,14 +100,14 @@ openssl rand -base64 32
 openssl rand -base64 64
 ```
 
-Trage die generierten Werte in `.env.production` ein:
+Trage die generierten Werte in `.env` ein:
 
 ```bash
 DB_USER=elnuser
 DB_PASSWORD=<HIER_GENERIERTES_DB_PASSWORT>
 JWT_SECRET=<HIER_GENERIERTES_JWT_SECRET>
 CORS_ORIGIN=http://localhost
-ASPNETCORE_ENVIRONMENT=Production
+ASPNETCORE_ENVIRONMENT=Development
 ```
 
 #### 4. Deployment starten
@@ -208,7 +208,7 @@ docker exec -it eln-postgres psql -U elnuser -d elndb
 
 - [ ] Ubuntu hat Docker + Docker-Compose installiert
 - [ ] Repository geklont
-- [ ] `.env.production` erstellt mit:
+- [ ] `.env` erstellt mit:
   - [ ] `DB_PASSWORD` generiert (`openssl rand -base64 32`)
   - [ ] `JWT_SECRET` generiert (`openssl rand -base64 64`)
   - [ ] `CORS_ORIGIN` gesetzt (z.B. `http://localhost` oder Server-IP)

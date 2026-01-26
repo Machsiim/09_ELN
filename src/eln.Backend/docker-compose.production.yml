@@ -30,7 +30,7 @@ services:
     ports:
       - "5100:8080"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Production}
       - ASPNETCORE_URLS=http://+:8080
       - ELN_DB_CONNECTION=Host=postgres;Database=elndb;Username=${DB_USER};Password=${DB_PASSWORD}
       - ELN_JWT_SECRET=${JWT_SECRET}
