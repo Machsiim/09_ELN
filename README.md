@@ -138,6 +138,11 @@ curl http://localhost/health
 
 ---
 
+#### (7. Manuell mit einem Docker-Compose starten)
+```bash
+docker-compose -f docker-compose.production.yml up -d
+```
+
 ### Häufige Probleme auf Ubuntu
 
 #### Docker Permission Denied
