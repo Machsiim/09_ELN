@@ -140,7 +140,7 @@ curl http://localhost/health
 
 #### (7. Manuell mit einem Docker-Compose starten)
 ```bash
-docker-compose -f docker-compose.production.yml up -d
+docker-compose -f docker-compose.production.yml up -d --build
 ```
 
 ### Häufige Probleme auf Ubuntu
