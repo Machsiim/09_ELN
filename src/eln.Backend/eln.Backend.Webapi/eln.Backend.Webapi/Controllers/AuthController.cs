@@ -34,7 +34,12 @@ namespace eln.Backend.Webapi.Controllers
         [HttpPost("login")]
         public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginRequest request)
         {
-            if (!_ldapService.ValidateUser(request.Username, request.Password))
+            // Development-only: Allow local admin user
+            var isDevAdmin = _environment.IsDevelopment()
+                && request.Username == "admin"
+                && request.Password == "!ELN_Admin_09!";
+
+            if (!isDevAdmin && !_ldapService.ValidateUser(request.Username, request.Password))
                 return Unauthorized();
             var user = await _context.Users.SingleOrDefaultAsync(u => u.Username == request.Username);
             if (user == null)
