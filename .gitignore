@@ -35,7 +35,6 @@ src/lookappweb.client/*.swo
 **/wwwroot
 *.db*
 appsettings.Development.json
-package-lock.json
 src/lookappweb.Application/obj/
 src/lookappweb.Webapi/obj/
 
