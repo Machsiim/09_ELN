@@ -67,6 +67,12 @@ export const routes: Routes = [
     canActivate: [authGuard]
   },
   {
+    path: 'exportieren',
+    loadComponent: () => import('./features/export/export').then(m => m.Export),
+    title: 'Daten exportieren - Biomedical Research Notebook',
+    canActivate: [authGuard]
+  },
+  {
     path: 'shared/:token',
     loadComponent: () => import('./features/shared-series/shared-series').then(m => m.SharedSeries),
     title: 'Geteilte Messserie - Biomedical Research Notebook'

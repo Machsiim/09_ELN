@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import os
 
-from .routers import parse, template, migrate
+from .routers import parse, template, migrate, export
 
 def get_cors_origins() -> list[str]:
     raw = os.getenv("CORS_ORIGINS", "")
@@ -25,3 +25,4 @@ def health():
 app.include_router(parse.router, prefix="")
 app.include_router(template.router, prefix="")
 app.include_router(migrate.router, prefix="")
+app.include_router(export.router, prefix="")

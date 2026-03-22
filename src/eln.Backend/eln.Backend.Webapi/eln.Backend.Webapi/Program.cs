@@ -51,6 +51,7 @@ builder.Services.AddScoped<eln.Backend.Application.Services.MeasurementValidatio
 builder.Services.AddScoped<eln.Backend.Application.Services.MeasurementSeriesService>();
 builder.Services.AddScoped<eln.Backend.Application.Services.ShareLinkService>();
 builder.Services.AddScoped<eln.Backend.Application.Services.ImportService>();
+builder.Services.AddScoped<eln.Backend.Application.Services.ExportService>();
 
 // HttpClient for Python Excel Microservice
 builder.Services.AddHttpClient("PythonService", client =>

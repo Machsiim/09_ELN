@@ -24,7 +24,7 @@ export class Header {
   }
 
   onExport(): void {
-    console.log('Export clicked');
+    window.location.href = '/exportieren';
   }
 
   onProfileClick(): void {
