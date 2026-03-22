@@ -1,31 +1,33 @@
+@use '../../styles/variables' as *;
+
 .page-container {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: #fafafa;
+  background-color: $color-bg-page-alt;
 }
 
 .main-content {
   flex: 1;
-  padding: 3rem 2rem;
+  padding: $spacing-2xl $spacing-xl;
 }
 
 .content-wrapper {
-  max-width: 1200px;
+  max-width: $max-width-wide;
   margin: 0 auto;
 }
 
 .welcome-title {
   font-size: 2.5rem;
   font-weight: 600;
-  color: #1a1a1a;
-  margin-bottom: 1.5rem;
+  color: $color-text-dark;
+  margin-bottom: $spacing-lg;
   text-align: center;
 }
 
 .description {
   font-size: 1.125rem;
-  color: #666;
+  color: $color-text-gray;
   max-width: 800px;
   margin: 0 auto;
   line-height: 1.6;
@@ -34,16 +36,16 @@
 .quick-actions {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
-  margin-top: 3rem;
+  gap: $spacing-xl;
+  margin-top: $spacing-2xl;
 }
 
 .action-card {
   background: white;
-  border-radius: 12px;
-  padding: 2rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s, box-shadow 0.2s;
+  border-radius: $radius-lg;
+  padding: $spacing-xl;
+  box-shadow: $shadow-md;
+  transition: transform $transition-base, box-shadow $transition-base;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -56,42 +58,42 @@
 }
 
 .card-icon {
-  color: #0066cc;
-  margin-bottom: 1.5rem;
+  color: $color-primary;
+  margin-bottom: $spacing-lg;
 }
 
 .action-card h3 {
   font-size: 1.25rem;
   font-weight: 600;
-  color: #1a1a1a;
-  margin-bottom: 1rem;
+  color: $color-text-dark;
+  margin-bottom: $spacing-md;
 }
 
 .action-card p {
-  color: #666;
+  color: $color-text-gray;
   line-height: 1.6;
-  margin-bottom: 1.5rem;
+  margin-bottom: $spacing-lg;
   flex: 1;
 }
 
 .card-button {
-  background-color: #0066cc;
+  background-color: $color-primary;
   color: white;
   border: none;
-  padding: 0.75rem 2rem;
-  border-radius: 8px;
+  padding: 0.75rem $spacing-xl;
+  border-radius: $radius-md;
   font-size: 1rem;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color $transition-base;
   width: 100%;
 }
 
 .card-button:hover {
-  background-color: #0052a3;
+  background-color: $color-primary-dark;
 }
 
-@media (max-width: 768px) {
+@media (max-width: $breakpoint-md) {
   .welcome-title {
     font-size: 2rem;
   }

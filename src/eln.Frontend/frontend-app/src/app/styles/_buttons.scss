@@ -1,0 +1,78 @@
+@use 'variables' as *;
+
+// ============================================================
+// Shared Button Styles
+// ============================================================
+
+.btn {
+  padding: 0.85rem 1.5rem;
+  border: none;
+  border-radius: $radius-md;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background $transition-base, box-shadow $transition-base, transform $transition-base;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-sm;
+  font-size: 1rem;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.btn-primary {
+  background: $color-accent;
+  color: #fff;
+
+  &:not(:disabled):hover {
+    background: $color-accent-dark;
+    box-shadow: 0 5px 15px rgba(37, 99, 235, 0.35);
+  }
+}
+
+.btn-secondary {
+  background: $color-border-dark;
+  color: $color-text-primary;
+
+  &:not(:disabled):hover {
+    background: $color-border-muted;
+  }
+}
+
+.btn-outline {
+  background: transparent;
+  color: $color-text-primary;
+  border: 1px solid $color-border-input;
+}
+
+.btn-text {
+  background: transparent;
+  color: $color-primary;
+  font-weight: 500;
+  padding: $spacing-sm 0;
+  text-decoration: underline;
+  border: none;
+  cursor: pointer;
+
+  &:hover {
+    color: $color-primary-dark;
+  }
+}
+
+.btn-icon {
+  padding: $spacing-sm;
+  background-color: $color-bg-page;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    background-color: $color-border-dark;
+  }
+}

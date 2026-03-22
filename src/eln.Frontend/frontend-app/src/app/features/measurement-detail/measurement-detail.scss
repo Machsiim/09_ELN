@@ -1,3 +1,5 @@
+@use '../../styles/variables' as *;
+
 .page-container {
   display: flex;
   flex-direction: column;
@@ -6,124 +8,15 @@
 
 .main-content {
   flex: 1;
-  padding: 2rem 1rem;
-  max-width: 1200px;
+  padding: $spacing-xl $spacing-md;
+  max-width: $max-width-wide;
   margin: 0 auto;
   width: 100%;
 }
 
 .detail-card {
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
-  padding: 2rem;
-}
-
-.status {
-  padding: 1rem;
-  border-radius: 8px;
-  margin-bottom: 1rem;
-
-  &.info {
-    background: #e0f2fe;
-    color: #0369a1;
-  }
-
-  &.error {
-    background: #fee2e2;
-    color: #b91c1c;
-  }
-}
-
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal-dialog {
-  background: #fff;
-  border-radius: 12px;
-  padding: 2rem;
-  max-width: 420px;
-  width: 90%;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-  text-align: center;
-
-  h2 {
-    margin-top: 0;
-    margin-bottom: 0.75rem;
-    font-size: 1.5rem;
-  }
-
-  p {
-    margin: 0 0 1.5rem 0;
-    color: #555;
-    line-height: 1.4;
-  }
-}
-
-.modal-actions {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.modal-button {
-  flex: 1;
-  min-width: 120px;
-  padding: 0.6rem 1rem;
-  border-radius: 8px;
-  border: none;
-  font-weight: 600;
-  text-transform: uppercase;
-  font-size: 0.85rem;
-  letter-spacing: 0.05em;
-  cursor: pointer;
-  transition: background-color 0.2s, color 0.2s, opacity 0.2s;
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-
-  &.danger {
-    background: #f44336;
-    color: #fff;
-
-    &:hover:not(:disabled) {
-      background: #d32f2f;
-    }
-  }
-
-  &:not(.danger) {
-    background: #e0e0e0;
-    color: #333;
-
-    &:hover:not(:disabled) {
-      background: #d5d5d5;
-    }
-  }
-}
-
-.toast {
-  position: fixed;
-  bottom: 1.5rem;
-  left: 1.5rem;
-  padding: 1rem 1.25rem;
-  border-radius: 8px;
-  color: #fff;
-  font-weight: 600;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 1100;
-  animation: fadeInOut 4s forwards;
-}
-
-.toast-success {
-  background: #388e3c;
+  background: $color-bg-white;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-lg;
+  padding: $spacing-xl;
 }

@@ -15,6 +15,7 @@ import {
 } from '@angular/forms';
 import { TemplateDto, TemplateService } from '../../services/template.service';
 import { AuthService } from '../../services/auth.service';
+import { NotificationService } from '../../services/notification.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import {
@@ -57,18 +58,16 @@ export class Templates implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly notification = inject(NotificationService);
 
   readonly templates = signal<TemplateDto[]>([]);
   readonly sections = signal<BuilderSection[]>([]);
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
   readonly successMessage = signal<string | null>(null);
-  readonly toastMessage = signal<string | null>(null);
   readonly confirmModalVisible = signal(false);
   readonly confirmModalMode = signal<'delete' | 'archive'>('delete');
   readonly templateForAction = signal<TemplateDto | null>(null);
-
-  private toastTimeout: number | null = null;
 
   readonly fieldTypeOptions: { value: TemplateFieldType; label: string }[] = [
     { value: 'text', label: 'Kurztext' },
@@ -269,7 +268,7 @@ export class Templates implements OnInit {
             this.loading.set(false);
             this.confirmModalVisible.set(false);
             this.templateForAction.set(null);
-            this.showToast('Template wurde gelöscht.');
+            this.notification.show('Template wurde gelöscht.');
           },
           error: () => {
             this.loading.set(false);
@@ -290,7 +289,7 @@ export class Templates implements OnInit {
             this.loading.set(false);
             this.confirmModalVisible.set(false);
             this.templateForAction.set(null);
-            this.showToast('Template wurde archiviert.');
+            this.notification.show('Template wurde archiviert.');
           },
           error: () => {
             this.loading.set(false);
@@ -349,7 +348,7 @@ export class Templates implements OnInit {
         next: (template) => {
           this.templates.update((list) => [template, ...list]);
           this.loading.set(false);
-          this.showToast('Template wurde gespeichert.');
+          this.notification.show('Template wurde gespeichert.');
           this.templateForm.reset({ name: '' });
         },
         error: () => {
@@ -364,7 +363,7 @@ export class Templates implements OnInit {
       const schema = this.decodeSchema(template.schema);
       this.templateForm.controls.name.setValue(`${template.name} (Kopie)`);
       this.setSectionsFromSchema(schema);
-      this.showToast('Template wurde in den Builder geladen.');
+      this.notification.show('Template wurde in den Builder geladen.');
     } catch {
       this.error.set('Schema konnte nicht geladen werden.');
     }
@@ -492,16 +491,5 @@ export class Templates implements OnInit {
 
   private createId(scope: string): string {
     return `${scope}-${Math.random().toString(36).slice(2, 9)}`;
-  }
-
-  private showToast(message: string): void {
-    this.toastMessage.set(message);
-    if (this.toastTimeout) {
-      window.clearTimeout(this.toastTimeout);
-    }
-    this.toastTimeout = window.setTimeout(() => {
-      this.toastMessage.set(null);
-      this.toastTimeout = null;
-    }, 4000);
   }
 }
