@@ -49,3 +49,7 @@ src/eln.Backend/.env
 src/eln.Backend/.env.*
 !src/eln.Backend/.env.example
 !src/eln.Backend/.env.production.example
+
+# Migration data files (only keep .gitkeep)
+migration-data/*
+!migration-data/.gitkeep

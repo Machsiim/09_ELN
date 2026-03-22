@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Text.Json;
 using eln.Backend.Application.Infrastructure;
 using eln.Backend.Application.Model;
+using eln.Backend.Application.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -15,10 +16,12 @@ namespace eln.Backend.Webapi.Controllers;
 public class TemplatesController : ControllerBase
 {
     private readonly ElnContext _context;
+    private readonly ImportService _importService;
 
-    public TemplatesController(ElnContext context)
+    public TemplatesController(ElnContext context, ImportService importService)
     {
         _context = context;
+        _importService = importService;
     }
 
     [HttpGet]
@@ -157,6 +160,32 @@ public class TemplatesController : ControllerBase
         await _context.SaveChangesAsync(cancellationToken);
 
         return Ok(new TemplateResponse(template.Id, template.Name, template.Schema.RootElement.GetRawText(), template.IsArchived, true));
+    }
+
+    /// <summary>
+    /// Generate a sample Excel file with headers matching the template schema
+    /// </summary>
+    [HttpGet("{id:int}/sample-excel")]
+    [AllowAnonymous]
+    public async Task<ActionResult> GetSampleExcel(int id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var template = await _context.Templates.FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
+            if (template == null)
+                return NotFound(new { error = "Template nicht gefunden." });
+
+            var bytes = await _importService.GenerateSampleExcelAsync(template.Schema, template.Name);
+            var fileName = $"Vorlage_{template.Name.Replace("\"", "").Replace("/", "_")}.xlsx";
+
+            return File(bytes,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                fileName);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     public record TemplateResponse(int Id, string Name, string Schema, bool IsArchived, bool HasExistingMeasurements);

@@ -61,6 +61,12 @@ export const routes: Routes = [
     canActivate: [authGuard]
   },
   {
+    path: 'migration',
+    loadComponent: () => import('./features/migration/migration').then(m => m.Migration),
+    title: 'Migration - Biomedical Research Notebook',
+    canActivate: [authGuard]
+  },
+  {
     path: 'shared/:token',
     loadComponent: () => import('./features/shared-series/shared-series').then(m => m.SharedSeries),
     title: 'Geteilte Messserie - Biomedical Research Notebook'

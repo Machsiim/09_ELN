@@ -5,28 +5,78 @@
     <div class="import-container">
       <div class="import-card">
         <h1 class="import-title">Datei importieren</h1>
-        <div class="step-indicator">Schritt 1 von 7</div>
+        <div class="step-indicator">Schritt {{ getStepNumber() }} von 5 — {{ getStepLabel() }}</div>
 
         <div class="progress-bar">
-          <div class="progress-fill" [style.width]="'14.28%'"></div>
+          <div class="progress-fill" [style.width]="getProgressWidth()"></div>
         </div>
 
+        <!-- ========== STEP 1: Template & Serie wählen ========== -->
+        @if (currentStep() === 'select') {
         <div class="form-section">
           <label for="template" class="form-label">Template</label>
           <select id="template" class="form-select" [(ngModel)]="selectedTemplate" (change)="onTemplateChange()">
-            <option value="">Bitte waehlen...</option>
+            <option value="">Bitte wählen...</option>
             @for (template of templates(); track template.id) {
             <option [value]="template.id">{{ template.name }}</option>
             }
           </select>
         </div>
 
+        @if (selectedTemplate) {
         <div class="form-section">
           <p class="template-hint">
-            Bitte nutzen Sie die bereitgestellte Excel-Vorlage
-            <br><a href="/assets/templates/Vorlage_leer.xlsx" download="Vorlage_leer.xlsx">Mustervorlage herunterladen</a>
-            und tragen Sie alle Messwerte direkt in dieses Dokument ein, bevor Sie es hier hochladen.
+            Bitte nutzen Sie die bereitgestellte Excel-Vorlage und tragen Sie alle Messwerte direkt
+            in dieses Dokument ein, bevor Sie es hier hochladen.
           </p>
+          <button type="button" class="btn btn-text" (click)="downloadSampleExcel()">
+            Mustervorlage herunterladen
+          </button>
+        </div>
+
+        <div class="form-section">
+          <label class="form-label">Messserie</label>
+          <div class="radio-group">
+            <label class="radio-option">
+              <input type="radio" name="seriesMode" value="new"
+                [checked]="seriesMode() === 'new'"
+                (change)="seriesMode.set('new')">
+              Neue Serie erstellen
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="seriesMode" value="existing"
+                [checked]="seriesMode() === 'existing'"
+                (change)="seriesMode.set('existing')">
+              Bestehende Serie verwenden
+            </label>
+          </div>
+
+          @if (seriesMode() === 'new') {
+          <input type="text" class="form-input" placeholder="Name der neuen Serie (optional)"
+            [(ngModel)]="newSeriesName">
+          }
+
+          @if (seriesMode() === 'existing') {
+          <select class="form-select" [(ngModel)]="selectedSeriesId">
+            <option value="">Bitte wählen...</option>
+            @for (s of existingSeries(); track s.id) {
+            <option [value]="s.id">{{ s.name }} ({{ s.measurementCount }} Messungen)</option>
+            }
+          </select>
+          }
+        </div>
+
+        <div class="button-group">
+          <button type="button" class="btn btn-primary" [disabled]="!canGoToUpload()" (click)="goToUpload()">
+            Weiter
+          </button>
+        </div>
+        }
+        }
+
+        <!-- ========== STEP 2: Datei hochladen ========== -->
+        @if (currentStep() === 'upload') {
+        <div class="form-section">
           <label class="form-label">Dokument anhängen</label>
           <div class="upload-area" [class.drag-over]="isDragOver()" (click)="triggerFileInput()"
             (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)" (drop)="onDrop($event)">
@@ -36,10 +86,10 @@
                 d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
             </svg>
 
-            <p class="upload-text">Drag and Drop here</p>
-            <p class="upload-subtext">or</p>
+            <p class="upload-text">Dateien hierher ziehen</p>
+            <p class="upload-subtext">oder</p>
             <button type="button" class="browse-button" (click)="triggerFileInput(); $event.stopPropagation()">
-              Browse Files
+              Dateien auswählen
             </button>
 
             <input id="fileInput" type="file" accept=".csv,.xlsx" (change)="onFileSelected($event)"
@@ -60,21 +110,26 @@
         </div>
 
         <div class="button-group">
-          <button type="button" class="btn btn-primary" [disabled]="!canProceed()" (click)="onUpload()">
+          <button type="button" class="btn btn-secondary" (click)="currentStep.set('select')">
+            Zurück
+          </button>
+          <button type="button" class="btn btn-primary" [disabled]="!canLoadPreview()" (click)="onLoadPreview()">
             Vorschau laden
           </button>
-          <button type="button" class="btn btn-secondary"
-            [disabled]="!canImport() || getDuplicateMappings().length > 0"
-            (click)="onImport()">
-            Import starten
-          </button>
         </div>
-
-        @if (importStatus() === 'ready' && getDuplicateMappings().length > 0) {
-        <p>Bitte behebe doppelte Zuordnungen, bevor du den Import startest.</p>
         }
 
-        @if (importStatus() === 'ready') {
+        <!-- ========== STEP 3: Vorschau & Mapping ========== -->
+        @if (currentStep() === 'preview') {
+        <div class="form-section">
+          <div class="preview-info">
+            <strong>{{ previewRowCount() }}</strong> Zeilen erkannt
+            @if (previewWarning()) {
+            <p class="warning-text">{{ previewWarning() }}</p>
+            }
+          </div>
+        </div>
+
         <div class="form-section">
           <div class="mapping-header">
             <h2>Spalten zuordnen</h2>
@@ -93,15 +148,72 @@
           </div>
           }
         </div>
+
+        @if (getDuplicateMappings().length > 0) {
+        <p class="error-text">Bitte beheben Sie doppelte Zuordnungen, bevor Sie den Import starten.</p>
         }
 
-        <p>Import-Status: {{ importStatus() }}</p>
-        <p>Importiert: {{ importedCount() }} / {{ totalCount() }}</p>
-        @if (previewWarning()) {
-        <p>{{ previewWarning() }}</p>
+        <div class="button-group">
+          <button type="button" class="btn btn-secondary" (click)="currentStep.set('upload')">
+            Zurück
+          </button>
+          <button type="button" class="btn btn-primary"
+            [disabled]="!canImport()"
+            (click)="onImport()">
+            Import starten
+          </button>
+        </div>
         }
+
+        <!-- ========== STEP 4: Import läuft ========== -->
+        @if (currentStep() === 'importing') {
+        <div class="importing-status">
+          <div class="spinner"></div>
+          <p>Import wird verarbeitet...</p>
+        </div>
+        }
+
+        <!-- ========== STEP 5: Ergebnis ========== -->
+        @if (currentStep() === 'done' && importResult()) {
+        <div class="result-section">
+          @if (importResult()!.successCount > 0) {
+          <div class="result-badge result-success">
+            {{ importResult()!.successCount }} von {{ importResult()!.totalRows }} Messungen erfolgreich importiert
+          </div>
+          }
+
+          @if (importResult()!.errorCount > 0) {
+          <div class="result-badge result-error">
+            {{ importResult()!.errorCount }} Zeilen mit Fehlern
+          </div>
+          <div class="error-list">
+            <h3>Fehlerdetails</h3>
+            @for (err of importResult()!.errors; track err.row) {
+            <div class="error-item">
+              <span class="error-row">Zeile {{ err.row }}</span>
+              @if (err.field) {
+              <span class="error-field">{{ err.field }}</span>
+              }
+              <span class="error-message">{{ err.message }}</span>
+            </div>
+            }
+          </div>
+          }
+
+          <div class="button-group">
+            <button type="button" class="btn btn-secondary" (click)="resetImport()">
+              Neuer Import
+            </button>
+            <button type="button" class="btn btn-primary" (click)="goToSeries()">
+              Zur Messserie
+            </button>
+          </div>
+        </div>
+        }
+
+        <!-- Global error -->
         @if (globalError()) {
-        <p>{{ globalError() }}</p>
+        <p class="error-text global-error">{{ globalError() }}</p>
         }
       </div>
     </div>
@@ -109,5 +221,3 @@
 
   <app-footer></app-footer>
 </div>
-
-

@@ -50,6 +50,17 @@ builder.Services.AddScoped<eln.Backend.Application.Services.MeasurementService>(
 builder.Services.AddScoped<eln.Backend.Application.Services.MeasurementValidationService>();
 builder.Services.AddScoped<eln.Backend.Application.Services.MeasurementSeriesService>();
 builder.Services.AddScoped<eln.Backend.Application.Services.ShareLinkService>();
+builder.Services.AddScoped<eln.Backend.Application.Services.ImportService>();
+
+// HttpClient for Python Excel Microservice
+builder.Services.AddHttpClient("PythonService", client =>
+{
+    client.BaseAddress = new Uri(
+        Environment.GetEnvironmentVariable("PYTHON_SERVICE_URL")
+        ?? builder.Configuration["PythonService:BaseUrl"]
+        ?? "http://localhost:8001");
+    client.Timeout = TimeSpan.FromMinutes(5);
+});
 
 // Database Context - PostgreSQL (Connection String from Environment Variable or Config)
 var connectionString = Environment.GetEnvironmentVariable("ELN_DB_CONNECTION")
@@ -89,8 +100,15 @@ builder.Services.Configure<CookiePolicyOptions>(options =>
     };
 });
 
-// JwtSettings f�r IOptions<JwtSettings> im AuthController (falls du die Klasse nutzt)
-builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
+// JwtSettings fuer IOptions<JwtSettings> im AuthController
+builder.Services.Configure<JwtSettings>(options =>
+{
+    builder.Configuration.GetSection("JwtSettings").Bind(options);
+    // Override Secret from environment variable if set
+    var envSecret = Environment.GetEnvironmentVariable("ELN_JWT_SECRET");
+    if (!string.IsNullOrEmpty(envSecret))
+        options.Secret = envSecret;
+});
 
 // LdapSettings aus appsettings binden
 builder.Services.Configure<LdapSettings>(builder.Configuration.GetSection("Ldap"));

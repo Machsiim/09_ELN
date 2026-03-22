@@ -1,0 +1,128 @@
+<div class="page-container">
+  <app-header></app-header>
+
+  <main class="main-content">
+    <div class="migration-container">
+
+      <!-- ========== Active Migration Detail ========== -->
+      @if (currentMigration()) {
+      <div class="migration-card">
+        <div class="card-header">
+          <h1 class="card-title">Migration</h1>
+          <button type="button" class="btn btn-text" (click)="closeMigrationView()">Schließen</button>
+        </div>
+
+        <div class="status-overview">
+          <div class="status-badge" [class]="'status-badge-' + currentMigration()!.status">
+            {{ currentMigration()!.status === 'running' ? 'Läuft...' : 'Abgeschlossen' }}
+          </div>
+          <span class="status-detail">
+            {{ currentMigration()!.processed_files }} von {{ currentMigration()!.total_files }} Dateien verarbeitet
+          </span>
+        </div>
+
+        <div class="progress-bar">
+          <div class="progress-fill"
+            [style.width]="currentMigration()!.total_files > 0
+              ? (currentMigration()!.processed_files / currentMigration()!.total_files * 100) + '%'
+              : '0%'">
+          </div>
+        </div>
+
+        <div class="file-list">
+          @for (file of currentMigration()!.files; track file.filename) {
+          <div class="file-item">
+            <div class="file-info">
+              <span class="file-name">{{ file.filename }}</span>
+              <span class="file-status" [class]="getFileStatusClass(file.status)">
+                {{ getFileStatusLabel(file.status) }}
+              </span>
+            </div>
+            @if (file.status === 'completed' || file.status === 'failed') {
+            <div class="file-details">
+              <span>{{ file.rows }} Zeilen</span>
+              <span class="detail-success">{{ file.imported }} importiert</span>
+              @if (file.errors > 0) {
+              <span class="detail-error">{{ file.errors }} Fehler</span>
+              }
+            </div>
+            }
+            @if (file.error_message) {
+            <p class="file-error">{{ file.error_message }}</p>
+            }
+          </div>
+          }
+        </div>
+      </div>
+      }
+
+      <!-- ========== Start Migration Form ========== -->
+      @if (!currentMigration()) {
+      <div class="migration-card">
+        <h1 class="card-title">Daten-Migration</h1>
+        <p class="card-description">
+          Importiert alle Excel/CSV-Dateien aus einem Verzeichnis in das ELN.
+        </p>
+
+        <div class="form-section">
+          <label class="form-label">Template</label>
+          <select class="form-select" [(ngModel)]="selectedTemplate">
+            <option value="">Bitte wählen...</option>
+            @for (template of templates(); track template.id) {
+            <option [value]="template.id">{{ template.name }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="form-section">
+          <label class="form-label">Quellverzeichnis</label>
+          <input type="text" class="form-input" [(ngModel)]="directory"
+            placeholder="/data/migration">
+          <p class="form-hint">Pfad im Docker-Container (gemountet via docker-compose)</p>
+        </div>
+
+        <div class="button-group">
+          <button type="button" class="btn btn-primary"
+            [disabled]="!selectedTemplate || isStarting()"
+            (click)="startMigration()">
+            @if (isStarting()) {
+            Migration starten...
+            } @else {
+            Migration starten
+            }
+          </button>
+        </div>
+
+        @if (globalError()) {
+        <p class="error-text">{{ globalError() }}</p>
+        }
+      </div>
+
+      <!-- ========== History ========== -->
+      @if (history().length > 0) {
+      <div class="migration-card">
+        <h2 class="card-title">Vergangene Migrationen</h2>
+        <div class="history-list">
+          @for (entry of history(); track entry.migration_id) {
+          <div class="history-item" (click)="viewMigration(entry.migration_id)">
+            <div class="history-info">
+              <span class="history-date">{{ formatDate(entry.started_at) }}</span>
+              <span class="history-status" [class]="'history-' + entry.status">
+                {{ entry.status === 'running' ? 'Läuft' : 'Abgeschlossen' }}
+              </span>
+            </div>
+            <div class="history-details">
+              {{ entry.processed_files }}/{{ entry.total_files }} Dateien — Template #{{ entry.template_id }}
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+      }
+      }
+
+    </div>
+  </main>
+
+  <app-footer></app-footer>
+</div>

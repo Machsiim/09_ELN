@@ -31,9 +31,13 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8080
       - ConnectionStrings__DefaultConnection=Host=postgres;Database=elndb;Username=elnuser;Password=elnpassword
+      - PYTHON_SERVICE_URL=http://python-service:8001
+      - ELN_JWT_SECRET=${ELN_JWT_SECRET:-SuperSecretDevKeyThatIsAtLeast64BytesLong_ChangeInProduction123}
     depends_on:
       postgres:
         condition: service_healthy
+      python-service:
+        condition: service_started
     networks:
       - eln-network
 
@@ -56,6 +60,8 @@ services:
     container_name: eln-python-service
     ports:
       - "8001:8001"
+    volumes:
+      - ./migration-data:/data/migration
     networks:
       - eln-network
 

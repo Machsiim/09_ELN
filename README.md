@@ -47,7 +47,7 @@ Frontend läuft dann auf `http://localhost:4200`
 
 ### Development Login
 - **Username:** `admin`
-- **Password:** `11111111`
+- **Password:** `!ELN_Admin_09!`
 
 (Funktioniert nur wenn `ASPNETCORE_ENVIRONMENT=Development`)
 
@@ -355,7 +355,7 @@ ASPNETCORE_ENVIRONMENT=Development
 | Feature | Development | Production |
 |---------|-------------|------------|
 | Swagger UI | Ja | Nein |
-| Admin-Login (admin/11111111) | Ja | Nein |
+| Admin-Login (admin/!ELN_Admin_09!) | Ja | Nein |
 | Detaillierte Fehlermeldungen | Ja | Nein |
 | CORS | Alles erlaubt | Nur CORS_ORIGIN |
 
