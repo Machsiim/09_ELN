@@ -50,7 +50,6 @@ public class MeasurementService
         }
 
         var measurement = new Measurement(dto.SeriesId, dto.TemplateId, jsonDocument, userId);
-        
         _context.Measurements.Add(measurement);
         await _context.SaveChangesAsync();
 

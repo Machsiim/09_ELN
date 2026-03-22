@@ -267,7 +267,7 @@ public class MeasurementSeriesController : ControllerBase
             if (user == null)
                 return Unauthorized();
 
-            await _shareLinkService.DeleteShareLinkAsync(shareId, user.Id);
+            await _shareLinkService.DeleteShareLinkAsync(seriesId, shareId, user.Id);
             return NoContent();
         }
         catch (Exception ex)
@@ -296,7 +296,7 @@ public class MeasurementSeriesController : ControllerBase
             if (user == null)
                 return Unauthorized();
 
-            await _shareLinkService.DeactivateShareLinkAsync(shareId, user.Id);
+            await _shareLinkService.DeactivateShareLinkAsync(seriesId, shareId, user.Id);
             return NoContent();
         }
         catch (Exception ex)

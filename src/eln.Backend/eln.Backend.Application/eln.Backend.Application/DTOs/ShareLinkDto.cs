@@ -15,7 +15,9 @@ public class CreateShareLinkDto
     public bool IsPublic { get; set; }
 
     /// <summary>
-    /// List of user emails that have access (only used when IsPublic = false)
+    /// List of university email addresses that have access (only used when IsPublic = false).
+    /// Must belong to accepted FH/university domains (e.g. technikum-wien.at).
+    /// Required when IsPublic = false.
     /// </summary>
     public List<string>? AllowedUserEmails { get; set; }
 }

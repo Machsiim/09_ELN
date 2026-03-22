@@ -37,6 +37,7 @@ services:
       - JwtSettings__Secret=${JWT_SECRET}
       - Cors__AllowedOrigins__0=${CORS_ORIGIN}
       - ELN_UPLOAD_PATH=/app/uploads
+      # ELN_DEV_ADMIN_PASSWORD is intentionally NOT set in production
     volumes:
       - uploads_data:/app/uploads
     depends_on:

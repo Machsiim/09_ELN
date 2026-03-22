@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using eln.Backend.Application;
 
 namespace eln.Backend.Webapi.Middleware;
 
@@ -40,11 +41,25 @@ public class ExceptionHandlerMiddleware
         _logger.LogError(exception, "An unhandled exception occurred: {Message}", exception.Message);
 
         context.Response.ContentType = "application/json";
-        context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+
+        // Map known exception types to appropriate HTTP status codes
+        context.Response.StatusCode = exception switch
+        {
+            NotFoundException  => (int)HttpStatusCode.NotFound,
+            ForbiddenException => (int)HttpStatusCode.Forbidden,
+            ValidationException => (int)HttpStatusCode.BadRequest,
+            _                  => (int)HttpStatusCode.InternalServerError
+        };
 
         var response = new ErrorResponse
         {
-            Error = "An unexpected error occurred",
+            Error = exception switch
+            {
+                NotFoundException   => "Not found",
+                ForbiddenException  => "Forbidden",
+                ValidationException => "Validation error",
+                _                   => "An unexpected error occurred"
+            },
             StatusCode = context.Response.StatusCode
         };
 
@@ -53,6 +68,12 @@ public class ExceptionHandlerMiddleware
         {
             response.Details = exception.Message;
             response.StackTrace = exception.StackTrace;
+        }
+        else
+        {
+            // In production, safe to expose message for known/expected exceptions
+            if (exception is NotFoundException or ForbiddenException or ValidationException)
+                response.Details = exception.Message;
         }
 
         var jsonOptions = new JsonSerializerOptions

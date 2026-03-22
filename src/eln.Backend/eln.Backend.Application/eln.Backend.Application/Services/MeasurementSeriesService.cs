@@ -36,7 +36,7 @@ public class MeasurementSeriesService
             .FirstOrDefaultAsync(s => s.Id == id);
 
         if (series == null)
-            throw new Exception($"MeasurementSeries with ID {id} not found");
+            throw new NotFoundException($"MeasurementSeries with ID {id} not found");
 
         return new MeasurementSeriesResponseDto
         {
@@ -83,7 +83,7 @@ public class MeasurementSeriesService
     {
         var series = await _context.MeasurementSeries.FindAsync(id);
         if (series == null)
-            throw new Exception($"MeasurementSeries with ID {id} not found");
+            throw new NotFoundException($"MeasurementSeries with ID {id} not found");
 
         _context.MeasurementSeries.Remove(series);
         await _context.SaveChangesAsync();
@@ -97,11 +97,11 @@ public class MeasurementSeriesService
     {
         var series = await _context.MeasurementSeries.FindAsync(id);
         if (series == null)
-            throw new Exception($"MeasurementSeries with ID {id} not found");
+            throw new NotFoundException($"MeasurementSeries with ID {id} not found");
 
         // Check if series is locked
         if (series.IsLocked)
-            throw new Exception("Cannot update locked series. Please unlock it first.");
+            throw new ValidationException("Cannot update locked series. Please unlock it first.");
 
         // Update properties
         series.Name = dto.Name;
@@ -119,10 +119,10 @@ public class MeasurementSeriesService
     {
         var series = await _context.MeasurementSeries.FindAsync(id);
         if (series == null)
-            throw new Exception($"MeasurementSeries with ID {id} not found");
+            throw new NotFoundException($"MeasurementSeries with ID {id} not found");
 
         if (series.IsLocked)
-            throw new Exception("Series is already locked");
+            throw new ValidationException("Series is already locked");
 
         series.IsLocked = true;
         series.LockedBy = userId;
@@ -140,10 +140,10 @@ public class MeasurementSeriesService
     {
         var series = await _context.MeasurementSeries.FindAsync(id);
         if (series == null)
-            throw new Exception($"MeasurementSeries with ID {id} not found");
+            throw new NotFoundException($"MeasurementSeries with ID {id} not found");
 
         if (!series.IsLocked)
-            throw new Exception("Series is not locked");
+            throw new ValidationException("Series is not locked");
 
         series.IsLocked = false;
         series.LockedBy = null;

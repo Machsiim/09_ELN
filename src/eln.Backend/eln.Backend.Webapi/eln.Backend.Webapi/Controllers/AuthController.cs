@@ -34,10 +34,12 @@ namespace eln.Backend.Webapi.Controllers
         [HttpPost("login")]
         public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginRequest request)
         {
-            // Development-only: Allow local admin user
+            // Development-only: Allow local admin user via environment variable
+            var devAdminPassword = Environment.GetEnvironmentVariable("ELN_DEV_ADMIN_PASSWORD");
             var isDevAdmin = _environment.IsDevelopment()
+                && !string.IsNullOrEmpty(devAdminPassword)
                 && request.Username == "admin"
-                && request.Password == "!ELN_Admin_09!";
+                && request.Password == devAdminPassword;
 
             if (!isDevAdmin && !_ldapService.ValidateUser(request.Username, request.Password))
                 return Unauthorized();
@@ -86,11 +88,7 @@ namespace eln.Backend.Webapi.Controllers
 
         private string GenerateJwtToken(string username, out DateTime expiresAt)
         {
-            // Rolle aus dem Usernamen ableiten:
-            var role = username.StartsWith("if", StringComparison.OrdinalIgnoreCase)
-                ? "Student"
-                : "Staff";
-
+            var role = GetRoleFromUsername(username);
             return GenerateJwtToken(username, role, out expiresAt);
         }
 
