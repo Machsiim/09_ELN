@@ -63,8 +63,6 @@ export class Templates implements OnInit {
   readonly templates = signal<TemplateDto[]>([]);
   readonly sections = signal<BuilderSection[]>([]);
   readonly loading = signal(false);
-  readonly error = signal<string | null>(null);
-  readonly successMessage = signal<string | null>(null);
   readonly confirmModalVisible = signal(false);
   readonly confirmModalMode = signal<'delete' | 'archive'>('delete');
   readonly templateForAction = signal<TemplateDto | null>(null);
@@ -222,7 +220,6 @@ export class Templates implements OnInit {
 
   fetchTemplates(): void {
     this.loading.set(true);
-    this.error.set(null);
 
     this.templateService
       .getTemplates()
@@ -234,7 +231,7 @@ export class Templates implements OnInit {
         },
         error: () => {
           this.loading.set(false);
-          this.error.set('Templates konnten nicht geladen werden.');
+          this.notification.showError('Templates konnten nicht geladen werden.');
         }
       });
   }
@@ -274,7 +271,7 @@ export class Templates implements OnInit {
             this.loading.set(false);
             this.confirmModalVisible.set(false);
             this.templateForAction.set(null);
-            this.error.set('Fehler beim Löschen des Templates.');
+            this.notification.showError('Fehler beim Löschen des Templates.');
           }
         });
     } else {
@@ -295,7 +292,7 @@ export class Templates implements OnInit {
             this.loading.set(false);
             this.confirmModalVisible.set(false);
             this.templateForAction.set(null);
-            this.error.set('Fehler beim Archivieren des Templates.');
+            this.notification.showError('Fehler beim Archivieren des Templates.');
           }
         });
     }
@@ -308,7 +305,7 @@ export class Templates implements OnInit {
 
   saveTemplate(): void {
     if (!this.authService.isStaff()) {
-      this.error.set('Nur Lektoren können Templates erstellen.');
+      this.notification.showError('Nur Lektoren können Templates erstellen.');
       return;
     }
 
@@ -318,12 +315,12 @@ export class Templates implements OnInit {
     }
 
     if (this.sections().length === 0) {
-      this.error.set('Bitte fügen Sie mindestens eine Sektion mit Inhalten hinzu.');
+      this.notification.showError('Bitte fügen Sie mindestens eine Sektion mit Inhalten hinzu.');
       return;
     }
 
     if (!this.builderHasFields()) {
-      this.error.set('Fügen Sie mindestens ein Feld hinzu.');
+      this.notification.showError('Fügen Sie mindestens ein Feld hinzu.');
       return;
     }
 
@@ -339,7 +336,6 @@ export class Templates implements OnInit {
     }
 
     this.loading.set(true);
-    this.error.set(null);
 
     this.templateService
       .createTemplate(payload)
@@ -353,7 +349,7 @@ export class Templates implements OnInit {
         },
         error: () => {
           this.loading.set(false);
-          this.error.set('Template konnte nicht gespeichert werden.');
+          this.notification.showError('Template konnte nicht gespeichert werden.');
         }
       });
   }
@@ -365,7 +361,7 @@ export class Templates implements OnInit {
       this.setSectionsFromSchema(schema);
       this.notification.show('Template wurde in den Builder geladen.');
     } catch {
-      this.error.set('Schema konnte nicht geladen werden.');
+      this.notification.showError('Schema konnte nicht geladen werden.');
     }
   }
 

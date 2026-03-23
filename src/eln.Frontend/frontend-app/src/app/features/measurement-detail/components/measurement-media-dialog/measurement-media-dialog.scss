@@ -1,3 +1,5 @@
+@use '../../../../styles/variables' as *;
+
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -5,15 +7,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: $z-modal;
 }
 
 .media-dialog {
-  background: #fff;
+  background: $color-bg-white;
   border-radius: 16px;
-  padding: 1.5rem;
+  padding: $spacing-lg;
   width: min(540px, 90vw);
-  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.15);
+  box-shadow: $shadow-modal;
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -27,20 +29,20 @@
 
 .media-add-button {
   border: none;
-  border-radius: 999px;
+  border-radius: $radius-pill;
   padding: 0.35rem 1rem;
-  background: #c1f1d0;
-  color: #065f46;
+  background: $color-primary-light;
+  color: $color-primary;
   font-weight: 600;
   cursor: pointer;
 }
 
 .media-remove-button {
   border: none;
-  border-radius: 999px;
+  border-radius: $radius-pill;
   padding: 0.35rem 1rem;
-  background: #fee2e2;
-  color: #b91c1c;
+  background: $color-error-bg;
+  color: $color-error-text;
   font-weight: 600;
   cursor: pointer;
 }

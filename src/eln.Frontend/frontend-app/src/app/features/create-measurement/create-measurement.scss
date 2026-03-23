@@ -45,7 +45,7 @@
 .ghost-button {
   border: none;
   background: transparent;
-  color: $color-accent;
+  color: $color-primary;
   font-weight: 600;
   cursor: pointer;
 
@@ -140,6 +140,7 @@
   input,
   textarea {
     width: 100%;
+    box-sizing: border-box;
     padding: 0.65rem 0.85rem;
     border-radius: 0.6rem;
     border: 1px solid $color-border-input;
@@ -149,7 +150,7 @@
     &:focus {
       outline: none;
       border-color: $color-accent;
-      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+      box-shadow: 0 0 0 2px rgba($color-primary, 0.1);
     }
   }
 

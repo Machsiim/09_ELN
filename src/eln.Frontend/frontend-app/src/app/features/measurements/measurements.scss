@@ -108,11 +108,12 @@
   }
 
   &.danger {
-    background: #fecaca;
+    background: $color-error-bg;
     color: $color-error-text;
 
     &:not(:disabled):hover {
-      background: #fca5a5;
+      background: $color-error;
+      color: $color-bg-white;
     }
   }
 }
@@ -169,7 +170,7 @@
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 15px 30px rgba(15, 23, 42, 0.15);
-    border-color: #93c5fd;
+    border-color: $color-primary-light;
   }
 
   &:active {
@@ -199,15 +200,15 @@
   align-self: flex-start;
   padding: 0.3rem 0.8rem;
   border-radius: $radius-pill;
-  background: #eef2ff;
-  color: #4c1d95;
+  background: $color-primary-bg;
+  color: $color-primary-dark;
   font-size: 0.9rem;
   font-weight: 600;
 }
 
 .tag-secondary {
-  background: #e0f2fe;
-  color: #0369a1;
+  background: $color-primary-light;
+  color: $color-primary;
   font-size: 0.85rem;
 }
 
@@ -257,7 +258,7 @@
       &:focus {
         outline: none;
         border-color: $color-accent;
-        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+        box-shadow: 0 0 0 2px rgba($color-primary, 0.1);
       }
     }
 

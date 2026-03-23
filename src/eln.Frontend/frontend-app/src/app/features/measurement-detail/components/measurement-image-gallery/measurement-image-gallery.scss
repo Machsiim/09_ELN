@@ -1,9 +1,11 @@
+@use '../../../../styles/variables' as *;
+
 .images-gallery-container {
   margin-top: 2rem;
   padding: 1.5rem;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  background: $color-bg-white;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-md;
 
   .gallery-header {
     display: flex;
@@ -21,10 +23,10 @@
 
 .media-add-button {
   border: none;
-  border-radius: 999px;
+  border-radius: $radius-pill;
   padding: 0.35rem 1rem;
-  background: #c1f1d0;
-  color: #065f46;
+  background: $color-primary-light;
+  color: $color-primary;
   font-weight: 600;
   cursor: pointer;
 }

@@ -50,35 +50,35 @@
   }
 }
 .share-button {
-  background: #e0edff;
+  background: $color-primary-light;
   border: none;
   padding: $spacing-sm 1.25rem;
   border-radius: $radius-pill;
   font-weight: 600;
-  color: $color-accent-dark;
+  color: $color-primary;
   cursor: pointer;
 
   &:hover {
-    background: #c7dcff;
+    background: $color-primary-bg;
   }
 }
 
 .lock-toggle-button {
-  background: #ffebee;
-  border: 1px solid #ef9a9a;
+  background: $color-error-bg;
+  border: 1px solid $color-error;
   padding: $spacing-sm $spacing-md;
   border-radius: $radius-sm;
   cursor: pointer;
   font-size: 0.9rem;
-  color: #c62828;
+  color: $color-error-text;
   transition: all $transition-base;
   display: flex;
   align-items: center;
   gap: $spacing-sm;
 
   &:hover:not(:disabled) {
-    background: #ffcdd2;
-    border-color: #e57373;
+    background: $color-error-bg;
+    border-color: $color-danger;
   }
 
   &:disabled {
@@ -87,13 +87,13 @@
   }
 
   &.locked {
-    background: #e8f5e9;
-    border-color: #a5d6a7;
-    color: #2e7d32;
+    background: $color-success-bg;
+    border-color: $color-success;
+    color: $color-success-text;
 
     &:hover:not(:disabled) {
-      background: #c8e6c9;
-      border-color: #81c784;
+      background: $color-primary-light;
+      border-color: $color-primary;
     }
   }
 
@@ -103,18 +103,18 @@
 }
 
 .lock-badge {
-  background: #ffebee;
-  border: 1px solid #ef9a9a;
+  background: $color-error-bg;
+  border: 1px solid $color-error;
   padding: $spacing-sm $spacing-md;
   border-radius: $radius-sm;
   font-size: 0.9rem;
-  color: #c62828;
+  color: $color-error-text;
 }
 
 .lock-warning {
   display: block;
   margin-top: $spacing-sm;
-  color: #c62828;
+  color: $color-error-text;
 }
 
 .subtitle {
@@ -147,6 +147,7 @@ h1 {
 
 .search-input {
   width: 100%;
+  box-sizing: border-box;
   padding: 0.75rem 2.5rem 0.75rem 1rem;
   border: 2px solid $color-border-dark;
   border-radius: $radius-md;
@@ -155,8 +156,8 @@ h1 {
 
   &:focus {
     outline: none;
-    border-color: #1976d2;
-    box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+    border-color: $color-primary;
+    box-shadow: 0 0 0 3px rgba($color-primary, 0.1);
   }
 
   &::placeholder {
@@ -219,6 +220,12 @@ h1 {
   font-size: 0.8rem;
   letter-spacing: 0.05em;
   transition: background-color $transition-base, color $transition-base, border-color $transition-base, opacity $transition-base;
+
+  &:hover:not(:disabled) {
+    background: $color-primary;
+    border-color: $color-primary-dark;
+    color: #fff;
+  }
 
   &:disabled {
     cursor: not-allowed;
@@ -323,7 +330,7 @@ h1 {
 
     .cell-id {
       font-weight: 600;
-      color: #1976d2;
+      color: $color-primary;
       white-space: nowrap;
     }
 
@@ -348,6 +355,7 @@ h1 {
       input {
         width: 16px;
         height: 16px;
+        accent-color: $color-primary;
       }
     }
   }
@@ -426,14 +434,14 @@ h1 {
 
   &:hover {
     background: $color-bg-page;
-    border-color: #1976d2;
+    border-color: $color-primary;
   }
 
   input[type="checkbox"] {
     width: 18px;
     height: 18px;
     cursor: pointer;
-    accent-color: #1976d2;
+    accent-color: $color-primary;
   }
 
   span {

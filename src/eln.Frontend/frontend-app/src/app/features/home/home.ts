@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
+import { Router } from '@angular/router';
 import { Header } from '../../components/header/header';
 import { Footer } from '../../components/footer/footer';
 
@@ -9,11 +10,17 @@ import { Footer } from '../../components/footer/footer';
   styleUrl: './home.scss',
 })
 export class Home {
+  private readonly router = inject(Router);
+
+  navigateToCreate(): void {
+    this.router.navigate(['/erstellen']);
+  }
+
   navigateToImport(): void {
-    window.location.href = '/import';
+    this.router.navigate(['/import']);
   }
 
   navigateToDashboard(): void {
-    window.location.href = '/dashboard';
+    this.router.navigate(['/dashboard']);
   }
 }

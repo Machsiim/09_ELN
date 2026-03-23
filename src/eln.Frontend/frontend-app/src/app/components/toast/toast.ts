@@ -6,7 +6,7 @@ import { NotificationService } from '../../services/notification.service';
   standalone: true,
   template: `
     @if (notification.message()) {
-      <div class="toast toast-success">
+      <div class="toast" [class.toast-success]="notification.type() === 'success'" [class.toast-error]="notification.type() === 'error'">
         {{ notification.message() }}
       </div>
     }

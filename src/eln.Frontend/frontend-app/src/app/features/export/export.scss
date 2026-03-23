@@ -66,15 +66,15 @@
 
 // Override btn-primary for export page (full-width, different color)
 .btn-primary {
-  background-color: #0033cc;
+  background-color: $color-primary;
   width: 100%;
 
   &:hover:not(:disabled) {
-    background-color: #002699;
+    background-color: $color-primary-dark;
   }
 
   &:disabled {
-    background-color: #ccc;
+    background-color: $color-border-dark;
   }
 }
 

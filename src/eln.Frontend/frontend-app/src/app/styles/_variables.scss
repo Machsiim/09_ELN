@@ -1,48 +1,54 @@
 // ============================================================
 // Design Tokens – Single Source of Truth
+// Based on FH Technikum Wien Corporate Design Guidelines
 // ============================================================
 
-// ── Primary ──────────────────────────────────────────────────
-$color-primary: #0066cc;
-$color-primary-dark: #0052a3;
-$color-primary-light: #e6f2ff;
-$color-primary-bg: #f0f7ff;
+// ── FH Technikum Wien Brand Colors ───────────────────────────
+$fh-blue: #00649c;       // PANTONE 301C – Technikum Blau
+$fh-gray: #72777A;       // PANTONE 431C – Technikum Grau
+$fh-green: #8BB31D;      // PANTONE 376C – Technikum Grün
 
-// ── Secondary / Accent ───────────────────────────────────────
-$color-accent: #2563eb;
-$color-accent-dark: #1d4ed8;
-$color-accent-light: #dbeafe;
+// ── Primary (Technikum Blau) ─────────────────────────────────
+$color-primary: $fh-blue;
+$color-primary-dark: #004d79;
+$color-primary-light: #d9eaf4;
+$color-primary-bg: #edf5fa;
 
-// ── Success ──────────────────────────────────────────────────
-$color-success: #16a34a;
-$color-success-bg: #dcfce7;
-$color-success-text: #15803d;
+// ── Secondary / Accent (Technikum Grün) ──────────────────────
+$color-accent: $fh-green;
+$color-accent-dark: #6d8c17;
+$color-accent-light: #e5f0cc;
 
-// ── Error / Danger ───────────────────────────────────────────
-$color-error: #dc3545;
-$color-error-dark: #c82333;
-$color-error-bg: #fee2e2;
-$color-error-text: #b91c1c;
-$color-danger: #f44336;
-$color-danger-dark: #d32f2f;
+// ── Success (abgeleitet aus Technikum Grün) ──────────────────
+$color-success: $fh-green;
+$color-success-bg: #e5f0cc;
+$color-success-text: #4d6611;
 
-// ── Warning ──────────────────────────────────────────────────
-$color-warning: #f59e0b;
-$color-warning-bg: #fff3cd;
-$color-warning-text: #856404;
+// ── Error / Danger (Komplementär zu Technikum Blau) ──────────
+$color-error: #c6362e;
+$color-error-dark: #a02c26;
+$color-error-bg: #f8e0de;
+$color-error-text: #7d2220;
+$color-danger: #c6362e;
+$color-danger-dark: #a02c26;
 
-// ── Info ─────────────────────────────────────────────────────
-$color-info-bg: #eff6ff;
-$color-info-text: #1d4ed8;
+// ── Warning (warmes Gegenstück zu Technikum Grün) ────────────
+$color-warning: #c98a0c;
+$color-warning-bg: #faf0d1;
+$color-warning-text: #7a5408;
 
-// ── Neutrals / Gray ─────────────────────────────────────────
-$color-text-primary: #0f172a;
-$color-text-secondary: #475569;
-$color-text-muted: #64748b;
-$color-text-light: #94a3b8;
+// ── Info (abgeleitet aus Technikum Blau) ─────────────────────
+$color-info-bg: $color-primary-light;
+$color-info-text: $fh-blue;
+
+// ── Neutrals / Gray (abgeleitet aus Technikum Grau) ──────────
+$color-text-primary: #1a1c1d;
+$color-text-secondary: $fh-gray;
+$color-text-muted: #959a9c;
+$color-text-light: #b4b8ba;
 $color-text-dark: #1a1a1a;
-$color-text-gray: #666;
-$color-text-heading: #333;
+$color-text-gray: $fh-gray;
+$color-text-heading: #3a3d3f;
 
 $color-bg-page: #f5f5f5;
 $color-bg-page-alt: #fafafa;

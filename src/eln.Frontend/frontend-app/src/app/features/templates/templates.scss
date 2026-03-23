@@ -104,13 +104,13 @@
 }
 
 .btn-secondary {
-  background: rgba(99, 102, 241, 0.1);
-  color: #4f46e5;
+  background: $color-primary-light;
+  color: $color-primary;
 }
 
 .btn-text {
   background: transparent;
-  color: #4f46e5;
+  color: $color-primary;
   padding: 0.35rem 0.75rem;
 }
 
@@ -211,7 +211,7 @@
 
 .field-type {
   font-size: 0.8rem;
-  color: #4f46e5;
+  color: $color-primary;
   margin-left: $spacing-sm;
 }
 
@@ -268,13 +268,13 @@
 }
 
 .delete-btn {
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.1);
+  color: $color-danger;
+  background: $color-error-bg;
   transition: all $transition-base;
 }
 
 .delete-btn:hover:not(:disabled) {
-  background: #ef4444;
+  background: $color-danger;
   color: white;
 }
 

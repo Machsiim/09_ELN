@@ -145,7 +145,7 @@
   gap: 0.75rem;
   padding: 0.75rem;
   background-color: $color-primary-bg;
-  border: 1px solid #b3d9ff;
+  border: 1px solid $color-primary-light;
   border-radius: $radius-md;
   margin-top: $spacing-md;
 
@@ -190,15 +190,15 @@
 
 // Override btn-primary for import page
 .btn-primary {
-  background-color: #0033cc;
+  background-color: $color-primary;
   flex: 1;
 
   &:hover:not(:disabled) {
-    background-color: #002699;
+    background-color: $color-primary-dark;
   }
 
   &:disabled {
-    background-color: #ccc;
+    background-color: $color-border-dark;
   }
 }
 
@@ -243,7 +243,7 @@
   padding: $spacing-md;
   background-color: $color-primary-bg;
   border-radius: $radius-md;
-  border: 1px solid #b3d9ff;
+  border: 1px solid $color-primary-light;
 
   strong {
     color: $color-primary;
@@ -292,8 +292,8 @@
 .global-error {
   margin-top: $spacing-lg;
   padding: 0.75rem 1rem;
-  background-color: #f8d7da;
-  border: 1px solid #f5c6cb;
+  background-color: $color-error-bg;
+  border: 1px solid $color-error;
   border-radius: $radius-md;
 }
 
@@ -328,7 +328,7 @@
 
 .error-row {
   font-weight: 600;
-  color: #721c24;
+  color: $color-error-text;
   min-width: 60px;
 }
 

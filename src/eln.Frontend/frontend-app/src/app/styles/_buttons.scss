@@ -24,12 +24,12 @@
 }
 
 .btn-primary {
-  background: $color-accent;
+  background: $color-primary;
   color: #fff;
 
   &:not(:disabled):hover {
-    background: $color-accent-dark;
-    box-shadow: 0 5px 15px rgba(37, 99, 235, 0.35);
+    background: $color-primary-dark;
+    box-shadow: 0 5px 15px rgba($color-primary, 0.35);
   }
 }
 

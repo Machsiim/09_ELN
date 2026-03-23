@@ -1,10 +1,12 @@
+@use '../../styles/variables' as *;
+
 .share-dialog {
-  background: #fff;
-  border-radius: 12px;
+  background: $color-bg-white;
+  border-radius: $radius-lg;
   padding: 2rem;
   width: min(680px, 92vw);
   min-width: 360px;
-  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.12);
+  box-shadow: $shadow-xl;
 
   h2 {
     margin-top: 0;
@@ -19,18 +21,18 @@
   }
 
   .form-control {
-    border: 1px solid #cbd5f5;
+    border: 1px solid $color-border-input;
     border-radius: 10px;
     padding: 0.65rem 0.85rem;
-    background-color: #f8fafc;
+    background-color: $color-bg-subtle;
     font-weight: 600;
-    color: #1f2937;
+    color: $color-text-primary;
   }
 
   select.form-control {
     appearance: none;
-    background-image: linear-gradient(45deg, transparent 50%, #475569 50%),
-      linear-gradient(135deg, #475569 50%, transparent 50%);
+    background-image: linear-gradient(45deg, transparent 50%, $color-text-heading 50%),
+      linear-gradient(135deg, $color-text-heading 50%, transparent 50%);
     background-position: calc(100% - 18px) 50%, calc(100% - 13px) 50%;
     background-size: 6px 6px, 6px 6px;
     background-repeat: no-repeat;
@@ -38,11 +40,11 @@
   }
 
   .share-url {
-    background: #f5f8ff;
+    background: $color-primary-bg;
     padding: 0.75rem;
     border-radius: 6px;
     font-weight: 600;
-    color: #1f2937;
+    color: $color-text-primary;
     word-break: break-all;
     margin-bottom: 1rem;
   }

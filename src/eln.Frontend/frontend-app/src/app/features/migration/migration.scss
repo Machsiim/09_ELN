@@ -63,15 +63,15 @@
 
 // Override btn-primary for migration page
 .btn-primary {
-  background-color: #0033cc;
+  background-color: $color-primary;
   width: 100%;
 
   &:hover:not(:disabled) {
-    background-color: #002699;
+    background-color: $color-primary-dark;
   }
 
   &:disabled {
-    background-color: #ccc;
+    background-color: $color-border-dark;
   }
 }
 
@@ -96,8 +96,8 @@
 }
 
 .status-badge-completed {
-  background-color: #d4edda;
-  color: #155724;
+  background-color: $color-success-bg;
+  color: $color-success-text;
 }
 
 .status-detail {
@@ -151,11 +151,11 @@
 }
 
 .status-success {
-  color: #155724;
+  color: $color-success-text;
 }
 
 .status-error {
-  color: #721c24;
+  color: $color-error-text;
 }
 
 .status-processing {
@@ -175,19 +175,19 @@
 }
 
 .detail-success {
-  color: #155724;
+  color: $color-success-text;
 }
 
 .detail-error {
-  color: #721c24;
+  color: $color-error-text;
 }
 
 .file-error {
   font-size: 0.8125rem;
-  color: #721c24;
+  color: $color-error-text;
   margin-top: 0.375rem;
   padding: $spacing-sm;
-  background-color: #f8d7da;
+  background-color: $color-error-bg;
   border-radius: $radius-sm;
 }
 
@@ -232,7 +232,7 @@
 }
 
 .history-completed {
-  color: #155724;
+  color: $color-success-text;
 }
 
 .history-details {

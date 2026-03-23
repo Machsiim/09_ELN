@@ -1,3 +1,5 @@
+@use '../../../../styles/variables' as *;
+
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -5,13 +7,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: $z-modal;
 }
 
 .history-dialog {
-  background: #fff;
-  border-radius: 12px;
-  padding: 1.5rem;
+  background: $color-bg-white;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
   max-width: 780px;
   width: 90%;
   max-height: 80vh;
@@ -40,10 +42,10 @@
 
 .history-status {
   margin: 0;
-  color: #555;
+  color: $color-text-secondary;
 
   &.error {
-    color: #d32f2f;
+    color: $color-error;
   }
 }
 
@@ -54,8 +56,8 @@
 }
 
 .history-entry {
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  border: 1px solid $color-border;
+  border-radius: $radius-md;
   padding: 1rem;
 
   header {
@@ -66,7 +68,7 @@
     }
 
     small {
-      color: #6b7280;
+      color: $color-text-secondary;
     }
   }
 
@@ -78,12 +80,12 @@
 
 .history-description {
   margin: 0.25rem 0 0;
-  color: #555;
+  color: $color-text-secondary;
 }
 
 .history-nochange {
   margin: 0;
-  color: #6b7280;
+  color: $color-text-secondary;
 }
 
 .change-value {
@@ -91,10 +93,10 @@
   margin-top: 0.25rem;
 
   &.old {
-    color: #b91c1c;
+    color: $color-error-text;
   }
 
   &.new {
-    color: #15803d;
+    color: $color-success-text;
   }
 }

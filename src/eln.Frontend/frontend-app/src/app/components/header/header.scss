@@ -1,10 +1,16 @@
 @use '../../styles/variables' as *;
 
-.app-header {
+:host {
   position: sticky;
-  background-color: $color-bg-white;
+  top: 0;
+  z-index: $z-sticky + 1;
+  display: block;
+}
+
+.app-header {
+  background-color: $color-primary;
   box-shadow: $shadow-sm;
-  padding: $spacing-md 0;
+  padding: $spacing-sm 0;
 }
 
 .header-container {
@@ -33,21 +39,22 @@
 }
 
 .main-nav a {
-  color: $color-text-heading;
+  color: rgba(255, 255, 255, 0.85);
   text-decoration: none;
   font-weight: 500;
   padding: $spacing-sm $spacing-md;
   border-radius: $radius-sm;
-  transition: background-color $transition-base;
+  transition: background-color $transition-base, color $transition-base;
 }
 
 .main-nav a:hover {
-  background-color: $color-bg-page;
+  color: #fff;
+  background-color: rgba(255, 255, 255, 0.15);
 }
 
 .main-nav a.active {
-  color: $color-primary;
-  background-color: $color-primary-light;
+  color: #fff;
+  background-color: rgba(255, 255, 255, 0.2);
 }
 
 .action-buttons {
@@ -70,31 +77,32 @@
 }
 
 .btn-primary {
-  background-color: $color-primary;
-  color: white;
+  background-color: #fff;
+  color: $color-primary;
 }
 
 .btn-primary:hover {
-  background-color: $color-primary-dark;
+  background-color: rgba(255, 255, 255, 0.85);
 }
 
 .btn-secondary {
-  background-color: $color-primary;
-  color: white;
+  background-color: rgba(255, 255, 255, 0.15);
+  color: #fff;
 }
 
 .btn-secondary:hover {
-  background-color: $color-primary-dark;
+  background-color: rgba(255, 255, 255, 0.25);
 }
 
 .btn-icon {
   padding: $spacing-sm;
-  background-color: $color-bg-page;
+  background-color: rgba(255, 255, 255, 0.15);
   border-radius: 50%;
+  color: #fff;
 }
 
 .btn-icon:hover {
-  background-color: $color-border-dark;
+  background-color: rgba(255, 255, 255, 0.25);
 }
 
 .user-profile {
@@ -105,17 +113,17 @@
 
 .username {
   font-weight: 500;
-  color: $color-text-heading;
+  color: #fff;
   font-size: 0.9rem;
 }
 
 .btn-logout {
-  background-color: $color-error;
-  color: white;
+  background-color: rgba(255, 255, 255, 0.15);
+  color: #fff;
   padding: $spacing-sm $spacing-md;
   font-size: 0.875rem;
 
   &:hover {
-    background-color: $color-error-dark;
+    background-color: $color-error;
   }
 }

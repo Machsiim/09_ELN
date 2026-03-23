@@ -37,8 +37,8 @@
   font-size: 0.875rem;
   margin-top: $spacing-md;
   padding: 0.75rem 1rem;
-  background-color: #f8d7da;
-  border: 1px solid #f5c6cb;
+  background-color: $color-error-bg;
+  border: 1px solid $color-error;
   border-radius: $radius-md;
 }
 
@@ -51,13 +51,13 @@
 }
 
 .result-success {
-  background-color: #d4edda;
-  color: #155724;
-  border: 1px solid #c3e6cb;
+  background-color: $color-success-bg;
+  color: $color-success-text;
+  border: 1px solid $color-success;
 }
 
 .result-error {
-  background-color: #f8d7da;
-  color: #721c24;
-  border: 1px solid #f5c6cb;
+  background-color: $color-error-bg;
+  color: $color-error-text;
+  border: 1px solid $color-error;
 }
