@@ -60,8 +60,6 @@ services:
     container_name: eln-python-service
     ports:
       - "8001:8001"
-    volumes:
-      - ./migration-data:/data/migration
     networks:
       - eln-network
 

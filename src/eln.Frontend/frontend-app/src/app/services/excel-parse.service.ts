@@ -35,4 +35,25 @@ export class ExcelParseService {
       }
     });
   }
+
+  parseCsv(
+    file: File,
+    headerRow: number
+  ): Observable<ExcelParseResponse> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const url = `${this.baseUrl}/parse-csv`;
+    return this.http.post<ExcelParseResponse>(url, formData, {
+      params: { headerRow: String(headerRow) }
+    });
+  }
+
+  parseFile(
+    file: File,
+    headerRow: number
+  ): Observable<ExcelParseResponse> {
+    const ext = file.name.toLowerCase().split('.').pop();
+    return ext === 'csv' ? this.parseCsv(file, headerRow) : this.parseExcel(file, headerRow);
+  }
 }

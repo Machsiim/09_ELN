@@ -32,7 +32,8 @@ public class ImportController : ControllerBase
         [FromForm] int templateId,
         [FromForm] int? seriesId = null,
         [FromForm] string? seriesName = null,
-        [FromForm] string? seriesDescription = null)
+        [FromForm] string? seriesDescription = null,
+        [FromForm] string? columnMapping = null)
     {
         try
         {
@@ -49,7 +50,7 @@ public class ImportController : ControllerBase
             await using var stream = file.OpenReadStream();
             var result = await _importService.ImportExcelAsync(
                 stream, file.FileName, templateId, userId.Value,
-                seriesId, seriesName, seriesDescription);
+                seriesId, seriesName, seriesDescription, columnMapping);
 
             return Ok(result);
         }
@@ -68,7 +69,8 @@ public class ImportController : ControllerBase
         [FromForm] int templateId,
         [FromForm] int? seriesId = null,
         [FromForm] string? seriesName = null,
-        [FromForm] string? seriesDescription = null)
+        [FromForm] string? seriesDescription = null,
+        [FromForm] string? columnMapping = null)
     {
         try
         {
@@ -85,7 +87,7 @@ public class ImportController : ControllerBase
             await using var stream = file.OpenReadStream();
             var result = await _importService.ImportCsvAsync(
                 stream, file.FileName, templateId, userId.Value,
-                seriesId, seriesName, seriesDescription);
+                seriesId, seriesName, seriesDescription, columnMapping);
 
             return Ok(result);
         }

@@ -17,40 +17,45 @@
 .migration-container {
   width: 100%;
   max-width: 750px;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
 }
 
 .migration-card {
   background: white;
   border-radius: 12px;
-  padding: 2.5rem;
+  padding: 3rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.migration-title {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 0.5rem;
+}
+
+.step-indicator {
+  font-size: 1rem;
+  color: #666;
   margin-bottom: 1.5rem;
 }
 
-.card-title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #1a1a1a;
-  margin: 0 0 0.5rem;
+.progress-bar {
+  width: 100%;
+  height: 4px;
+  background-color: #e0e0e0;
+  border-radius: 2px;
+  margin-bottom: 2rem;
+  overflow: hidden;
 }
 
-.card-description {
-  font-size: 0.9375rem;
-  color: #555;
-  margin-bottom: 2rem;
+.progress-fill {
+  height: 100%;
+  background-color: #0066cc;
+  transition: width 0.3s ease;
 }
 
 .form-section {
-  margin-bottom: 1.5rem;
+  margin-bottom: 2rem;
 }
 
 .form-label {
@@ -68,6 +73,7 @@
   border-radius: 8px;
   font-size: 1rem;
   background-color: white;
+  cursor: pointer;
   transition: border-color 0.2s;
 
   &:focus {
@@ -76,14 +82,143 @@
   }
 }
 
-.form-hint {
-  font-size: 0.8125rem;
-  color: #888;
-  margin-top: 0.25rem;
+.form-input {
+  cursor: text;
+  margin-top: 0.5rem;
 }
 
+.migration-hint {
+  font-size: 0.875rem;
+  color: #555;
+  margin-bottom: 0.75rem;
+  line-height: 1.5;
+}
+
+.radio-group {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.radio-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9375rem;
+  color: #333;
+  cursor: pointer;
+
+  input[type="radio"] {
+    accent-color: #0066cc;
+  }
+}
+
+// Upload area (identical to import)
+.upload-area {
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  padding: 3rem 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background-color: #fafafa;
+
+  &:hover {
+    border-color: #0066cc;
+    background-color: #f0f7ff;
+  }
+
+  &.drag-over {
+    border-color: #0066cc;
+    background-color: #e6f2ff;
+  }
+}
+
+.upload-icon {
+  color: #0066cc;
+  margin-bottom: 1rem;
+}
+
+.upload-text {
+  font-size: 1rem;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.upload-subtext {
+  font-size: 0.875rem;
+  color: #666;
+  margin-bottom: 1rem;
+}
+
+.browse-button {
+  background-color: transparent;
+  color: #0066cc;
+  border: none;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: underline;
+
+  &:hover {
+    color: #0052a3;
+  }
+}
+
+.file-info {
+  font-size: 0.875rem;
+  color: #666;
+  margin-top: 0.5rem;
+}
+
+.selected-file {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background-color: #f0f7ff;
+  border: 1px solid #b3d9ff;
+  border-radius: 8px;
+  margin-top: 1rem;
+
+  svg {
+    color: #0066cc;
+    flex-shrink: 0;
+  }
+
+  span {
+    flex: 1;
+    color: #333;
+    font-size: 0.875rem;
+  }
+}
+
+.remove-file {
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+  }
+}
+
+// Buttons (identical to import)
 .button-group {
-  margin-top: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 2rem;
 }
 
 .btn {
@@ -99,7 +234,7 @@
 .btn-primary {
   background-color: #0033cc;
   color: white;
-  width: 100%;
+  flex: 1;
 
   &:hover:not(:disabled) {
     background-color: #002699;
@@ -111,197 +246,261 @@
   }
 }
 
-.btn-text {
-  background: none;
-  border: none;
-  color: #0066cc;
-  font-weight: 500;
-  cursor: pointer;
-  padding: 0.5rem 0;
+.btn-secondary {
+  background-color: #e0e0e0;
+  color: #333;
 
   &:hover {
-    color: #0052a3;
+    background-color: #d0d0d0;
   }
+}
+
+// Profile section
+.profile-section {
+  margin-bottom: 1.5rem;
+}
+
+// Mapping info
+.mapping-info {
+  padding: 1rem;
+  background-color: #f0f7ff;
+  border-radius: 8px;
+  border: 1px solid #b3d9ff;
+  font-size: 0.9375rem;
+
+  strong {
+    color: #0066cc;
+  }
+}
+
+// Mapping table
+.mapping-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+
+  th {
+    text-align: left;
+    padding: 0.75rem;
+    background-color: #f5f5f5;
+    border-bottom: 2px solid #e0e0e0;
+    font-weight: 600;
+    color: #333;
+  }
+
+  td {
+    padding: 0.625rem 0.75rem;
+    border-bottom: 1px solid #f0f0f0;
+    vertical-align: middle;
+  }
+
+  tr:last-child td {
+    border-bottom: none;
+  }
+
+  .form-select {
+    padding: 0.5rem;
+    font-size: 0.8125rem;
+  }
+}
+
+.field-label {
+  display: block;
+  font-weight: 500;
+  color: #333;
+}
+
+.field-section {
+  display: block;
+  font-size: 0.75rem;
+  color: #888;
+  margin-top: 0.125rem;
+}
+
+.status-auto {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #155724;
+  background-color: #d4edda;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.status-manual {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #0c5460;
+  background-color: #d1ecf1;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.status-skip {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #856404;
+  background-color: #fff3cd;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+// Save profile
+.save-profile {
+  padding: 1rem;
+  background-color: #fafafa;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+}
+
+.checkbox-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9375rem;
+  color: #333;
+  cursor: pointer;
+
+  input[type="checkbox"] {
+    accent-color: #0066cc;
+  }
+}
+
+// Importing spinner (identical to import)
+.importing-status {
+  text-align: center;
+  padding: 3rem 0;
+
+  p {
+    margin-top: 1rem;
+    color: #666;
+    font-size: 1rem;
+  }
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto;
+  border: 4px solid #e0e0e0;
+  border-top-color: #0066cc;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// Result section (identical to import)
+.result-section {
+  margin-top: 1rem;
+}
+
+.result-badge {
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 1rem;
+  margin-bottom: 1rem;
+}
+
+.result-success {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.result-error {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.result-actions {
+  margin-top: 2rem;
 }
 
 .error-text {
   color: #dc3545;
   font-size: 0.875rem;
-  margin-top: 1rem;
+  margin-top: 0.5rem;
+}
+
+.global-error {
+  margin-top: 1.5rem;
   padding: 0.75rem 1rem;
   background-color: #f8d7da;
   border: 1px solid #f5c6cb;
   border-radius: 8px;
 }
 
-// Status overview
-.status-overview {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-
-.status-badge {
-  padding: 0.375rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.8125rem;
-  font-weight: 600;
-}
-
-.status-badge-running {
-  background-color: #fff3cd;
-  color: #856404;
-}
-
-.status-badge-completed {
-  background-color: #d4edda;
-  color: #155724;
-}
-
-.status-detail {
-  font-size: 0.9375rem;
-  color: #555;
-}
-
-.progress-bar {
-  width: 100%;
-  height: 6px;
-  background-color: #e0e0e0;
-  border-radius: 3px;
-  margin-bottom: 1.5rem;
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  background-color: #0066cc;
-  transition: width 0.5s ease;
-}
-
-// File list
-.file-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.file-item {
-  padding: 0.875rem 1rem;
+.error-list {
+  margin-top: 1rem;
+  max-height: 300px;
+  overflow-y: auto;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
-}
 
-.file-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.file-name {
-  font-weight: 500;
-  color: #333;
-  font-size: 0.9375rem;
-}
-
-.file-status {
-  font-size: 0.8125rem;
-  font-weight: 600;
-}
-
-.status-success {
-  color: #155724;
-}
-
-.status-error {
-  color: #721c24;
-}
-
-.status-processing {
-  color: #856404;
-}
-
-.status-pending {
-  color: #888;
-}
-
-.file-details {
-  display: flex;
-  gap: 1rem;
-  margin-top: 0.375rem;
-  font-size: 0.8125rem;
-  color: #666;
-}
-
-.detail-success {
-  color: #155724;
-}
-
-.detail-error {
-  color: #721c24;
-}
-
-.file-error {
-  font-size: 0.8125rem;
-  color: #721c24;
-  margin-top: 0.375rem;
-  padding: 0.5rem;
-  background-color: #f8d7da;
-  border-radius: 4px;
-}
-
-// History
-.history-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.history-item {
-  padding: 0.75rem 1rem;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-
-  &:hover {
+  h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 0.75rem 1rem;
+    margin: 0;
     background-color: #f5f5f5;
+    border-bottom: 1px solid #e0e0e0;
   }
 }
 
-.history-info {
+.error-item {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.history-date {
-  font-size: 0.875rem;
-  color: #333;
-  font-weight: 500;
-}
-
-.history-status {
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid #f0f0f0;
   font-size: 0.8125rem;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.error-row {
   font-weight: 600;
+  color: #721c24;
+  min-width: 60px;
 }
 
-.history-running {
+.error-field {
   color: #856404;
+  min-width: 120px;
 }
 
-.history-completed {
-  color: #155724;
-}
-
-.history-details {
-  font-size: 0.8125rem;
-  color: #666;
-  margin-top: 0.25rem;
+.error-message {
+  color: #333;
+  flex: 1;
 }
 
 @media (max-width: 768px) {
   .migration-card {
-    padding: 1.5rem;
+    padding: 2rem 1.5rem;
+  }
+
+  .button-group {
+    flex-direction: column-reverse;
+  }
+
+  .btn {
+    width: 100%;
+  }
+
+  .mapping-table {
+    display: block;
+    overflow-x: auto;
+  }
+
+  .radio-group {
+    flex-direction: column;
+    gap: 0.5rem;
   }
 }

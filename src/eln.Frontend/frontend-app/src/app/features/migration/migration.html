@@ -3,124 +3,267 @@
 
   <main class="main-content">
     <div class="migration-container">
-
-      <!-- ========== Active Migration Detail ========== -->
-      @if (currentMigration()) {
       <div class="migration-card">
-        <div class="card-header">
-          <h1 class="card-title">Migration</h1>
-          <button type="button" class="btn btn-text" (click)="closeMigrationView()">Schließen</button>
-        </div>
-
-        <div class="status-overview">
-          <div class="status-badge" [class]="'status-badge-' + currentMigration()!.status">
-            {{ currentMigration()!.status === 'running' ? 'Läuft...' : 'Abgeschlossen' }}
-          </div>
-          <span class="status-detail">
-            {{ currentMigration()!.processed_files }} von {{ currentMigration()!.total_files }} Dateien verarbeitet
-          </span>
-        </div>
+        <h1 class="migration-title">Daten-Migration</h1>
+        <div class="step-indicator">Schritt {{ getStepNumber() }} von 6 — {{ getStepLabel() }}</div>
 
         <div class="progress-bar">
-          <div class="progress-fill"
-            [style.width]="currentMigration()!.total_files > 0
-              ? (currentMigration()!.processed_files / currentMigration()!.total_files * 100) + '%'
-              : '0%'">
-          </div>
+          <div class="progress-fill" [style.width]="getProgressWidth()"></div>
         </div>
 
-        <div class="file-list">
-          @for (file of currentMigration()!.files; track file.filename) {
-          <div class="file-item">
-            <div class="file-info">
-              <span class="file-name">{{ file.filename }}</span>
-              <span class="file-status" [class]="getFileStatusClass(file.status)">
-                {{ getFileStatusLabel(file.status) }}
-              </span>
-            </div>
-            @if (file.status === 'completed' || file.status === 'failed') {
-            <div class="file-details">
-              <span>{{ file.rows }} Zeilen</span>
-              <span class="detail-success">{{ file.imported }} importiert</span>
-              @if (file.errors > 0) {
-              <span class="detail-error">{{ file.errors }} Fehler</span>
-              }
-            </div>
-            }
-            @if (file.error_message) {
-            <p class="file-error">{{ file.error_message }}</p>
-            }
-          </div>
-          }
+        <!-- ========== STEP 1: Template waehlen ========== -->
+        @if (currentStep() === 'template') {
+        <div class="form-section">
+          <p class="migration-hint">
+            Importieren Sie Altdaten aus bestehenden Excel- oder CSV-Dateien in das ELN.
+            Die Spalten Ihrer Dateien werden den Template-Feldern zugeordnet.
+          </p>
         </div>
-      </div>
-      }
-
-      <!-- ========== Start Migration Form ========== -->
-      @if (!currentMigration()) {
-      <div class="migration-card">
-        <h1 class="card-title">Daten-Migration</h1>
-        <p class="card-description">
-          Importiert alle Excel/CSV-Dateien aus einem Verzeichnis in das ELN.
-        </p>
 
         <div class="form-section">
-          <label class="form-label">Template</label>
-          <select class="form-select" [(ngModel)]="selectedTemplate">
-            <option value="">Bitte wählen...</option>
+          <label for="template" class="form-label">Template</label>
+          <select id="template" class="form-select" [(ngModel)]="selectedTemplate" (change)="onTemplateChange()">
+            <option value="">Bitte waehlen...</option>
             @for (template of templates(); track template.id) {
             <option [value]="template.id">{{ template.name }}</option>
             }
           </select>
         </div>
 
-        <div class="form-section">
-          <label class="form-label">Quellverzeichnis</label>
-          <input type="text" class="form-input" [(ngModel)]="directory"
-            placeholder="/data/migration">
-          <p class="form-hint">Pfad im Docker-Container (gemountet via docker-compose)</p>
-        </div>
-
         <div class="button-group">
-          <button type="button" class="btn btn-primary"
-            [disabled]="!selectedTemplate || isStarting()"
-            (click)="startMigration()">
-            @if (isStarting()) {
-            Migration starten...
-            } @else {
-            Migration starten
-            }
+          <button type="button" class="btn btn-primary" [disabled]="!selectedTemplate" (click)="goToUpload()">
+            Weiter
           </button>
         </div>
-
-        @if (globalError()) {
-        <p class="error-text">{{ globalError() }}</p>
         }
-      </div>
 
-      <!-- ========== History ========== -->
-      @if (history().length > 0) {
-      <div class="migration-card">
-        <h2 class="card-title">Vergangene Migrationen</h2>
-        <div class="history-list">
-          @for (entry of history(); track entry.migration_id) {
-          <div class="history-item" (click)="viewMigration(entry.migration_id)">
-            <div class="history-info">
-              <span class="history-date">{{ formatDate(entry.started_at) }}</span>
-              <span class="history-status" [class]="'history-' + entry.status">
-                {{ entry.status === 'running' ? 'Läuft' : 'Abgeschlossen' }}
-              </span>
-            </div>
-            <div class="history-details">
-              {{ entry.processed_files }}/{{ entry.total_files }} Dateien — Template #{{ entry.template_id }}
-            </div>
+        <!-- ========== STEP 2: Datei hochladen ========== -->
+        @if (currentStep() === 'upload') {
+        <div class="form-section">
+          <label class="form-label">Dokument anhaengen</label>
+          <div class="upload-area" [class.drag-over]="isDragOver()" (click)="triggerFileInput()"
+            (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)" (drop)="onDrop($event)">
+
+            <svg class="upload-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+
+            <p class="upload-text">Dateien hierher ziehen</p>
+            <p class="upload-subtext">oder</p>
+            <button type="button" class="browse-button" (click)="triggerFileInput(); $event.stopPropagation()">
+              Dateien auswaehlen
+            </button>
+
+            <input id="migrationFileInput" type="file" accept=".csv,.xlsx" (change)="onFileSelected($event)"
+              style="display: none">
+          </div>
+          <p class="file-info">Akzeptierte Dateitypen: .csv, .xlsx</p>
+
+          @if (selectedFile()) {
+          <div class="selected-file">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" />
+              <polyline points="14 2 14 8 20 8" />
+            </svg>
+            <span>{{ selectedFile()?.name }}</span>
+            <button type="button" class="remove-file" (click)="removeFile(); $event.stopPropagation()">×</button>
           </div>
           }
         </div>
-      </div>
-      }
-      }
 
+        <div class="button-group">
+          <button type="button" class="btn btn-secondary" (click)="currentStep.set('template')">
+            Zurueck
+          </button>
+          <button type="button" class="btn btn-primary" [disabled]="!selectedFile()" (click)="onLoadPreview()">
+            Vorschau laden
+          </button>
+        </div>
+        }
+
+        <!-- ========== STEP 3: Spalten zuordnen ========== -->
+        @if (currentStep() === 'mapping') {
+        <div class="form-section">
+          @if (savedProfiles().length > 0) {
+          <div class="profile-section">
+            <label class="form-label">Gespeichertes Mapping laden</label>
+            <select class="form-select" [(ngModel)]="selectedProfileId" (change)="loadProfile()">
+              <option [ngValue]="null">-- Manuell zuordnen --</option>
+              @for (p of savedProfiles(); track p.id) {
+              <option [value]="p.id">{{ p.name }}</option>
+              }
+            </select>
+          </div>
+          }
+        </div>
+
+        <div class="form-section">
+          <div class="mapping-info">
+            {{ autoMappedCount }} von {{ mappings.length }} Feldern automatisch zugeordnet.
+          </div>
+        </div>
+
+        <div class="form-section">
+          <table class="mapping-table">
+            <thead>
+              <tr>
+                <th>Template-Feld</th>
+                <th>Excel-Spalte</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (m of mappings; track m.templateField) {
+              <tr>
+                <td>
+                  <span class="field-label">{{ m.templateFieldLabel }}</span>
+                  <span class="field-section">{{ m.templateFieldSection }}</span>
+                </td>
+                <td>
+                  <select class="form-select" [(ngModel)]="m.excelColumn"
+                    (ngModelChange)="m.autoMapped = false">
+                    <option [ngValue]="null">-- Nicht zuordnen --</option>
+                    @for (col of excelColumns; track col) {
+                    <option [value]="col">{{ col }}</option>
+                    }
+                  </select>
+                </td>
+                <td>
+                  @if (m.excelColumn && m.autoMapped) {
+                  <span class="status-auto">Automatisch</span>
+                  }
+                  @if (m.excelColumn && !m.autoMapped) {
+                  <span class="status-manual">Manuell</span>
+                  }
+                  @if (!m.excelColumn) {
+                  <span class="status-skip">Uebersprungen</span>
+                  }
+                </td>
+              </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div class="form-section">
+          <div class="save-profile">
+            <label class="checkbox-option">
+              <input type="checkbox" [(ngModel)]="saveAsProfile">
+              Mapping als Profil speichern
+            </label>
+            @if (saveAsProfile) {
+            <input type="text" class="form-input" [(ngModel)]="newProfileName"
+              placeholder="Name des Profils (z.B. 'Mein altes Lungen-Format')">
+            }
+          </div>
+        </div>
+
+        <div class="button-group">
+          <button type="button" class="btn btn-secondary" (click)="currentStep.set('upload')">
+            Zurueck
+          </button>
+          <button type="button" class="btn btn-primary" [disabled]="!hasAnyMapping()" (click)="goToSeries()">
+            Weiter
+          </button>
+        </div>
+        }
+
+        <!-- ========== STEP 4: Messserie waehlen ========== -->
+        @if (currentStep() === 'series') {
+        <div class="form-section">
+          <label class="form-label">Messserie</label>
+          <div class="radio-group">
+            <label class="radio-option">
+              <input type="radio" name="seriesMode" value="new"
+                [checked]="seriesMode() === 'new'"
+                (change)="seriesMode.set('new')">
+              Neue Serie erstellen
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="seriesMode" value="existing"
+                [checked]="seriesMode() === 'existing'"
+                (change)="seriesMode.set('existing')">
+              Bestehende Serie verwenden
+            </label>
+          </div>
+
+          @if (seriesMode() === 'new') {
+          <input type="text" class="form-input" placeholder="Name der neuen Serie (optional)"
+            [(ngModel)]="newSeriesName">
+          }
+
+          @if (seriesMode() === 'existing') {
+          <select class="form-select" [(ngModel)]="selectedSeriesId">
+            <option value="">Bitte waehlen...</option>
+            @for (s of existingSeries(); track s.id) {
+            <option [value]="s.id">{{ s.name }} ({{ s.measurementCount }} Messungen)</option>
+            }
+          </select>
+          }
+        </div>
+
+        <div class="button-group">
+          <button type="button" class="btn btn-secondary" (click)="currentStep.set('mapping')">
+            Zurueck
+          </button>
+          <button type="button" class="btn btn-primary" [disabled]="!canStartImport()" (click)="onImport()">
+            Import starten
+          </button>
+        </div>
+        }
+
+        <!-- ========== STEP 5: Import laeuft ========== -->
+        @if (currentStep() === 'importing') {
+        <div class="importing-status">
+          <div class="spinner"></div>
+          <p>Import wird verarbeitet...</p>
+        </div>
+        }
+
+        <!-- ========== STEP 6: Ergebnis ========== -->
+        @if (currentStep() === 'result' && importResult()) {
+        <div class="result-section">
+          @if (importResult()!.successCount > 0) {
+          <div class="result-badge result-success">
+            {{ importResult()!.successCount }} von {{ importResult()!.totalRows }} Messungen erfolgreich importiert
+          </div>
+          }
+
+          @if (importResult()!.errorCount > 0) {
+          <div class="result-badge result-error">
+            {{ importResult()!.errorCount }} Zeilen mit Fehlern
+          </div>
+          <div class="error-list">
+            <h3>Fehlerdetails</h3>
+            @for (err of importResult()!.errors; track err.row) {
+            <div class="error-item">
+              <span class="error-row">Zeile {{ err.row }}</span>
+              @if (err.field) {
+              <span class="error-field">{{ err.field }}</span>
+              }
+              <span class="error-message">{{ err.message }}</span>
+            </div>
+            }
+          </div>
+          }
+
+          <div class="button-group result-actions">
+            <button type="button" class="btn btn-secondary" (click)="startNextFile()">
+              Naechste Datei importieren
+            </button>
+            <button type="button" class="btn btn-primary" (click)="navigateToSeries()">
+              Zur Messserie
+            </button>
+          </div>
+        </div>
+        }
+
+        <!-- Global error -->
+        @if (globalError()) {
+        <p class="error-text global-error">{{ globalError() }}</p>
+        }
+      </div>
     </div>
   </main>
 

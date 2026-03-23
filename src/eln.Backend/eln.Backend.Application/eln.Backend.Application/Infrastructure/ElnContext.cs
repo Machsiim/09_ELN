@@ -16,6 +16,7 @@ public class ElnContext : DbContext
     public DbSet<MeasurementHistory> MeasurementHistories => Set<MeasurementHistory>();
     public DbSet<SeriesShareLink> SeriesShareLinks => Set<SeriesShareLink>();
     public DbSet<MeasurementImage> MeasurementImages => Set<MeasurementImage>();
+    public DbSet<MappingProfile> MappingProfiles => Set<MappingProfile>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -140,6 +141,25 @@ public class ElnContext : DbContext
             .WithMany()
             .HasForeignKey(mi => mi.UploadedBy)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // MappingProfile -> Template
+        modelBuilder.Entity<MappingProfile>()
+            .HasOne(mp => mp.Template)
+            .WithMany()
+            .HasForeignKey(mp => mp.TemplateId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // MappingProfile -> User (Creator)
+        modelBuilder.Entity<MappingProfile>()
+            .HasOne(mp => mp.Creator)
+            .WithMany()
+            .HasForeignKey(mp => mp.CreatedBy)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // MappingProfile: Mapping as JSONB
+        modelBuilder.Entity<MappingProfile>()
+            .Property(mp => mp.Mapping)
+            .HasColumnType("jsonb");
     }
 
     private static string ToSnakeCase(string? name)

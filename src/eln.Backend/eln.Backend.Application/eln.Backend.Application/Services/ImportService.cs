@@ -31,10 +31,11 @@ public class ImportService
     /// </summary>
     public async Task<ImportResponseDto> ImportExcelAsync(
         Stream fileStream, string fileName, int templateId, int userId,
-        int? seriesId = null, string? seriesName = null, string? seriesDescription = null)
+        int? seriesId = null, string? seriesName = null, string? seriesDescription = null,
+        string? columnMapping = null)
     {
         var parseResult = await ParseFileViaPython(fileStream, fileName, "/parse-excel-full");
-        return await ProcessImport(parseResult, templateId, userId, seriesId, seriesName, seriesDescription);
+        return await ProcessImport(parseResult, templateId, userId, seriesId, seriesName, seriesDescription, columnMapping);
     }
 
     /// <summary>
@@ -42,10 +43,11 @@ public class ImportService
     /// </summary>
     public async Task<ImportResponseDto> ImportCsvAsync(
         Stream fileStream, string fileName, int templateId, int userId,
-        int? seriesId = null, string? seriesName = null, string? seriesDescription = null)
+        int? seriesId = null, string? seriesName = null, string? seriesDescription = null,
+        string? columnMapping = null)
     {
         var parseResult = await ParseFileViaPython(fileStream, fileName, "/parse-csv-full");
-        return await ProcessImport(parseResult, templateId, userId, seriesId, seriesName, seriesDescription);
+        return await ProcessImport(parseResult, templateId, userId, seriesId, seriesName, seriesDescription, columnMapping);
     }
 
     /// <summary>
@@ -101,7 +103,8 @@ public class ImportService
 
     private async Task<ImportResponseDto> ProcessImport(
         PythonFullParseResponse parseResult, int templateId, int userId,
-        int? seriesId, string? seriesName, string? seriesDescription)
+        int? seriesId, string? seriesName, string? seriesDescription,
+        string? columnMapping = null)
     {
         // Load template
         var template = await _context.Templates.FindAsync(templateId);
@@ -138,8 +141,17 @@ public class ImportService
             TotalRows = parseResult.Data.Count
         };
 
-        // Auto-map columns to field keys
-        var columnToFieldKey = AutoMapColumns(parseResult.Columns, catalog);
+        // Use provided column mapping or auto-map columns to field keys
+        Dictionary<string, string> columnToFieldKey;
+        if (!string.IsNullOrEmpty(columnMapping))
+        {
+            columnToFieldKey = JsonSerializer.Deserialize<Dictionary<string, string>>(columnMapping)
+                ?? new Dictionary<string, string>();
+        }
+        else
+        {
+            columnToFieldKey = AutoMapColumns(parseResult.Columns, catalog);
+        }
 
         // Process each row in a transaction
         await using var transaction = await _context.Database.BeginTransactionAsync();

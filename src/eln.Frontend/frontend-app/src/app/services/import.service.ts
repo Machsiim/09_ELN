@@ -31,7 +31,8 @@ export class ImportService {
     templateId: number,
     seriesId?: number,
     seriesName?: string,
-    seriesDescription?: string
+    seriesDescription?: string,
+    columnMapping?: Record<string, string>
   ): Observable<ImportResponse> {
     const formData = new FormData();
     formData.append('file', file);
@@ -39,6 +40,9 @@ export class ImportService {
     if (seriesId != null) formData.append('seriesId', String(seriesId));
     if (seriesName) formData.append('seriesName', seriesName);
     if (seriesDescription) formData.append('seriesDescription', seriesDescription);
+    if (columnMapping && Object.keys(columnMapping).length > 0) {
+      formData.append('columnMapping', JSON.stringify(columnMapping));
+    }
     return this.http.post<ImportResponse>(`${this.baseUrl}/import/excel`, formData);
   }
 
@@ -47,7 +51,8 @@ export class ImportService {
     templateId: number,
     seriesId?: number,
     seriesName?: string,
-    seriesDescription?: string
+    seriesDescription?: string,
+    columnMapping?: Record<string, string>
   ): Observable<ImportResponse> {
     const formData = new FormData();
     formData.append('file', file);
@@ -55,6 +60,9 @@ export class ImportService {
     if (seriesId != null) formData.append('seriesId', String(seriesId));
     if (seriesName) formData.append('seriesName', seriesName);
     if (seriesDescription) formData.append('seriesDescription', seriesDescription);
+    if (columnMapping && Object.keys(columnMapping).length > 0) {
+      formData.append('columnMapping', JSON.stringify(columnMapping));
+    }
     return this.http.post<ImportResponse>(`${this.baseUrl}/import/csv`, formData);
   }
 }
