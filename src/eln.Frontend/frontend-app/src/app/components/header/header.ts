@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
@@ -9,30 +9,31 @@ import { AuthService } from '../../services/auth.service';
   styleUrl: './header.scss',
 })
 export class Header {
+  private readonly router = inject(Router);
   readonly authService = inject(AuthService);
 
   onCreateMeasurement(): void {
-    window.location.href = '/erstellen';
+    this.router.navigate(['/erstellen']);
   }
 
   onImport(): void {
-    window.location.href = '/import';
+    this.router.navigate(['/import']);
   }
 
   onTemplates(): void {
-    window.location.href = '/templates';
+    this.router.navigate(['/templates']);
   }
 
   onExport(): void {
-    window.location.href = '/exportieren';
+    this.router.navigate(['/exportieren']);
   }
 
   onProfileClick(): void {
-    window.location.href = '/login';
+    this.router.navigate(['/login']);
   }
 
   onLogout(): void {
     this.authService.logout();
-    window.location.href = '/login';
+    this.router.navigate(['/login']);
   }
 }

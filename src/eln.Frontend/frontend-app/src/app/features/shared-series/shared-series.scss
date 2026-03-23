@@ -1,5 +1,7 @@
+@use '../../styles/variables' as *;
+
 .shared-series-card {
-  background: #ffffff;
+  background: $color-bg-white;
   border-radius: 20px;
   padding: 32px;
   box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
@@ -15,7 +17,7 @@
     text-transform: uppercase;
     letter-spacing: 0.08em;
     font-size: 12px;
-    color: #64748b;
+    color: $color-text-secondary;
   }
 
   h1 {
@@ -25,7 +27,7 @@
 
   .description {
     margin: 0;
-    color: #475569;
+    color: $color-text-heading;
   }
 
   .meta {
@@ -33,7 +35,7 @@
     gap: 16px;
     flex-wrap: wrap;
     font-size: 13px;
-    color: #64748b;
+    color: $color-text-secondary;
   }
 }
 
@@ -44,9 +46,9 @@
 
 .measurement-card {
   border-radius: 16px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid $color-border;
   padding: 18px;
-  background: #f8fafc;
+  background: $color-bg-subtle;
 }
 
 .measurement-header {
@@ -63,7 +65,7 @@
 
   .template-name {
     margin: 0;
-    color: #334155;
+    color: $color-text-heading;
   }
 
   .measurement-meta {
@@ -72,7 +74,7 @@
     align-items: flex-end;
     gap: 4px;
     font-size: 12px;
-    color: #64748b;
+    color: $color-text-secondary;
   }
 }
 

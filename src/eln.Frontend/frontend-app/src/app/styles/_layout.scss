@@ -1,0 +1,17 @@
+@use 'variables' as *;
+
+// ============================================================
+// Shared Layout Styles
+// ============================================================
+
+.page-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: $color-bg-page;
+}
+
+.main-content {
+  flex: 1;
+  padding: $spacing-xl;
+}

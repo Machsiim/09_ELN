@@ -1,0 +1,42 @@
+@use 'variables' as *;
+
+// ============================================================
+// Shared Toast / Notification Styles
+// ============================================================
+
+.toast {
+  position: fixed;
+  bottom: $spacing-lg;
+  left: $spacing-lg;
+  padding: 1rem 1.25rem;
+  border-radius: $radius-lg;
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.25);
+  z-index: $z-toast;
+  animation: toastFadeInOut 4s forwards;
+}
+
+.toast-success {
+  background: $color-success;
+}
+
+.toast-error {
+  background: $color-error;
+}
+
+@keyframes toastFadeInOut {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  10%,
+  90% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}

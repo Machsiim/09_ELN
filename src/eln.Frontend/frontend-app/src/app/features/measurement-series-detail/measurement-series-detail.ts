@@ -22,6 +22,7 @@ import {
   ShareLinkResponseDto
 } from '../../services/measurement-series.service';
 import { AuthService } from '../../services/auth.service';
+import { NotificationService } from '../../services/notification.service';
 import { MediaAttachment } from '../../models/media-attachment';
 
 @Component({
@@ -37,6 +38,7 @@ export class MeasurementSeriesDetail implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly notification = inject(NotificationService);
 
   readonly measurements = signal<MeasurementResponseDto[]>([]);
   readonly filteredMeasurements = signal<MeasurementResponseDto[]>([]);
@@ -51,8 +53,6 @@ export class MeasurementSeriesDetail implements OnInit {
   readonly confirmVisible = signal(false);
   readonly confirmMessage = signal<string>('');
   readonly pendingDeletionIds = signal<number[]>([]);
-  readonly successMessage = signal<string | null>(null);
-  private successTimeout: number | null = null;
   readonly columnPickerVisible = signal(false);
   readonly visibleColumns = signal<Set<string>>(new Set());
   readonly shareDialogVisible = signal(false);
@@ -111,12 +111,12 @@ export class MeasurementSeriesDetail implements OnInit {
         const result = await firstValueFrom(this.seriesService.unlockSeries(id));
         this.isLocked.set(result.isLocked);
         this.lockedByUsername.set(result.lockedByUsername ?? null);
-        this.showSuccess('Messserie entsperrt.');
+        this.notification.show('Messserie entsperrt.');
       } else {
         const result = await firstValueFrom(this.seriesService.lockSeries(id));
         this.isLocked.set(result.isLocked);
         this.lockedByUsername.set(result.lockedByUsername ?? null);
-        this.showSuccess('Messserie gesperrt.');
+        this.notification.show('Messserie gesperrt.');
       }
     } catch (err) {
       console.error('Failed to toggle lock:', err);
@@ -196,7 +196,7 @@ export class MeasurementSeriesDetail implements OnInit {
       }
       this.confirmVisible.set(false);
       this.pendingDeletionIds.set([]);
-      this.showSuccess(ids.length === 1
+      this.notification.show(ids.length === 1
         ? `Messung #${ids[0]} wurde gelöscht.`
         : `${ids.length} Messungen wurden gelöscht.`);
     } catch (err) {
@@ -205,17 +205,6 @@ export class MeasurementSeriesDetail implements OnInit {
     } finally {
       this.deleteInProgress.set(false);
     }
-  }
-
-  private showSuccess(message: string): void {
-    this.successMessage.set(message);
-    if (this.successTimeout) {
-      window.clearTimeout(this.successTimeout);
-    }
-    this.successTimeout = window.setTimeout(() => {
-      this.successMessage.set(null);
-      this.successTimeout = null;
-    }, 4000);
   }
 
   trackById(_: number, item: MeasurementResponseDto): number {

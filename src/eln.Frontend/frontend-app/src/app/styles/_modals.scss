@@ -1,0 +1,81 @@
+@use 'variables' as *;
+
+// ============================================================
+// Shared Modal / Dialog Styles
+// ============================================================
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: $z-modal;
+}
+
+.modal-dialog {
+  background: $color-bg-white;
+  border-radius: $radius-lg;
+  padding: $spacing-xl;
+  max-width: 420px;
+  width: 90%;
+  box-shadow: $shadow-modal;
+  text-align: center;
+
+  h2 {
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+    font-size: 1.5rem;
+  }
+
+  p {
+    margin: 0 0 $spacing-lg 0;
+    color: #555;
+    line-height: 1.4;
+  }
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: $spacing-md;
+  flex-wrap: wrap;
+}
+
+.modal-button {
+  flex: 1;
+  min-width: 120px;
+  padding: 0.6rem 1rem;
+  border-radius: $radius-md;
+  border: none;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: background-color $transition-base, color $transition-base, opacity $transition-base;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  &.danger {
+    background: $color-danger;
+    color: #fff;
+
+    &:hover:not(:disabled) {
+      background: $color-danger-dark;
+    }
+  }
+
+  &:not(.danger) {
+    background: $color-border-dark;
+    color: $color-text-heading;
+
+    &:hover:not(:disabled) {
+      background: #d5d5d5;
+    }
+  }
+}

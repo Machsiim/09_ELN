@@ -1,3 +1,5 @@
+@use '../../../../styles/variables' as *;
+
 .measurement-preview {
   margin-top: 2rem;
 }
@@ -9,10 +11,10 @@
 }
 
 .preview-section {
-  border: 1px solid #e2e8f0;
+  border: 1px solid $color-border;
   border-radius: 16px;
   padding: 1.25rem;
-  background: #f8fafc;
+  background: $color-bg-subtle;
 }
 
 .preview-section-header {
@@ -21,7 +23,7 @@
   h2 {
     margin: 0;
     font-size: 1.4rem;
-    color: #0f172a;
+    color: $color-text-dark;
   }
 }
 
@@ -32,9 +34,9 @@
 }
 
 .preview-card {
-  background: #fff;
+  background: $color-bg-white;
   border-radius: 18px;
-  border: 1px solid #dbeafe;
+  border: 1px solid $color-border-light;
   padding: 1rem;
   display: flex;
   flex-direction: column;
@@ -50,11 +52,11 @@
   h3 {
     margin: 0;
     font-size: 1.1rem;
-    color: #0f172a;
+    color: $color-text-dark;
   }
 
   small {
-    color: #6b7280;
+    color: $color-text-secondary;
   }
 }
 
@@ -68,13 +70,13 @@
 }
 
 .preview-fields li {
-  border: 1px dashed #cbd5f5;
+  border: 1px dashed $color-border-input;
   border-radius: 12px;
   padding: 0.75rem 1rem;
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
-  background: #fdfdff;
+  background: $color-bg-page-alt;
 }
 
 .field-meta {
@@ -86,19 +88,19 @@
 
 .field-label {
   font-weight: 600;
-  color: #111827;
+  color: $color-text-primary;
 }
 
 .field-type {
   font-size: 0.85rem;
-  color: #4f46e5;
+  color: $color-primary;
   font-weight: 500;
 }
 
 .field-value {
   font-family: 'Fira Code', 'JetBrains Mono', Consolas, monospace;
   font-size: 0.95rem;
-  color: #0f172a;
+  color: $color-text-dark;
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -120,11 +122,11 @@
   margin: 0;
 
   strong {
-    color: #111827;
+    color: $color-text-primary;
   }
 
   small {
-    color: #6b7280;
+    color: $color-text-secondary;
   }
 }
 
@@ -136,10 +138,10 @@
 
 .media-add-button {
   border: none;
-  border-radius: 999px;
+  border-radius: $radius-pill;
   padding: 0.35rem 1rem;
-  background: #c1f1d0;
-  color: #065f46;
+  background: $color-primary-light;
+  color: $color-primary;
   font-weight: 600;
   cursor: pointer;
 }
@@ -148,10 +150,10 @@
   border: none;
   outline: none;
   box-shadow: none;
-  border-radius: 999px;
+  border-radius: $radius-pill;
   padding: 0.35rem 1rem;
-  background: #e0edff;
-  color: #1d4ed8;
+  background: $color-primary-light;
+  color: $color-primary;
   font-weight: 600;
   cursor: pointer;
 }
@@ -162,10 +164,10 @@
 
 .media-preview-card {
   margin: 0.75rem 0 1rem;
-  border: 1px solid #dbeafe;
+  border: 1px solid $color-border-light;
   border-radius: 16px;
   padding: 1.5rem;
-  background: #f5f8ff;
+  background: $color-primary-bg;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
@@ -181,19 +183,19 @@
 .field-input {
   width: 100%;
   padding: 0.6rem 0.8rem;
-  border: 1px solid #cbd5f5;
-  border-radius: 8px;
+  border: 1px solid $color-border-input;
+  border-radius: $radius-md;
   font-size: 0.95rem;
   font-family: 'Fira Code', 'JetBrains Mono', Consolas, monospace;
-  color: #0f172a;
+  color: $color-text-dark;
 
   &:disabled {
-    background: #f3f4f6;
+    background: $color-bg-page;
     cursor: not-allowed;
   }
 }
 
-@media (min-width: 768px) {
+@media (min-width: $breakpoint-md) {
   .preview-fields li {
     flex-direction: row;
     justify-content: space-between;

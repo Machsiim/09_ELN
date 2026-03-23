@@ -1,0 +1,64 @@
+@use 'variables' as *;
+
+// ============================================================
+// Shared Form Styles
+// ============================================================
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-lg;
+
+  label {
+    font-weight: 600;
+    color: $color-text-primary;
+  }
+}
+
+.form-control {
+  appearance: none;
+  padding: 0.75rem 1rem;
+  border: 1px solid $color-border-input;
+  border-radius: $radius-xl;
+  font-size: 1rem;
+  transition: border $transition-base, box-shadow $transition-base;
+
+  &:focus {
+    outline: none;
+    border-color: $color-accent;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  }
+
+  &:disabled {
+    background: $color-bg-muted;
+    cursor: not-allowed;
+  }
+}
+
+.form-select,
+.form-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: $radius-md;
+  font-size: 1rem;
+  background-color: $color-bg-white;
+  transition: border-color $transition-base;
+
+  &:focus {
+    outline: none;
+    border-color: $color-primary;
+  }
+}
+
+.form-label {
+  display: block;
+  font-weight: 500;
+  color: $color-text-heading;
+  margin-bottom: $spacing-sm;
+}
+
+.form-section {
+  margin-bottom: $spacing-xl;
+}

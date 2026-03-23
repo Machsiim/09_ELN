@@ -44,6 +44,7 @@ import {
 import { MediaAttachment } from '../../models/media-attachment';
 import { MediaUploadField } from '../../components/media-upload-field/media-upload-field';
 import { ImageService } from '../../services/image.service';
+import { NotificationService } from '../../services/notification.service';
 
 interface MeasurementFieldSchema extends TemplateFieldSchema {
   backendName: string;
@@ -81,6 +82,7 @@ export class CreateMeasurement implements OnInit {
   private readonly imageService = inject(ImageService);
   private readonly fb = inject(FormBuilder);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly notification = inject(NotificationService);
 
   readonly templates = signal<TemplateDto[]>([]);
   readonly loading = signal(false);
@@ -96,8 +98,6 @@ export class CreateMeasurement implements OnInit {
   readonly createSeriesError = signal<string | null>(null);
   readonly submitting = signal(false);
   readonly submitError = signal<string | null>(null);
-  readonly toastMessage = signal<string | null>(null);
-  private toastTimeout: number | null = null;
 
   measurementForm: FormGroup | null = null;
   private controlMap = new Map<string, FieldMeta>();
@@ -188,7 +188,7 @@ export class CreateMeasurement implements OnInit {
           this.selectedSeriesId.set(series.id);
           this.seriesForm.reset({ name: '', description: '' });
           this.showSeriesForm.set(false);
-          this.showToast(`Messserie "${series.name}" wurde angelegt.`);
+          this.notification.show(`Messserie "${series.name}" wurde angelegt.`);
         },
         error: () => {
           this.createSeriesLoading.set(false);
@@ -277,7 +277,7 @@ export class CreateMeasurement implements OnInit {
           const images = this.measurementImagesControl.value ?? [];
           if (images.length === 0) {
             this.submitting.set(false);
-            this.showToast(`Messung #${response.id} wurde gespeichert.`);
+            this.notification.show(`Messung #${response.id} wurde gespeichert.`);
             this.measurementForm?.reset();
             this.measurementImagesControl.reset();
             return;
@@ -295,7 +295,7 @@ export class CreateMeasurement implements OnInit {
                     next: () => {
                       if (++uploaded === images.length) {
                         this.submitting.set(false);
-                        this.showToast("Messung #${response.id} mit ${images.length} Bild(ern) gespeichert.");
+                        this.notification.show("Messung #${response.id} mit ${images.length} Bild(ern) gespeichert.");
                         this.measurementForm?.reset();
                         this.measurementImagesControl.reset();
                       }
@@ -303,7 +303,7 @@ export class CreateMeasurement implements OnInit {
                     error: () => {
                       if (++uploaded === images.length) {
                         this.submitting.set(false);
-                        this.showToast("Messung #${response.id} gespeichert (Bilder teilweise fehlgeschlagen).");
+                        this.notification.show("Messung #${response.id} gespeichert (Bilder teilweise fehlgeschlagen).");
                         this.measurementForm?.reset();
                         this.measurementImagesControl.reset();
                       }
@@ -382,17 +382,6 @@ export class CreateMeasurement implements OnInit {
     }
 
     return data;
-  }
-
-  private showToast(message: string): void {
-    this.toastMessage.set(message);
-    if (this.toastTimeout) {
-      window.clearTimeout(this.toastTimeout);
-    }
-    this.toastTimeout = window.setTimeout(() => {
-      this.toastMessage.set(null);
-      this.toastTimeout = null;
-    }, 4000);
   }
 
   private parseSchema(schema: string): MeasurementTemplateSchema {

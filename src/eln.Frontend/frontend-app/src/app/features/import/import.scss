@@ -1,90 +1,59 @@
+@use '../../styles/variables' as *;
+
 .page-container {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: #f5f5f5;
+  background-color: $color-bg-page;
 }
 
 .main-content {
   flex: 1;
-  padding: 2rem;
+  padding: $spacing-xl;
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  padding-top: 3rem;
+  padding-top: $spacing-2xl;
 }
 
 .import-container {
   width: 100%;
-  max-width: 700px;
+  max-width: $max-width-narrow;
 }
 
 .import-card {
   background: white;
-  border-radius: 12px;
-  padding: 3rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: $radius-lg;
+  padding: $spacing-2xl;
+  box-shadow: $shadow-md;
 }
 
 .import-title {
   font-size: 1.75rem;
   font-weight: 600;
-  color: #1a1a1a;
-  margin-bottom: 0.5rem;
+  color: $color-text-dark;
+  margin-bottom: $spacing-sm;
 }
 
 .step-indicator {
   font-size: 1rem;
-  color: #666;
-  margin-bottom: 1.5rem;
+  color: $color-text-gray;
+  margin-bottom: $spacing-lg;
 }
 
 .progress-bar {
   width: 100%;
   height: 4px;
-  background-color: #e0e0e0;
+  background-color: $color-border-dark;
   border-radius: 2px;
-  margin-bottom: 2rem;
+  margin-bottom: $spacing-xl;
   overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
-  background-color: #0066cc;
-  transition: width 0.3s ease;
-}
-
-.form-section {
-  margin-bottom: 2rem;
-}
-
-.form-label {
-  display: block;
-  font-weight: 500;
-  color: #333;
-  margin-bottom: 0.5rem;
-}
-
-.form-select,
-.form-input {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  font-size: 1rem;
-  background-color: white;
-  cursor: pointer;
-  transition: border-color 0.2s;
-
-  &:focus {
-    outline: none;
-    border-color: #0066cc;
-  }
-}
-
-.form-input {
-  cursor: text;
-  margin-top: 0.5rem;
+  background-color: $color-primary;
+  transition: width $transition-slow;
 }
 
 .template-hint {
@@ -96,63 +65,63 @@
 
 .radio-group {
   display: flex;
-  gap: 1.5rem;
+  gap: $spacing-lg;
   margin-bottom: 0.75rem;
 }
 
 .radio-option {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: $spacing-sm;
   font-size: 0.9375rem;
-  color: #333;
+  color: $color-text-heading;
   cursor: pointer;
 
   input[type="radio"] {
-    accent-color: #0066cc;
+    accent-color: $color-primary;
   }
 }
 
 .upload-area {
   border: 2px dashed #ccc;
-  border-radius: 8px;
-  padding: 3rem 2rem;
+  border-radius: $radius-md;
+  padding: $spacing-2xl $spacing-xl;
   text-align: center;
   cursor: pointer;
-  transition: all 0.2s;
-  background-color: #fafafa;
+  transition: all $transition-base;
+  background-color: $color-bg-page-alt;
 
   &:hover {
-    border-color: #0066cc;
-    background-color: #f0f7ff;
+    border-color: $color-primary;
+    background-color: $color-primary-bg;
   }
 
   &.drag-over {
-    border-color: #0066cc;
-    background-color: #e6f2ff;
+    border-color: $color-primary;
+    background-color: $color-primary-light;
   }
 }
 
 .upload-icon {
-  color: #0066cc;
-  margin-bottom: 1rem;
+  color: $color-primary;
+  margin-bottom: $spacing-md;
 }
 
 .upload-text {
   font-size: 1rem;
-  color: #333;
-  margin-bottom: 0.5rem;
+  color: $color-text-heading;
+  margin-bottom: $spacing-sm;
 }
 
 .upload-subtext {
   font-size: 0.875rem;
-  color: #666;
-  margin-bottom: 1rem;
+  color: $color-text-gray;
+  margin-bottom: $spacing-md;
 }
 
 .browse-button {
   background-color: transparent;
-  color: #0066cc;
+  color: $color-primary;
   border: none;
   font-size: 1rem;
   font-weight: 500;
@@ -160,14 +129,14 @@
   text-decoration: underline;
 
   &:hover {
-    color: #0052a3;
+    color: $color-primary-dark;
   }
 }
 
 .file-info {
   font-size: 0.875rem;
-  color: #666;
-  margin-top: 0.5rem;
+  color: $color-text-gray;
+  margin-top: $spacing-sm;
 }
 
 .selected-file {
@@ -175,19 +144,19 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem;
-  background-color: #f0f7ff;
-  border: 1px solid #b3d9ff;
-  border-radius: 8px;
-  margin-top: 1rem;
+  background-color: $color-primary-bg;
+  border: 1px solid $color-primary-light;
+  border-radius: $radius-md;
+  margin-top: $spacing-md;
 
   svg {
-    color: #0066cc;
+    color: $color-primary;
     flex-shrink: 0;
   }
 
   span {
     flex: 1;
-    color: #333;
+    color: $color-text-heading;
     font-size: 0.875rem;
   }
 }
@@ -195,7 +164,7 @@
 .remove-file {
   background: none;
   border: none;
-  color: #666;
+  color: $color-text-gray;
   font-size: 1.5rem;
   cursor: pointer;
   padding: 0;
@@ -204,8 +173,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
-  transition: background-color 0.2s;
+  border-radius: $radius-sm;
+  transition: background-color $transition-base;
 
   &:hover {
     background-color: rgba(0, 0, 0, 0.1);
@@ -215,55 +184,21 @@
 .button-group {
   display: flex;
   justify-content: space-between;
-  gap: 1rem;
-  margin-top: 2rem;
+  gap: $spacing-md;
+  margin-top: $spacing-xl;
 }
 
-.btn {
-  padding: 0.75rem 2rem;
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
+// Override btn-primary for import page
 .btn-primary {
-  background-color: #0033cc;
-  color: white;
+  background-color: $color-primary;
   flex: 1;
 
   &:hover:not(:disabled) {
-    background-color: #002699;
+    background-color: $color-primary-dark;
   }
 
   &:disabled {
-    background-color: #ccc;
-    cursor: not-allowed;
-  }
-}
-
-.btn-secondary {
-  background-color: #e0e0e0;
-  color: #333;
-
-  &:hover {
-    background-color: #d0d0d0;
-  }
-}
-
-.btn-text {
-  background: none;
-  border: none;
-  color: #0066cc;
-  font-weight: 500;
-  cursor: pointer;
-  padding: 0.5rem 0;
-  text-decoration: underline;
-
-  &:hover {
-    color: #0052a3;
+    background-color: $color-border-dark;
   }
 }
 
@@ -272,19 +207,19 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  margin-bottom: $spacing-md;
 
   h2 {
     font-size: 1.25rem;
     font-weight: 600;
-    color: #1a1a1a;
+    color: $color-text-dark;
     margin: 0;
   }
 }
 
 .mapping-row {
   display: flex;
-  gap: 1rem;
+  gap: $spacing-md;
   align-items: center;
   margin-bottom: 0.75rem;
 }
@@ -292,11 +227,11 @@
 .mapping-column {
   flex: 1;
   font-size: 0.875rem;
-  color: #333;
+  color: $color-text-heading;
   font-weight: 500;
-  padding: 0.5rem;
-  background-color: #f5f5f5;
-  border-radius: 4px;
+  padding: $spacing-sm;
+  background-color: $color-bg-page;
+  border-radius: $radius-sm;
 }
 
 .mapping-row .form-select {
@@ -305,30 +240,30 @@
 
 // Preview
 .preview-info {
-  padding: 1rem;
-  background-color: #f0f7ff;
-  border-radius: 8px;
-  border: 1px solid #b3d9ff;
+  padding: $spacing-md;
+  background-color: $color-primary-bg;
+  border-radius: $radius-md;
+  border: 1px solid $color-primary-light;
 
   strong {
-    color: #0066cc;
+    color: $color-primary;
   }
 }
 
 .warning-text {
   font-size: 0.875rem;
-  color: #856404;
-  margin-top: 0.5rem;
+  color: $color-warning-text;
+  margin-top: $spacing-sm;
 }
 
 // Importing spinner
 .importing-status {
   text-align: center;
-  padding: 3rem 0;
+  padding: $spacing-2xl 0;
 
   p {
-    margin-top: 1rem;
-    color: #666;
+    margin-top: $spacing-md;
+    color: $color-text-gray;
     font-size: 1rem;
   }
 }
@@ -337,8 +272,8 @@
   width: 40px;
   height: 40px;
   margin: 0 auto;
-  border: 4px solid #e0e0e0;
-  border-top-color: #0066cc;
+  border: 4px solid $color-border-dark;
+  border-top-color: $color-primary;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -351,64 +286,38 @@
 
 // Result section
 .result-section {
-  margin-top: 1rem;
-}
-
-.result-badge {
-  padding: 1rem 1.5rem;
-  border-radius: 8px;
-  font-weight: 500;
-  font-size: 1rem;
-  margin-bottom: 1rem;
-}
-
-.result-success {
-  background-color: #d4edda;
-  color: #155724;
-  border: 1px solid #c3e6cb;
-}
-
-.result-error {
-  background-color: #f8d7da;
-  color: #721c24;
-  border: 1px solid #f5c6cb;
-}
-
-.error-text {
-  color: #dc3545;
-  font-size: 0.875rem;
-  margin-top: 0.5rem;
+  margin-top: $spacing-md;
 }
 
 .global-error {
-  margin-top: 1.5rem;
+  margin-top: $spacing-lg;
   padding: 0.75rem 1rem;
-  background-color: #f8d7da;
-  border: 1px solid #f5c6cb;
-  border-radius: 8px;
+  background-color: $color-error-bg;
+  border: 1px solid $color-error;
+  border-radius: $radius-md;
 }
 
 .error-list {
-  margin-top: 1rem;
+  margin-top: $spacing-md;
   max-height: 300px;
   overflow-y: auto;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
+  border: 1px solid $color-border-dark;
+  border-radius: $radius-md;
 
   h3 {
     font-size: 1rem;
     font-weight: 600;
     padding: 0.75rem 1rem;
     margin: 0;
-    background-color: #f5f5f5;
-    border-bottom: 1px solid #e0e0e0;
+    background-color: $color-bg-page;
+    border-bottom: 1px solid $color-border-dark;
   }
 }
 
 .error-item {
   display: flex;
   gap: 0.75rem;
-  padding: 0.5rem 1rem;
+  padding: $spacing-sm $spacing-md;
   border-bottom: 1px solid #f0f0f0;
   font-size: 0.8125rem;
 
@@ -419,23 +328,23 @@
 
 .error-row {
   font-weight: 600;
-  color: #721c24;
+  color: $color-error-text;
   min-width: 60px;
 }
 
 .error-field {
-  color: #856404;
+  color: $color-warning-text;
   min-width: 120px;
 }
 
 .error-message {
-  color: #333;
+  color: $color-text-heading;
   flex: 1;
 }
 
-@media (max-width: 768px) {
+@media (max-width: $breakpoint-md) {
   .import-card {
-    padding: 2rem 1.5rem;
+    padding: $spacing-xl $spacing-lg;
   }
 
   .button-group {
@@ -452,6 +361,6 @@
 
   .radio-group {
     flex-direction: column;
-    gap: 0.5rem;
+    gap: $spacing-sm;
   }
 }

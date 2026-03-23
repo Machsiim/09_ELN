@@ -19,6 +19,7 @@ import {
 } from '../../services/measurement.service';
 import { MeasurementSeriesService } from '../../services/measurement-series.service';
 import { AuthService } from '../../services/auth.service';
+import { NotificationService } from '../../services/notification.service';
 import { MediaAttachment } from '../../models/media-attachment';
 import { MeasurementDetailHeader } from './components/measurement-detail-header/measurement-detail-header';
 import { MeasurementDetailSections } from './components/measurement-detail-sections/measurement-detail-sections';
@@ -57,6 +58,7 @@ export class MeasurementDetail implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly notification = inject(NotificationService);
 
   @ViewChild(MeasurementImageGallery) imageGallery?: MeasurementImageGallery;
 
@@ -65,7 +67,6 @@ export class MeasurementDetail implements OnInit {
   readonly error = signal<string | null>(null);
   readonly deleteInProgress = signal(false);
   readonly deleteConfirmVisible = signal(false);
-  readonly toastMessage = signal<string | null>(null);
   readonly isEditing = signal(false);
   readonly saveInProgress = signal(false);
   readonly editableData = signal<Record<string, Record<string, unknown>> | null>(null);
@@ -81,8 +82,6 @@ export class MeasurementDetail implements OnInit {
   readonly pendingMediaAttachments = signal<MediaAttachment[]>([]);
   readonly isSeriesLocked = signal(false);
   readonly isStaff = this.authService.isStaff();
-
-  private toastTimeout: number | null = null;
 
   ngOnInit(): void {
     this.route.params.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(params => {
@@ -195,7 +194,7 @@ export class MeasurementDetail implements OnInit {
         next: () => {
           this.deleteInProgress.set(false);
           this.deleteConfirmVisible.set(false);
-          this.showToast('Messung wurde gelöscht.');
+          this.notification.show('Messung wurde gelöscht.');
           setTimeout(() => {
             this.router.navigate([`/messungen/serie/${measurement.seriesId}`]);
           }, 300);
@@ -281,7 +280,7 @@ export class MeasurementDetail implements OnInit {
 
           this.editableData.set(null);
           this.isEditing.set(false);
-          this.showToast('Messung wurde aktualisiert.');
+          this.notification.show('Messung wurde aktualisiert.');
         },
         error: () => {
           this.saveInProgress.set(false);
@@ -471,17 +470,6 @@ export class MeasurementDetail implements OnInit {
       ...current,
       [sectionName]: nextSection
     });
-  }
-
-  private showToast(message: string): void {
-    this.toastMessage.set(message);
-    if (this.toastTimeout) {
-      window.clearTimeout(this.toastTimeout);
-    }
-    this.toastTimeout = window.setTimeout(() => {
-      this.toastMessage.set(null);
-      this.toastTimeout = null;
-    }, 4000);
   }
 
   openHistory(): void {

@@ -1,67 +1,64 @@
+@use '../../styles/variables' as *;
+
 .page-container {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: #f5f5f5;
+  background-color: $color-bg-page;
 }
 
 .main-content {
   flex: 1;
-  padding: 2rem;
+  padding: $spacing-xl;
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  padding-top: 3rem;
+  padding-top: $spacing-2xl;
 }
 
 .migration-container {
   width: 100%;
   max-width: 750px;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
 }
 
 .migration-card {
   background: white;
-  border-radius: 12px;
-  padding: 3rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: $radius-lg;
+  padding: 2.5rem;
+  box-shadow: $shadow-md;
 }
 
-.migration-title {
-  font-size: 1.75rem;
-  font-weight: 600;
-  color: #1a1a1a;
-  margin-bottom: 0.5rem;
-}
-
-.step-indicator {
-  font-size: 1rem;
-  color: #666;
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 1.5rem;
 }
 
-.progress-bar {
-  width: 100%;
-  height: 4px;
-  background-color: #e0e0e0;
-  border-radius: 2px;
-  margin-bottom: 2rem;
-  overflow: hidden;
+.card-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: $color-text-dark;
+  margin: 0 0 0.5rem;
 }
 
-.progress-fill {
-  height: 100%;
-  background-color: #0066cc;
-  transition: width 0.3s ease;
+.card-description {
+  font-size: 0.9375rem;
+  color: $color-text-secondary;
+  margin-bottom: 2rem;
 }
 
 .form-section {
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 
 .form-label {
   display: block;
   font-weight: 500;
-  color: #333;
+  color: $color-text-heading;
   margin-bottom: 0.5rem;
 }
 
@@ -69,106 +66,22 @@
 .form-input {
   width: 100%;
   padding: 0.75rem;
-  border: 1px solid #ccc;
-  border-radius: 8px;
+  border: 1px solid $color-border-muted;
+  border-radius: $radius-md;
   font-size: 1rem;
   background-color: white;
-  cursor: pointer;
   transition: border-color 0.2s;
 
   &:focus {
     outline: none;
-    border-color: #0066cc;
+    border-color: $color-primary;
   }
 }
 
-.form-input {
-  cursor: text;
-  margin-top: 0.5rem;
-}
-
-.migration-hint {
-  font-size: 0.875rem;
-  color: #555;
-  margin-bottom: 0.75rem;
-  line-height: 1.5;
-}
-
-.radio-group {
-  display: flex;
-  gap: 1.5rem;
-  margin-bottom: 0.75rem;
-}
-
-.radio-option {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9375rem;
-  color: #333;
-  cursor: pointer;
-
-  input[type="radio"] {
-    accent-color: #0066cc;
-  }
-}
-
-// Upload area (identical to import)
-.upload-area {
-  border: 2px dashed #ccc;
-  border-radius: 8px;
-  padding: 3rem 2rem;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.2s;
-  background-color: #fafafa;
-
-  &:hover {
-    border-color: #0066cc;
-    background-color: #f0f7ff;
-  }
-
-  &.drag-over {
-    border-color: #0066cc;
-    background-color: #e6f2ff;
-  }
-}
-
-.upload-icon {
-  color: #0066cc;
-  margin-bottom: 1rem;
-}
-
-.upload-text {
-  font-size: 1rem;
-  color: #333;
-  margin-bottom: 0.5rem;
-}
-
-.upload-subtext {
-  font-size: 0.875rem;
-  color: #666;
-  margin-bottom: 1rem;
-}
-
-.browse-button {
-  background-color: transparent;
-  color: #0066cc;
-  border: none;
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  text-decoration: underline;
-
-  &:hover {
-    color: #0052a3;
-  }
-}
-
-.file-info {
-  font-size: 0.875rem;
-  color: #666;
-  margin-top: 0.5rem;
+.form-hint {
+  font-size: 0.8125rem;
+  color: $color-text-muted;
+  margin-top: 0.25rem;
 }
 
 .selected-file {
@@ -176,19 +89,19 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem;
-  background-color: #f0f7ff;
-  border: 1px solid #b3d9ff;
-  border-radius: 8px;
+  background-color: $color-primary-bg;
+  border: 1px solid $color-border-light;
+  border-radius: $radius-md;
   margin-top: 1rem;
 
   svg {
-    color: #0066cc;
+    color: $color-primary;
     flex-shrink: 0;
   }
 
   span {
     flex: 1;
-    color: #333;
+    color: $color-text-heading;
     font-size: 0.875rem;
   }
 }
@@ -196,7 +109,7 @@
 .remove-file {
   background: none;
   border: none;
-  color: #666;
+  color: $color-text-secondary;
   font-size: 1.5rem;
   cursor: pointer;
   padding: 0;
@@ -205,8 +118,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
-  transition: background-color 0.2s;
+  border-radius: $radius-sm;
+  transition: background-color $transition-base;
 
   &:hover {
     background-color: rgba(0, 0, 0, 0.1);
@@ -215,249 +128,195 @@
 
 // Buttons (identical to import)
 .button-group {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-top: 2rem;
+  margin-top: 1.5rem;
 }
 
-.btn {
-  padding: 0.75rem 2rem;
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
+// Override btn-primary for migration page
 .btn-primary {
-  background-color: #0033cc;
-  color: white;
-  flex: 1;
+  background-color: $color-primary;
+  color: $color-bg-white;
+  width: 100%;
 
   &:hover:not(:disabled) {
-    background-color: #002699;
+    background-color: $color-primary-dark;
   }
 
   &:disabled {
-    background-color: #ccc;
+    background-color: $color-border-muted;
     cursor: not-allowed;
   }
 }
 
-.btn-secondary {
-  background-color: #e0e0e0;
-  color: #333;
+.btn-text {
+  background: none;
+  border: none;
+  color: $color-primary;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0.5rem 0;
 
   &:hover {
-    background-color: #d0d0d0;
+    color: $color-primary-dark;
   }
 }
 
-// Profile section
-.profile-section {
-  margin-bottom: 1.5rem;
-}
-
-// Mapping info
-.mapping-info {
-  padding: 1rem;
-  background-color: #f0f7ff;
-  border-radius: 8px;
-  border: 1px solid #b3d9ff;
-  font-size: 0.9375rem;
-
-  strong {
-    color: #0066cc;
-  }
-}
-
-// Mapping table
-.mapping-table {
-  width: 100%;
-  border-collapse: collapse;
+.error-text {
+  color: $color-error;
   font-size: 0.875rem;
-
-  th {
-    text-align: left;
-    padding: 0.75rem;
-    background-color: #f5f5f5;
-    border-bottom: 2px solid #e0e0e0;
-    font-weight: 600;
-    color: #333;
-  }
-
-  td {
-    padding: 0.625rem 0.75rem;
-    border-bottom: 1px solid #f0f0f0;
-    vertical-align: middle;
-  }
-
-  tr:last-child td {
-    border-bottom: none;
-  }
-
-  .form-select {
-    padding: 0.5rem;
-    font-size: 0.8125rem;
-  }
+  margin-top: $spacing-md;
+  padding: 0.75rem 1rem;
+  background-color: $color-error-bg;
+  border: 1px solid $color-error;
+  border-radius: $radius-md;
 }
 
-.field-label {
-  display: block;
-  font-weight: 500;
-  color: #333;
+// Status overview
+.status-overview {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
 }
 
-.field-section {
-  display: block;
-  font-size: 0.75rem;
-  color: #888;
-  margin-top: 0.125rem;
-}
-
-.status-auto {
-  font-size: 0.75rem;
+.status-badge {
+  padding: 0.375rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8125rem;
   font-weight: 600;
-  color: #155724;
-  background-color: #d4edda;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
 }
 
-.status-manual {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #0c5460;
-  background-color: #d1ecf1;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
+.status-badge-running {
+  background-color: $color-warning-bg;
+  color: $color-warning-text;
 }
 
-.status-skip {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #856404;
-  background-color: #fff3cd;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
+.status-badge-completed {
+  background-color: $color-success-bg;
+  color: $color-success-text;
 }
 
-// Save profile
-.save-profile {
-  padding: 1rem;
-  background-color: #fafafa;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
+.status-detail {
+  font-size: 0.9375rem;
+  color: $color-text-secondary;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 6px;
+  background-color: $color-border-dark;
+  border-radius: $radius-sm;
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background-color: $color-primary;
+  transition: width 0.5s ease;
+}
+
+// File list
+.file-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.file-item {
+  padding: 0.875rem 1rem;
+  border: 1px solid $color-border-dark;
+  border-radius: $radius-md;
 }
 
 .checkbox-option {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9375rem;
-  color: #333;
-  cursor: pointer;
-
-  input[type="checkbox"] {
-    accent-color: #0066cc;
-  }
 }
 
-// Importing spinner (identical to import)
-.importing-status {
-  text-align: center;
-  padding: 3rem 0;
-
-  p {
-    margin-top: 1rem;
-    color: #666;
-    font-size: 1rem;
-  }
-}
-
-.spinner {
-  width: 40px;
-  height: 40px;
-  margin: 0 auto;
-  border: 4px solid #e0e0e0;
-  border-top-color: #0066cc;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-// Result section (identical to import)
-.result-section {
-  margin-top: 1rem;
-}
-
-.result-badge {
-  padding: 1rem 1.5rem;
-  border-radius: 8px;
+.file-name {
   font-weight: 500;
-  font-size: 1rem;
-  margin-bottom: 1rem;
+  color: $color-text-heading;
+  font-size: 0.9375rem;
 }
 
-.result-success {
-  background-color: #d4edda;
-  color: #155724;
-  border: 1px solid #c3e6cb;
+.file-status {
+  font-size: 0.8125rem;
+  font-weight: 600;
 }
 
-.result-error {
-  background-color: #f8d7da;
-  color: #721c24;
-  border: 1px solid #f5c6cb;
+.status-success {
+  color: $color-success-text;
 }
 
-.result-actions {
-  margin-top: 2rem;
+.status-error {
+  color: $color-error-text;
 }
 
-.error-text {
-  color: #dc3545;
-  font-size: 0.875rem;
-  margin-top: 0.5rem;
+.status-processing {
+  color: $color-warning-text;
 }
 
-.global-error {
-  margin-top: 1.5rem;
+.status-pending {
+  color: $color-text-muted;
+}
+
+.file-details {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.375rem;
+  font-size: 0.8125rem;
+  color: $color-text-secondary;
+}
+
+.detail-success {
+  color: $color-success-text;
+}
+
+.detail-error {
+  color: $color-error-text;
+}
+
+.file-error {
+  font-size: 0.8125rem;
+  color: $color-error-text;
+  margin-top: 0.375rem;
+  padding: 0.5rem;
+  background-color: $color-error-bg;
+  border-radius: $radius-sm;
+}
+
+// History
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.history-item {
   padding: 0.75rem 1rem;
-  background-color: #f8d7da;
-  border: 1px solid #f5c6cb;
-  border-radius: 8px;
-}
+  border: 1px solid $color-border-dark;
+  border-radius: $radius-md;
+  cursor: pointer;
+  transition: background-color $transition-base;
 
-.error-list {
-  margin-top: 1rem;
-  max-height: 300px;
-  overflow-y: auto;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-
-  h3 {
-    font-size: 1rem;
-    font-weight: 600;
-    padding: 0.75rem 1rem;
-    margin: 0;
-    background-color: #f5f5f5;
-    border-bottom: 1px solid #e0e0e0;
+  &:hover {
+    background-color: $color-bg-page;
   }
 }
 
 .error-item {
   display: flex;
-  gap: 0.75rem;
-  padding: 0.5rem 1rem;
-  border-bottom: 1px solid #f0f0f0;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.history-date {
+  font-size: 0.875rem;
+  color: $color-text-heading;
+  font-weight: 500;
+}
+
+.history-status {
   font-size: 0.8125rem;
 
   &:last-child {
@@ -467,40 +326,26 @@
 
 .error-row {
   font-weight: 600;
-  color: #721c24;
+  color: $color-error-text;
   min-width: 60px;
 }
 
-.error-field {
-  color: #856404;
-  min-width: 120px;
+.history-running {
+  color: $color-warning-text;
 }
 
-.error-message {
-  color: #333;
-  flex: 1;
+.history-completed {
+  color: $color-success-text;
 }
 
-@media (max-width: 768px) {
+.history-details {
+  font-size: 0.8125rem;
+  color: $color-text-secondary;
+  margin-top: 0.25rem;
+}
+
+@media (max-width: $breakpoint-md) {
   .migration-card {
-    padding: 2rem 1.5rem;
-  }
-
-  .button-group {
-    flex-direction: column-reverse;
-  }
-
-  .btn {
-    width: 100%;
-  }
-
-  .mapping-table {
-    display: block;
-    overflow-x: auto;
-  }
-
-  .radio-group {
-    flex-direction: column;
-    gap: 0.5rem;
+    padding: 1.5rem;
   }
 }

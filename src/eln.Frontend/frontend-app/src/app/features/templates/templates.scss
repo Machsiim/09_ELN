@@ -1,78 +1,79 @@
+@use '../../styles/variables' as *;
+
 .template-workspace {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
-  padding-bottom: 2rem;
+  gap: $spacing-lg;
+  padding-bottom: $spacing-xl;
 }
 
 .card {
-  background: #fff;
+  background: $color-bg-white;
   border-radius: 18px;
-  padding: 1.5rem;
+  padding: $spacing-lg;
   box-shadow: 0 15px 35px rgba(15, 23, 42, 0.12);
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: $spacing-md;
 }
 
 .card-heading {
   display: flex;
   justify-content: space-between;
-  gap: 1rem;
+  gap: $spacing-md;
   align-items: flex-start;
 }
 
 .card-subtitle {
-  color: #64748b;
+  color: $color-text-muted;
   margin: 0;
   font-size: 0.95rem;
 }
 
 .status-pills {
   display: flex;
-  gap: 0.5rem;
+  gap: $spacing-sm;
   align-items: center;
 }
 
 .status {
   padding: 0.35rem 0.85rem;
-  border-radius: 999px;
+  border-radius: $radius-pill;
   font-size: 0.85rem;
 }
 
 .status.success {
   background: rgba(34, 197, 94, 0.18);
-  color: #15803d;
+  color: $color-success-text;
 }
 
 .status.error {
   background: rgba(248, 113, 113, 0.2);
-  color: #b91c1c;
+  color: $color-error-text;
 }
 
 .template-name input,
 .control-block input,
 .control-block select {
-
   padding: 0.6rem 0.85rem;
-  border-radius: 12px;
-  border: 1px solid #cbd5f5;
+  border-radius: $radius-lg;
+  border: 1px solid $color-border-input;
   font-size: 1rem;
 }
 
 .controls-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 1rem;
+  gap: $spacing-md;
 }
 
 .control-block {
-  border: 1px solid #e2e8f0;
+  border: 1px solid $color-border;
   border-radius: 14px;
-  padding: 1rem;
+  padding: $spacing-md;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: $spacing-sm;
 }
 
 .control-block form {
@@ -83,48 +84,33 @@
 
 .builder-actions {
   display: flex;
-  gap: 1rem;
+  gap: $spacing-md;
   flex-wrap: wrap;
 }
 
+// Template-specific button overrides
 .btn {
-  border-radius: 999px;
-  border: none;
+  border-radius: $radius-pill;
   padding: 0.55rem 1.4rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: transform 0.15s ease;
 }
 
 .btn:hover:not(:disabled) {
   transform: translateY(-1px);
 }
 
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-}
-
 .btn-primary {
-  background: #0066cc;
+  background: $color-primary;
   color: #fff;
 }
 
 .btn-secondary {
-  background: rgba(99, 102, 241, 0.1);
-  color: #4f46e5;
-}
-
-.btn-outline {
-  background: transparent;
-  color: #0f172a;
-  border: 1px solid #cbd5f5;
+  background: $color-primary-light;
+  color: $color-primary;
 }
 
 .btn-text {
   background: transparent;
-  color: #4f46e5;
+  color: $color-primary;
   padding: 0.35rem 0.75rem;
 }
 
@@ -154,44 +140,44 @@
 .preview-sections {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: $spacing-md;
 }
 
 .preview-section {
-  border: 1px solid #e2e8f0;
+  border: 1px solid $color-border;
   border-radius: 16px;
-  padding: 1rem;
-  background: #f8fafc;
+  padding: $spacing-md;
+  background: $color-bg-subtle;
 }
 
 .preview-section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.5rem;
+  margin-bottom: $spacing-sm;
 }
 
 .preview-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1rem;
+  gap: $spacing-md;
 }
 
 .preview-card {
-  background: #fff;
+  background: $color-bg-white;
   border-radius: 14px;
-  border: 1px solid #dbeafe;
-  padding: 1rem;
+  border: 1px solid $color-border-light;
+  padding: $spacing-md;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: $spacing-sm;
 }
 
 .preview-card-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 0.5rem;
+  gap: $spacing-sm;
 }
 
 .preview-fields {
@@ -204,17 +190,17 @@
 }
 
 .preview-fields li {
-  border: 1px dashed #cbd5f5;
+  border: 1px dashed $color-border-input;
   border-radius: 10px;
   padding: 0.5rem 0.75rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 0.5rem;
+  gap: $spacing-sm;
 }
 
 .field-placeholder {
-  color: #94a3b8;
+  color: $color-text-light;
   font-style: italic;
   justify-content: center;
 }
@@ -225,76 +211,43 @@
 
 .field-type {
   font-size: 0.8rem;
-  color: #4f46e5;
-  margin-left: 0.5rem;
+  color: $color-primary;
+  margin-left: $spacing-sm;
 }
 
 .template-list-card .template-row {
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
+  border: 1px solid $color-border;
+  border-radius: $radius-lg;
   padding: 0.85rem 1rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 1rem;
+  gap: $spacing-md;
 }
 
 .template-row + .template-row {
-  margin-top: 0.5rem;
+  margin-top: $spacing-sm;
 }
 
 .template-row-actions {
   display: flex;
-  gap: 0.5rem;
+  gap: $spacing-sm;
 }
 
 .empty-state {
-  color: #94a3b8;
+  color: $color-text-light;
   text-align: center;
-  margin: 2rem 0;
-}
-
-.toast {
-  position: fixed;
-  bottom: 1.5rem;
-  left: 1.5rem;
-  padding: 1rem 1.25rem;
-  border-radius: 12px;
-  color: #fff;
-  font-weight: 600;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.25);
-  z-index: 1200;
-  animation: fadeInOut 4s forwards;
-}
-
-.toast-success {
-  background: #16a34a;
-}
-
-@keyframes fadeInOut {
-  0% {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  10%,
-  90% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(10px);
-  }
+  margin: $spacing-xl 0;
 }
 
 .template-row.archived {
-  background-color: #f1f5f9;
-  border-color: #e2e8f0;
+  background-color: $color-bg-muted;
+  border-color: $color-border;
   opacity: 0.75;
 }
 
 .template-row.archived h3 {
-  color: #64748b;
+  color: $color-text-muted;
 }
 
 .template-info-header {
@@ -304,24 +257,24 @@
 }
 
 .badge-archived {
-  background-color: #94a3b8;
+  background-color: $color-text-light;
   color: white;
   font-size: 0.7rem;
   padding: 0.15rem 0.5rem;
-  border-radius: 4px;
+  border-radius: $radius-sm;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   font-weight: 600;
 }
 
 .delete-btn {
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.1);
-  transition: all 0.2s;
+  color: $color-danger;
+  background: $color-error-bg;
+  transition: all $transition-base;
 }
 
 .delete-btn:hover:not(:disabled) {
-  background: #ef4444;
+  background: $color-danger;
   color: white;
 }
 
@@ -331,88 +284,12 @@
 }
 
 .archive-btn {
-  color: #f59e0b;
+  color: $color-warning;
   background: rgba(245, 158, 11, 0.1);
-  transition: all 0.2s;
+  transition: all $transition-base;
 }
 
 .archive-btn:hover {
-  background: #f59e0b;
+  background: $color-warning;
   color: white;
-}
-
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal-dialog {
-  background: #fff;
-  border-radius: 12px;
-  padding: 2rem;
-  max-width: 420px;
-  width: 90%;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-  text-align: center;
-
-  h2 {
-    margin-top: 0;
-    margin-bottom: 0.75rem;
-    font-size: 1.5rem;
-  }
-
-  p {
-    margin: 0 0 1.5rem 0;
-    color: #555;
-    line-height: 1.4;
-  }
-}
-
-.modal-actions {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.modal-button {
-  flex: 1;
-  min-width: 120px;
-  padding: 0.6rem 1rem;
-  border-radius: 8px;
-  border: none;
-  font-weight: 600;
-  text-transform: uppercase;
-  font-size: 0.85rem;
-  letter-spacing: 0.05em;
-  cursor: pointer;
-  transition: background-color 0.2s, color 0.2s, opacity 0.2s;
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-
-  &.danger {
-    background: #f44336;
-    color: #fff;
-
-    &:hover:not(:disabled) {
-      background: #d32f2f;
-    }
-  }
-
-  &:not(.danger) {
-    background: #e0e0e0;
-    color: #333;
-
-    &:hover:not(:disabled) {
-      background: #d5d5d5;
-    }
-  }
 }

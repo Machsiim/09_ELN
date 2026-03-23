@@ -1,0 +1,107 @@
+// ============================================================
+// Design Tokens – Single Source of Truth
+// Based on FH Technikum Wien Corporate Design Guidelines
+// ============================================================
+
+// ── FH Technikum Wien Brand Colors ───────────────────────────
+$fh-blue: #00649c;       // PANTONE 301C – Technikum Blau
+$fh-gray: #72777A;       // PANTONE 431C – Technikum Grau
+$fh-green: #8BB31D;      // PANTONE 376C – Technikum Grün
+
+// ── Primary (Technikum Blau) ─────────────────────────────────
+$color-primary: $fh-blue;
+$color-primary-dark: #004d79;
+$color-primary-light: #d9eaf4;
+$color-primary-bg: #edf5fa;
+
+// ── Secondary / Accent (Technikum Grün) ──────────────────────
+$color-accent: $fh-green;
+$color-accent-dark: #6d8c17;
+$color-accent-light: #e5f0cc;
+
+// ── Success (abgeleitet aus Technikum Grün) ──────────────────
+$color-success: $fh-green;
+$color-success-bg: #e5f0cc;
+$color-success-text: #4d6611;
+
+// ── Error / Danger (Komplementär zu Technikum Blau) ──────────
+$color-error: #c6362e;
+$color-error-dark: #a02c26;
+$color-error-bg: #f8e0de;
+$color-error-text: #7d2220;
+$color-danger: #c6362e;
+$color-danger-dark: #a02c26;
+
+// ── Warning (warmes Gegenstück zu Technikum Grün) ────────────
+$color-warning: #c98a0c;
+$color-warning-bg: #faf0d1;
+$color-warning-text: #7a5408;
+
+// ── Info (abgeleitet aus Technikum Blau) ─────────────────────
+$color-info-bg: $color-primary-light;
+$color-info-text: $fh-blue;
+
+// ── Neutrals / Gray (abgeleitet aus Technikum Grau) ──────────
+$color-text-primary: #1a1c1d;
+$color-text-secondary: $fh-gray;
+$color-text-muted: #959a9c;
+$color-text-light: #b4b8ba;
+$color-text-dark: #1a1a1a;
+$color-text-gray: $fh-gray;
+$color-text-heading: #3a3d3f;
+
+$color-bg-page: #f5f5f5;
+$color-bg-page-alt: #fafafa;
+$color-bg-white: #fff;
+$color-bg-subtle: #f8fafc;
+$color-bg-muted: #f1f5f9;
+
+$color-border: #e2e8f0;
+$color-border-light: #dbeafe;
+$color-border-input: #cbd5f5;
+$color-border-dark: #e0e0e0;
+$color-border-muted: #d0d0d0;
+
+// ── Spacing ──────────────────────────────────────────────────
+$spacing-xs: 0.25rem;
+$spacing-sm: 0.5rem;
+$spacing-md: 1rem;
+$spacing-lg: 1.5rem;
+$spacing-xl: 2rem;
+$spacing-2xl: 3rem;
+
+// ── Border Radius ────────────────────────────────────────────
+$radius-sm: 4px;
+$radius-md: 8px;
+$radius-lg: 12px;
+$radius-xl: 1rem;
+$radius-pill: 999px;
+
+// ── Shadows ──────────────────────────────────────────────────
+$shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+$shadow-md: 0 2px 8px rgba(0, 0, 0, 0.1);
+$shadow-lg: 0 10px 25px rgba(15, 23, 42, 0.1);
+$shadow-xl: 0 20px 40px rgba(15, 23, 42, 0.12);
+$shadow-modal: 0 10px 30px rgba(0, 0, 0, 0.2);
+
+// ── Transitions ──────────────────────────────────────────────
+$transition-fast: 0.15s ease;
+$transition-base: 0.2s ease;
+$transition-slow: 0.3s ease;
+
+// ── Breakpoints ──────────────────────────────────────────────
+$breakpoint-sm: 480px;
+$breakpoint-md: 768px;
+$breakpoint-lg: 1024px;
+$breakpoint-xl: 1200px;
+
+// ── Z-Index ──────────────────────────────────────────────────
+$z-sticky: 10;
+$z-modal: 1000;
+$z-toast: 1100;
+
+// ── Layout ───────────────────────────────────────────────────
+$max-width-content: 960px;
+$max-width-narrow: 700px;
+$max-width-wide: 1200px;
+$max-width-full: 1400px;

@@ -1,3 +1,5 @@
+@use '../../styles/variables' as *;
+
 .login-page {
   min-height: 100vh;
   height: 100vh;
@@ -11,17 +13,17 @@
 .login-container {
   width: 100%;
   max-width: 450px;
-  padding: 2rem;
+  padding: $spacing-xl;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .login-card {
-  background: #fff;
+  background: $color-bg-white;
   border-radius: 1.5rem;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  padding: 3rem;
+  padding: $spacing-2xl;
   animation: slideUp 0.5s ease-out;
 }
 
@@ -43,20 +45,20 @@
   .login-logo {
     max-width: 200px;
     height: auto;
-    margin-bottom: 2rem;
+    margin-bottom: $spacing-xl;
   }
 
   h1 {
     font-size: 1.75rem;
     font-weight: 600;
-    color: #1a1a1a;
+    color: $color-text-dark;
     margin-bottom: 0.75rem;
     white-space: nowrap;
   }
 
   .subtitle {
     font-size: 1rem;
-    color: #666;
+    color: $color-text-gray;
     margin: 0;
   }
 }
@@ -74,7 +76,7 @@
 
   label {
     font-weight: 600;
-    color: #0f172a;
+    color: $color-text-primary;
     font-size: 0.95rem;
   }
 }
@@ -82,24 +84,24 @@
 .form-control {
   width: 100%;
   padding: 0.875rem 1rem;
-  border: 2px solid #e2e8f0;
-  border-radius: 0.75rem;
+  border: 2px solid $color-border;
+  border-radius: $radius-xl;
   font-size: 1rem;
-  transition: all 0.2s ease;
+  transition: all $transition-base;
   box-sizing: border-box;
 
   &:focus {
     outline: none;
-    border-color: #2563eb;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    border-color: $color-accent;
+    box-shadow: 0 0 0 3px rgba($color-primary, 0.1);
   }
 
   &.invalid {
-    border-color: #dc2626;
+    border-color: $color-error;
   }
 
   &::placeholder {
-    color: #94a3b8;
+    color: $color-text-light;
   }
 }
 
@@ -109,7 +111,7 @@
   align-items: center;
 
   .form-control {
-    padding-right: 3rem;
+    padding-right: $spacing-2xl;
   }
 
   .password-toggle {
@@ -117,16 +119,16 @@
     right: 0.75rem;
     background: transparent;
     border: none;
-    color: #64748b;
+    color: $color-text-muted;
     cursor: pointer;
-    padding: 0.25rem;
+    padding: $spacing-xs;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: color 0.2s ease;
+    transition: color $transition-base;
 
     &:hover {
-      color: #2563eb;
+      color: $color-accent;
     }
 
     &:focus {
@@ -136,23 +138,23 @@
 }
 
 .error-text {
-  color: #dc2626;
+  color: $color-error;
   font-size: 0.875rem;
-  margin-top: 0.25rem;
+  margin-top: $spacing-xs;
 }
 
 .status {
   padding: 0.875rem 1rem;
-  border-radius: 0.75rem;
+  border-radius: $radius-xl;
   font-size: 0.95rem;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: $spacing-sm;
 
   &.error {
-    background: #fee2e2;
-    color: #b91c1c;
-    border: 1px solid #fca5a5;
+    background: $color-error-bg;
+    color: $color-error-text;
+    border: 1px solid $color-error;
   }
 
   svg {
@@ -161,26 +163,26 @@
 }
 
 .btn {
-  padding: 0.875rem 1.5rem;
+  padding: 0.875rem $spacing-lg;
   border: none;
-  border-radius: 0.75rem;
+  border-radius: $radius-xl;
   font-weight: 600;
   font-size: 1rem;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all $transition-base;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: $spacing-sm;
 }
 
 .btn-primary {
-  background: #2563eb;
+  background: $color-primary;
   color: #fff;
 
   &:not(:disabled):hover {
-    background: #1d4ed8;
-    box-shadow: 0 5px 15px rgba(37, 99, 235, 0.35);
+    background: $color-primary-dark;
+    box-shadow: 0 5px 15px rgba($color-primary, 0.35);
     transform: translateY(-1px);
   }
 
@@ -191,8 +193,8 @@
 }
 
 .btn-login {
-  margin-top: 0.5rem;
-  padding: 1rem 1.5rem;
+  margin-top: $spacing-sm;
+  padding: 1rem $spacing-lg;
   font-size: 1.05rem;
 }
 
@@ -212,21 +214,21 @@
 }
 
 .login-footer {
-  margin-top: 2rem;
+  margin-top: $spacing-xl;
   text-align: center;
-  padding-top: 1.5rem;
-  border-top: 1px solid #e2e8f0;
+  padding-top: $spacing-lg;
+  border-top: 1px solid $color-border;
 
   p {
-    color: #64748b;
+    color: $color-text-muted;
     font-size: 0.875rem;
     margin: 0;
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: $breakpoint-sm) {
   .login-card {
-    padding: 2rem 1.5rem;
+    padding: $spacing-xl $spacing-lg;
   }
 
   .login-header {
