@@ -29,11 +29,11 @@ public class TemplatesController : ControllerBase
     {
         var templates = await _context.Templates
             .OrderBy(t => t.Name)
-            .Select(t => new { t.Id, t.Name, t.Schema, t.IsArchived, HasExistingMeasurements = t.Measurements.Any() })
+            .Select(t => new { t.Id, t.Name, t.Schema, t.IsArchived, HasExistingMeasurements = t.Measurements.Any(), UsageCount = t.Measurements.Count() })
             .ToListAsync(cancellationToken);
 
         var response = templates
-            .Select(t => new TemplateResponse(t.Id, t.Name, t.Schema.RootElement.GetRawText(), t.IsArchived, t.HasExistingMeasurements));
+            .Select(t => new TemplateResponse(t.Id, t.Name, t.Schema.RootElement.GetRawText(), t.IsArchived, t.HasExistingMeasurements, t.UsageCount));
 
         return Ok(response);
     }
@@ -43,7 +43,7 @@ public class TemplatesController : ControllerBase
     {
         var template = await _context.Templates
             .Where(t => t.Id == id)
-            .Select(t => new { t.Id, t.Name, t.Schema, t.IsArchived, HasExistingMeasurements = t.Measurements.Any() })
+            .Select(t => new { t.Id, t.Name, t.Schema, t.IsArchived, HasExistingMeasurements = t.Measurements.Any(), UsageCount = t.Measurements.Count() })
             .FirstOrDefaultAsync(cancellationToken);
 
         if (template is null)
@@ -51,7 +51,7 @@ public class TemplatesController : ControllerBase
             return NotFound();
         }
 
-        return Ok(new TemplateResponse(template.Id, template.Name, template.Schema.RootElement.GetRawText(), template.IsArchived, template.HasExistingMeasurements));
+        return Ok(new TemplateResponse(template.Id, template.Name, template.Schema.RootElement.GetRawText(), template.IsArchived, template.HasExistingMeasurements, template.UsageCount));
     }
 
     [HttpPost]
@@ -78,7 +78,7 @@ public class TemplatesController : ControllerBase
         _context.Templates.Add(template);
         await _context.SaveChangesAsync(cancellationToken);
 
-        var response = new TemplateResponse(template.Id, template.Name, template.Schema.RootElement.GetRawText(), template.IsArchived, false);
+        var response = new TemplateResponse(template.Id, template.Name, template.Schema.RootElement.GetRawText(), template.IsArchived, false, 0);
         return CreatedAtAction(nameof(GetTemplate), new { id = template.Id }, response);
     }
 
@@ -119,7 +119,7 @@ public class TemplatesController : ControllerBase
 
         await _context.SaveChangesAsync(cancellationToken);
 
-        return Ok(new TemplateResponse(template.Id, template.Name, template.Schema.RootElement.GetRawText(), template.IsArchived, template.Measurements.Any()));
+        return Ok(new TemplateResponse(template.Id, template.Name, template.Schema.RootElement.GetRawText(), template.IsArchived, template.Measurements.Any(), template.Measurements.Count));
     }
 
     [HttpDelete("{id:int}")]
@@ -159,7 +159,8 @@ public class TemplatesController : ControllerBase
         template.IsArchived = true;
         await _context.SaveChangesAsync(cancellationToken);
 
-        return Ok(new TemplateResponse(template.Id, template.Name, template.Schema.RootElement.GetRawText(), template.IsArchived, true));
+        var usageCount = await _context.Measurements.CountAsync(m => m.TemplateId == id, cancellationToken);
+        return Ok(new TemplateResponse(template.Id, template.Name, template.Schema.RootElement.GetRawText(), template.IsArchived, usageCount > 0, usageCount));
     }
 
     /// <summary>
@@ -188,7 +189,7 @@ public class TemplatesController : ControllerBase
         }
     }
 
-    public record TemplateResponse(int Id, string Name, string Schema, bool IsArchived, bool HasExistingMeasurements);
+    public record TemplateResponse(int Id, string Name, string Schema, bool IsArchived, bool HasExistingMeasurements, int UsageCount);
 
     public class SaveTemplateRequest
     {
