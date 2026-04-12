@@ -24,6 +24,10 @@ export class Header {
     this.router.navigate(['/templates']);
   }
 
+  onMigration(): void {
+    this.router.navigate(['/migration']);
+  }
+
   onExport(): void {
     this.router.navigate(['/exportieren']);
   }

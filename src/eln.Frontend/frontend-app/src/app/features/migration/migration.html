@@ -74,7 +74,7 @@
 
         <div class="button-group">
           <button type="button" class="btn btn-secondary" (click)="currentStep.set('template')">
-            Zurueck
+            Zurück
           </button>
           <button type="button" class="btn btn-primary" [disabled]="!selectedFile()" (click)="onLoadPreview()">
             Vorschau laden
@@ -153,7 +153,7 @@
               Mapping als Profil speichern
             </label>
             @if (saveAsProfile) {
-            <input type="text" class="form-input" [(ngModel)]="newProfileName"
+            <input type="text" class="form-input form-field-compact" [(ngModel)]="newProfileName"
               placeholder="Name des Profils (z.B. 'Mein altes Lungen-Format')">
             }
           </div>
@@ -161,7 +161,7 @@
 
         <div class="button-group">
           <button type="button" class="btn btn-secondary" (click)="currentStep.set('upload')">
-            Zurueck
+            Zurück
           </button>
           <button type="button" class="btn btn-primary" [disabled]="!hasAnyMapping()" (click)="goToSeries()">
             Weiter
@@ -189,12 +189,12 @@
           </div>
 
           @if (seriesMode() === 'new') {
-          <input type="text" class="form-input" placeholder="Name der neuen Serie (optional)"
+          <input type="text" class="form-input form-field-compact" placeholder="Name der neuen Serie (optional)"
             [(ngModel)]="newSeriesName">
           }
 
           @if (seriesMode() === 'existing') {
-          <select class="form-select" [(ngModel)]="selectedSeriesId">
+          <select class="form-select form-field-compact" [(ngModel)]="selectedSeriesId">
             <option value="">Bitte waehlen...</option>
             @for (s of existingSeries(); track s.id) {
             <option [value]="s.id">{{ s.name }} ({{ s.measurementCount }} Messungen)</option>
@@ -205,7 +205,7 @@
 
         <div class="button-group">
           <button type="button" class="btn btn-secondary" (click)="currentStep.set('mapping')">
-            Zurueck
+            Zurück
           </button>
           <button type="button" class="btn btn-primary" [disabled]="!canStartImport()" (click)="onImport()">
             Import starten
@@ -250,7 +250,7 @@
 
           <div class="button-group result-actions">
             <button type="button" class="btn btn-secondary" (click)="startNextFile()">
-              Naechste Datei importieren
+              Nächste Datei importieren
             </button>
             <button type="button" class="btn btn-primary" (click)="navigateToSeries()">
               Zur Messserie

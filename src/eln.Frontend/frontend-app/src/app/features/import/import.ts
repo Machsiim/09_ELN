@@ -177,7 +177,7 @@ export class Import implements OnInit {
 
   private loadTemplates(): void {
     this.templateService.getTemplates().subscribe({
-      next: (templates) => this.templates.set(templates),
+      next: (templates) => this.templates.set(templates.filter((template) => !template.isArchived)),
       error: () => this.templates.set([])
     });
   }
