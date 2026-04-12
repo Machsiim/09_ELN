@@ -379,6 +379,11 @@ export class Templates implements OnInit {
     return this.fieldTypeOptions.find((option) => option.value === type)?.label ?? type;
   }
 
+  getUsageCountLabel(template: TemplateDto | null): string {
+    const usageCount = template?.usageCount ?? 0;
+    return usageCount === 1 ? '1 Messung' : `${usageCount} Messungen`;
+  }
+
   private buildSchema(): BackendTemplateSchema {
     return {
       sections: this.sections().map((section) => ({
