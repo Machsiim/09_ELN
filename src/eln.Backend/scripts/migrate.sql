@@ -24,5 +24,9 @@ CREATE TABLE IF NOT EXISTS measurement_images (
     uploaded_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
+-- GIN indices for JSONB columns (Req 1 - JSONB-Indizierung erweitern)
+CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_measurements_data ON measurements USING GIN (data);
+CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_templates_schema ON templates USING GIN (schema);
+
 -- Verify
 SELECT 'Migration complete' AS status;

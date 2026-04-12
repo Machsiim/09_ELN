@@ -121,6 +121,15 @@ public class ElnContext : DbContext
             .HasIndex(ssl => ssl.Token)
             .IsUnique();
 
+        // GIN indices for JSONB columns (Req 1 - JSONB-Indizierung)
+        modelBuilder.Entity<Measurement>()
+            .HasIndex(m => m.Data)
+            .HasMethod("GIN");
+
+        modelBuilder.Entity<Template>()
+            .HasIndex(t => t.Schema)
+            .HasMethod("GIN");
+
         // MeasurementSeries -> Locker (User who locked)
         modelBuilder.Entity<MeasurementSeries>()
             .HasOne(ms => ms.Locker)

@@ -3,6 +3,7 @@ using eln.Backend.Application.DTOs;
 using eln.Backend.Application.Infrastructure;
 using eln.Backend.Application.Model;
 using Microsoft.EntityFrameworkCore;
+using eln.Backend.Application;
 
 namespace eln.Backend.Application.Services;
 
@@ -25,7 +26,11 @@ public class MeasurementService
         // Get template
         var template = await _context.Templates.FindAsync(dto.TemplateId);
         if (template == null)
-            throw new Exception($"Template with ID {dto.TemplateId} not found");
+            throw new NotFoundException($"Template with ID {dto.TemplateId} not found");
+
+        // Archivierungsschutz (Req 2): archived templates cannot be used for new measurements
+        if (template.IsArchived)
+            throw new ValidationException("Cannot create a measurement using an archived template.");
 
         // Get series
         var series = await _context.MeasurementSeries.FindAsync(dto.SeriesId);
