@@ -159,6 +159,37 @@
   }
 }
 
+.schema-field--invalid {
+  input,
+  textarea {
+    border-color: $color-error-text;
+    color: $color-error-text;
+
+    &::placeholder {
+      color: rgba($color-error-text, 0.7);
+    }
+
+    &:focus {
+      border-color: $color-error-text;
+      box-shadow: 0 0 0 2px rgba($color-error-text, 0.15);
+    }
+  }
+}
+
+.required-indicator {
+  color: $color-error-text;
+  margin-left: 0.2rem;
+}
+
+.field-error {
+  color: $color-error-text;
+  font-weight: 600;
+}
+
+.measurement-images-group {
+  margin-top: $spacing-2xl;
+}
+
 .actions {
   display: flex;
   justify-content: flex-end;

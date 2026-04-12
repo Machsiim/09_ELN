@@ -145,13 +145,15 @@
                       <div class="schema-fields">
                         @for (field of card.fields; track trackById($index, field)) {
                           @let controlName = getControlName(section.id, card.id, field.id, field.label);
-                          <div class="schema-field">
+                          @let isRequired = field.required ?? false;
+                          @let isInvalid = form.get(controlName)?.invalid && form.get(controlName)?.touched;
+                          <div class="schema-field" [class.schema-field--invalid]="isInvalid">
                             @switch (field.type) {
                               @case ('media') {
                                 <app-media-upload-field
                                   [id]="controlName"
                                   [formControlName]="controlName"
-                                  [label]="field.label"
+                                  [label]="isRequired ? field.label + ' *' : field.label"
                                   [hint]="field.hint"
                                   [showLabel]="true">
                                 </app-media-upload-field>
@@ -159,6 +161,9 @@
                               @case ('multiline') {
                                 <label [attr.for]="controlName">
                                   {{ field.label }}
+                                  @if (isRequired) {
+                                  <span class="required-indicator">*</span>
+                                  }
                                 </label>
                                 <textarea rows="3" [id]="controlName" [formControlName]="controlName"></textarea>
                                 @if (field.hint) {
@@ -168,6 +173,9 @@
                               @case ('table') {
                                 <label [attr.for]="controlName">
                                   {{ field.label }}
+                                  @if (isRequired) {
+                                  <span class="required-indicator">*</span>
+                                  }
                                 </label>
                                 <textarea rows="3"
                                   placeholder="Tabellendaten (CSV oder Markdown)"
@@ -180,6 +188,9 @@
                               @case ('date') {
                                 <label [attr.for]="controlName">
                                   {{ field.label }}
+                                  @if (isRequired) {
+                                  <span class="required-indicator">*</span>
+                                  }
                                 </label>
                                 <input type="date" [id]="controlName" [formControlName]="controlName" />
                                 @if (field.hint) {
@@ -189,7 +200,12 @@
                               @case ('boolean') {
                                 <label class="checkbox-field">
                                   <input type="checkbox" [id]="controlName" [formControlName]="controlName" />
-                                  <span>{{ field.label }}</span>
+                                  <span>
+                                    {{ field.label }}
+                                    @if (isRequired) {
+                                    <span class="required-indicator">*</span>
+                                    }
+                                  </span>
                                 </label>
                                 @if (field.hint) {
                                   <small>{{ field.hint }}</small>
@@ -198,6 +214,9 @@
                               @case ('number') {
                                 <label [attr.for]="controlName">
                                   {{ field.label }}
+                                  @if (isRequired) {
+                                  <span class="required-indicator">*</span>
+                                  }
                                 </label>
                                 <input type="number" [id]="controlName" [formControlName]="controlName" />
                                 @if (field.hint) {
@@ -207,12 +226,18 @@
                               @default {
                                 <label [attr.for]="controlName">
                                   {{ field.label }}
+                                  @if (isRequired) {
+                                  <span class="required-indicator">*</span>
+                                  }
                                 </label>
                                 <input type="text" [id]="controlName" [formControlName]="controlName" />
                                 @if (field.hint) {
                                   <small>{{ field.hint }}</small>
                                 }
                               }
+                            }
+                            @if (isInvalid) {
+                              <small class="field-error">{{ getFieldErrorMessage(controlName, field.type) }}</small>
                             }
                           </div>
                         }
@@ -223,7 +248,7 @@
               }
             </div>
 
-            <div class="form-group">
+            <div class="form-group measurement-images-group">
               <label>Bilder zur Messung hinzufügen (optional)</label>
               <app-media-upload-field [formControl]="measurementImagesControl">
               </app-media-upload-field>

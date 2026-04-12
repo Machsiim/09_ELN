@@ -11,6 +11,7 @@ export interface TemplateFieldSchema {
   id: string;
   label: string;
   type: TemplateFieldType;
+  required?: boolean;
   hint?: string;
 }
 

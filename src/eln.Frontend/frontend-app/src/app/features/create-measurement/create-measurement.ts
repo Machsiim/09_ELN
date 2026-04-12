@@ -68,6 +68,7 @@ interface FieldMeta {
   fieldName: string;
   backendType: BackendFieldType;
   uiType: TemplateFieldType;
+  required: boolean;
 }
 @Component({
   selector: 'app-create-measurement',
@@ -342,7 +343,7 @@ export class CreateMeasurement implements OnInit {
       section.cards?.forEach((card) => {
         card.fields?.forEach((field) => {
           const controlName = this.getControlName(section.id, card.id, field.id, field.label);
-          const validators = this.getValidators(field.backendType, field.type);
+          const validators = this.getValidators(field.backendType, field.type, field.required ?? false);
           const control = this.buildControl(field.type, validators);
           controls[controlName] = control;
           const sectionKey = section.title || 'Sektion';
@@ -350,7 +351,8 @@ export class CreateMeasurement implements OnInit {
             section: sectionKey,
             fieldName: field.backendName,
             backendType: field.backendType,
-            uiType: field.type
+            uiType: field.type,
+            required: field.required ?? false
           });
         });
       });
@@ -408,6 +410,7 @@ export class CreateMeasurement implements OnInit {
             id: field.id,
             label: field.label,
             type: field.type,
+            required: field.required ?? false,
             hint: field.hint,
             backendName: this.buildFieldName(card.title, field.label),
             backendType: mapUiTypeToBackendType(field.type)
@@ -427,6 +430,7 @@ export class CreateMeasurement implements OnInit {
           const fieldName = field.name ?? field.Name ?? '';
           const fieldType = field.type ?? field.Type ?? 'text';
           const uiType = field.uiType ?? field.UiType;
+          const required = field.required ?? field.Required ?? false;
           const description = field.description ?? field.Description;
           const { cardTitle, fieldLabel } = splitFieldName(fieldName);
           if (!cardMap.has(cardTitle)) {
@@ -442,6 +446,7 @@ export class CreateMeasurement implements OnInit {
             id: this.createId('field'),
             label: fieldLabel,
             type: mapBackendTypeToUiType(fieldType, uiType),
+            required,
             hint: description ?? '',
             backendName: fieldName,
             backendType: fieldType
@@ -463,10 +468,16 @@ export class CreateMeasurement implements OnInit {
     return `${normalizedCard} - ${normalizedField}`;
   }
 
-  private getValidators(backendType: BackendFieldType, uiType: TemplateFieldType): ValidatorFn[] {
+  private getValidators(
+    backendType: BackendFieldType,
+    uiType: TemplateFieldType,
+    required: boolean
+  ): ValidatorFn[] {
     const validators: ValidatorFn[] = [];
 
-    if (uiType !== 'boolean') {
+    if (required && uiType === 'boolean') {
+      validators.push(Validators.requiredTrue);
+    } else if (required) {
       validators.push(Validators.required);
     }
 
@@ -476,6 +487,23 @@ export class CreateMeasurement implements OnInit {
     }
 
     return validators;
+  }
+
+  getFieldErrorMessage(controlName: string, uiType: TemplateFieldType): string {
+    const errors = this.measurementForm?.get(controlName)?.errors;
+    if (!errors) {
+      return '';
+    }
+
+    if (errors['requiredTrue'] && uiType === 'boolean') {
+      return 'Dieses Feld muss aktiviert werden.';
+    }
+
+    if (errors['required']) {
+      return 'Dieses Feld ist erforderlich.';
+    }
+
+    return 'Bitte prüfen Sie dieses Feld.';
   }
 
   private buildControl(type: TemplateFieldType, validators: ValidatorFn[]): unknown {
