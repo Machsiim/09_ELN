@@ -11,6 +11,27 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using System.Text.Json;
 using Npgsql;
 
+// Load .env file (walk up directory tree to find it)
+var envDir = new DirectoryInfo(Directory.GetCurrentDirectory());
+while (envDir != null)
+{
+    var envFile = Path.Combine(envDir.FullName, ".env");
+    if (File.Exists(envFile))
+    {
+        foreach (var line in File.ReadAllLines(envFile))
+        {
+            if (string.IsNullOrWhiteSpace(line) || line.TrimStart().StartsWith('#')) continue;
+            var idx = line.IndexOf('=');
+            if (idx < 0) continue;
+            var key = line[..idx].Trim();
+            var value = line[(idx + 1)..].Trim();
+            Environment.SetEnvironmentVariable(key, value);
+        }
+        break;
+    }
+    envDir = envDir.Parent;
+}
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container
