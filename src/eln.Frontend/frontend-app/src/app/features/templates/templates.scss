@@ -267,6 +267,21 @@
   font-weight: 600;
 }
 
+.badge-usage {
+  background-color: $color-primary-light;
+  color: $color-primary;
+  font-size: 0.7rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: $radius-sm;
+  font-weight: 600;
+  white-space: nowrap;
+
+  &.unused {
+    background-color: $color-bg-muted;
+    color: $color-text-muted;
+  }
+}
+
 .delete-btn {
   color: $color-danger;
   background: $color-error-bg;

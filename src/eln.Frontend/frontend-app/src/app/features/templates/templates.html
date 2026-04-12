@@ -168,6 +168,9 @@
               @if (template.isArchived) {
               <span class="badge-archived">Archiviert</span>
               }
+              <span class="badge-usage" [class.unused]="template.usageCount === 0">
+                {{ template.usageCount }} {{ template.usageCount === 1 ? 'Messung' : 'Messungen' }}
+              </span>
             </div>
             <small>ID: {{ template.id }}</small>
           </div>

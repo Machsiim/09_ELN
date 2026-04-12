@@ -9,6 +9,7 @@ export interface TemplateDto {
   schema: string;
   isArchived: boolean;
   hasExistingMeasurements: boolean;
+  usageCount: number;
 }
 
 export interface SaveTemplateDto {
