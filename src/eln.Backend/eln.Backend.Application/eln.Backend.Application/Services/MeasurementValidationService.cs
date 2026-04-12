@@ -184,20 +184,8 @@ public class MeasurementValidationService
                 if (string.IsNullOrEmpty(sectionName))
                     continue;
 
-                // Check if section exists in measurement data
-                if (!measurementRoot.TryGetProperty(sectionName, out var sectionDataElement))
-                {
-                    errors.Add(new ValidationErrorDto
-                    {
-                        Section = sectionName,
-                        Field = "",
-                        Error = $"Missing section '{sectionName}'"
-                    });
-                    continue;
-                }
-
-                // Get fields - check both schema formats
-                var fields = new List<(string label, string type)>();
+                // Get fields with their required status - check both schema formats (Req 5 & 6)
+                var fields = new List<(string label, string type, bool required)>();
 
                 // Format 1: Backend schema with "Fields" array directly on section
                 if (section.TryGetProperty("Fields", out var backendFields) ||
@@ -207,9 +195,10 @@ public class MeasurementValidationService
                     {
                         var fieldName = TryGetStringProperty(field, "Name", "name", "label", "Label") ?? "";
                         var fieldType = TryGetStringProperty(field, "Type", "type") ?? "string";
+                        var isRequired = TryGetBoolProperty(field, "Required", "required");
 
                         if (!string.IsNullOrEmpty(fieldName))
-                            fields.Add((fieldName, fieldType));
+                            fields.Add((fieldName, fieldType, isRequired));
                     }
                 }
                 // Format 2: UI schema with cards[].fields[]
@@ -225,6 +214,7 @@ public class MeasurementValidationService
                             {
                                 var fieldLabel = TryGetStringProperty(field, "label", "Label", "name", "Name") ?? "";
                                 var type = TryGetStringProperty(field, "type", "Type") ?? "string";
+                                var isRequired = TryGetBoolProperty(field, "required", "Required");
 
                                 if (!string.IsNullOrEmpty(fieldLabel))
                                 {
@@ -232,25 +222,44 @@ public class MeasurementValidationService
                                     var compositeKey = !string.IsNullOrEmpty(cardTitle)
                                         ? $"{cardTitle} - {fieldLabel}"
                                         : fieldLabel;
-                                    fields.Add((compositeKey, type));
+                                    fields.Add((compositeKey, type, isRequired));
                                 }
                             }
                         }
                     }
                 }
 
-                // Validate each field
-                foreach (var (fieldLabel, fieldType) in fields)
+                // Only require the section to be present if it has at least one required field
+                var hasRequiredFields = fields.Any(f => f.required);
+                if (!measurementRoot.TryGetProperty(sectionName, out var sectionDataElement))
                 {
-                    // Check if field exists in measurement data
-                    if (!sectionDataElement.TryGetProperty(fieldLabel, out var fieldElement))
+                    if (hasRequiredFields)
                     {
                         errors.Add(new ValidationErrorDto
                         {
                             Section = sectionName,
-                            Field = fieldLabel,
-                            Error = $"Required field '{fieldLabel}' is missing"
+                            Field = "",
+                            Error = $"Missing section '{sectionName}' which contains required fields"
                         });
+                    }
+                    continue;
+                }
+
+                // Validate each field (Req 6: server-side required field validation)
+                foreach (var (fieldLabel, fieldType, isRequired) in fields)
+                {
+                    // Check if field exists in measurement data
+                    if (!sectionDataElement.TryGetProperty(fieldLabel, out var fieldElement))
+                    {
+                        if (isRequired)
+                        {
+                            errors.Add(new ValidationErrorDto
+                            {
+                                Section = sectionName,
+                                Field = fieldLabel,
+                                Error = $"Required field '{fieldLabel}' is missing"
+                            });
+                        }
                         continue;
                     }
 
@@ -258,16 +267,19 @@ public class MeasurementValidationService
                     if (fieldElement.ValueKind == JsonValueKind.Null ||
                         fieldElement.ValueKind == JsonValueKind.Undefined)
                     {
-                        errors.Add(new ValidationErrorDto
+                        if (isRequired)
                         {
-                            Section = sectionName,
-                            Field = fieldLabel,
-                            Error = $"Field '{fieldLabel}' cannot be null"
-                        });
+                            errors.Add(new ValidationErrorDto
+                            {
+                                Section = sectionName,
+                                Field = fieldLabel,
+                                Error = $"Required field '{fieldLabel}' cannot be null"
+                            });
+                        }
                         continue;
                     }
 
-                    // Validate data type
+                    // Validate data type (only if value is present)
                     var typeError = ValidateJsonFieldType(fieldType, fieldElement);
                     if (typeError != null)
                     {
@@ -294,6 +306,23 @@ public class MeasurementValidationService
         result.Errors = errors;
         result.IsValid = errors.Count == 0;
         return result;
+    }
+
+    /// <summary>
+    /// Tries to get a bool property from a JSON element, checking multiple property names.
+    /// Returns false if the property is not found.
+    /// </summary>
+    private bool TryGetBoolProperty(JsonElement element, params string[] propertyNames)
+    {
+        foreach (var name in propertyNames)
+        {
+            if (element.TryGetProperty(name, out var prop))
+            {
+                if (prop.ValueKind == JsonValueKind.True) return true;
+                if (prop.ValueKind == JsonValueKind.False) return false;
+            }
+        }
+        return false;
     }
 
     /// <summary>
