@@ -274,6 +274,22 @@ h1 {
   width: 100%;
 }
 
+$section-colors: (
+  0: (dark: #00649c, mid: #b3d4e8, light: #e3eff6),
+  1: (dark: #6d8c17, mid: #c8dea0, light: #e9f1d6),
+  2: (dark: #8b5e00, mid: #e0c88a, light: #f3ead2),
+  3: (dark: #7b2d5f, mid: #d4a3c4, light: #f0dfe9),
+  4: (dark: #2d6e6e, mid: #a3cece, light: #dceeed),
+  5: (dark: #8b3a3a, mid: #d4a3a3, light: #f0dfdf),
+);
+
+$template-colors: (
+  0: #1b3a5c,
+  1: #3c1b5c,
+  2: #1b5c3a,
+  3: #5c1b1b,
+);
+
 .measurements-table {
   width: max-content;
   min-width: 100%;
@@ -283,26 +299,95 @@ h1 {
   border-radius: $radius-sm;
 
   thead {
-    background: $color-bg-page;
-    border-bottom: 2px solid #ddd;
     position: sticky;
     top: 0;
     z-index: $z-sticky;
 
     th {
-      padding: 0.875rem $spacing-md;
-      text-align: left;
+      padding: 0.6rem $spacing-md;
+      text-align: center;
       font-weight: 600;
       color: $color-text-heading;
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       white-space: nowrap;
-      background: $color-bg-page;
+      border: 1px solid $color-border-dark;
     }
 
     .select-column {
       width: 40px;
+      background: $color-bg-page;
+    }
+
+    .base-header {
+      background: $color-bg-page;
+      vertical-align: middle;
+      text-align: left;
+    }
+
+    // Template row (above sections, only shown with multiple templates)
+    .header-template {
+      background: #1a1a1a;
+      color: #fff;
+      font-size: 0.85rem;
+      letter-spacing: 0.1em;
+      border-color: #000;
+      border-bottom: 3px solid #444;
+      padding: 0.5rem $spacing-md;
+    }
+
+    @each $i, $color in $template-colors {
+      .header-template.tpl-color-#{$i} {
+        background: $color;
+        border-color: darken($color, 10%);
+        border-bottom-color: lighten($color, 15%);
+      }
+    }
+
+    // Section row
+    .header-section {
+      color: #fff;
+      font-size: 0.8rem;
+      letter-spacing: 0.08em;
+      border-bottom: 2px solid rgba(0, 0, 0, 0.3);
+    }
+
+    // Card row
+    .header-card {
+      font-size: 0.75rem;
+      font-weight: 600;
+      border-bottom: 2px solid rgba(0, 0, 0, 0.15);
+    }
+
+    // Field row
+    .header-field {
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: none;
+      letter-spacing: normal;
+      border-bottom: 2px solid $color-border-dark;
+    }
+
+    // Section separator: thick left border between different sections
+    @each $i, $colors in $section-colors {
+      .header-section.color-#{$i} {
+        background: map-get($colors, dark);
+        border-color: darken(map-get($colors, dark), 10%);
+        border-bottom-color: rgba(0, 0, 0, 0.3);
+      }
+      .header-card.color-#{$i} {
+        background: map-get($colors, mid);
+        color: map-get($colors, dark);
+        border-color: darken(map-get($colors, mid), 12%);
+        border-bottom-color: rgba(0, 0, 0, 0.15);
+      }
+      .header-field.color-#{$i} {
+        background: map-get($colors, light);
+        color: darken(map-get($colors, dark), 5%);
+        border-color: darken(map-get($colors, light), 10%);
+        border-bottom-color: $color-border-dark;
+      }
     }
   }
 
@@ -348,6 +433,7 @@ h1 {
     .cell-value {
       white-space: nowrap;
       padding-right: $spacing-xl;
+      border-right: 1px solid $color-border-dark;
     }
     .measurement-row .select-column,
     .select-column {
