@@ -90,7 +90,7 @@ export class Migration implements OnInit {
 
   private loadTemplates(): void {
     this.templateService.getTemplates().subscribe({
-      next: (templates) => this.templates.set(templates),
+      next: (templates) => this.templates.set(templates.filter((template) => !template.isArchived)),
       error: () => this.templates.set([])
     });
   }
@@ -345,7 +345,8 @@ export class Migration implements OnInit {
   }
 
   async saveProfile(): Promise<void> {
-    if (!this.newProfileName || !this.selectedTemplate) return;
+    const profileName = this.newProfileName.trim();
+    if (!profileName || !this.selectedTemplate) return;
 
     const mapping: Record<string, string> = {};
     for (const m of this.mappings) {
@@ -355,11 +356,12 @@ export class Migration implements OnInit {
     }
 
     await firstValueFrom(this.mappingProfileService.create({
-      name: this.newProfileName,
+      name: profileName,
       templateId: Number(this.selectedTemplate),
       mapping
     }));
 
+    this.newProfileName = profileName;
     this.loadProfiles();
   }
 
@@ -417,12 +419,6 @@ export class Migration implements OnInit {
       }
     }
 
-    // Save profile if desired
-    if (this.saveAsProfile && this.newProfileName) {
-      await this.saveProfile();
-      this.saveAsProfile = false;
-    }
-
     this.currentStep.set('importing');
     this.isImporting.set(true);
     this.globalError.set(null);
@@ -447,6 +443,24 @@ export class Migration implements OnInit {
       }
 
       this.importResult.set(result);
+
+      if (this.saveAsProfile) {
+        if (!this.newProfileName.trim()) {
+          this.globalError.set('Import erfolgreich, aber das Mapping-Profil wurde nicht gespeichert: Profilname fehlt.');
+        } else {
+          try {
+            await this.saveProfile();
+            this.saveAsProfile = false;
+          } catch (error: unknown) {
+            this.globalError.set(
+              error instanceof Error
+                ? `Import erfolgreich, aber das Mapping-Profil konnte nicht gespeichert werden: ${error.message}`
+                : 'Import erfolgreich, aber das Mapping-Profil konnte nicht gespeichert werden.'
+            );
+          }
+        }
+      }
+
       this.currentStep.set('result');
     } catch (error: unknown) {
       this.globalError.set(
