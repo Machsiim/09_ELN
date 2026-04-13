@@ -66,6 +66,7 @@ export class Templates implements OnInit {
   readonly confirmModalVisible = signal(false);
   readonly confirmModalMode = signal<'delete' | 'archive'>('delete');
   readonly templateForAction = signal<TemplateDto | null>(null);
+  readonly editingField = signal<{ sectionId: string; cardId: string; fieldId: string } | null>(null);
 
   readonly fieldTypeOptions: { value: TemplateFieldType; label: string }[] = [
     { value: 'text', label: 'Kurztext' },
@@ -96,6 +97,7 @@ export class Templates implements OnInit {
     cardId: ['', Validators.required],
     label: ['', [Validators.required, Validators.maxLength(120)]],
     type: this.fb.nonNullable.control<TemplateFieldType>('text'),
+    required: false,
     hint: ['']
   });
 
@@ -163,24 +165,21 @@ export class Templates implements OnInit {
       return;
     }
 
-    const field: BuilderField = {
-      id: this.createId('field'),
+    const nextField: BuilderField = {
+      id: this.editingField()?.fieldId ?? this.createId('field'),
       label: this.fieldForm.controls.label.value.trim(),
       type: this.fieldForm.controls.type.value,
+      required: this.fieldForm.controls.required.value,
       hint: this.fieldForm.controls.hint.value?.trim() ?? ''
     };
 
-    card.fields = [...card.fields, field];
+    const editingField = this.editingField();
+    card.fields = editingField
+      ? card.fields.map((field) => (field.id === editingField.fieldId ? nextField : field))
+      : [...card.fields, nextField];
     section.cards = section.cards.map((c) => (c.id === card.id ? card : c));
     this.sections.update((current) => current.map((s) => (s.id === section.id ? section : s)));
-
-    this.fieldForm.reset({
-      sectionId: '',
-      cardId: '',
-      label: '',
-      type: 'text',
-      hint: ''
-    });
+    this.resetFieldForm();
   }
 
   removeSection(sectionId: string): void {
@@ -198,6 +197,10 @@ export class Templates implements OnInit {
   }
 
   removeField(sectionId: string, cardId: string, fieldId: string): void {
+    if (this.editingField()?.fieldId === fieldId) {
+      this.cancelFieldEdit();
+    }
+
     this.sections.update((current) =>
       current.map((section) =>
         section.id === sectionId
@@ -216,6 +219,29 @@ export class Templates implements OnInit {
 
   handleFieldSectionChange(): void {
     this.fieldForm.controls.cardId.setValue('');
+  }
+
+  startEditField(sectionId: string, cardId: string, fieldId: string): void {
+    const section = this.findSection(sectionId);
+    const card = section?.cards.find((entry) => entry.id === cardId);
+    const field = card?.fields.find((entry) => entry.id === fieldId);
+    if (!section || !card || !field) {
+      return;
+    }
+
+    this.editingField.set({ sectionId, cardId, fieldId });
+    this.fieldForm.reset({
+      sectionId,
+      cardId,
+      label: field.label,
+      type: field.type,
+      required: field.required ?? false,
+      hint: field.hint ?? ''
+    });
+  }
+
+  cancelFieldEdit(): void {
+    this.resetFieldForm();
   }
 
   fetchTemplates(): void {
@@ -359,6 +385,7 @@ export class Templates implements OnInit {
       const schema = this.decodeSchema(template.schema);
       this.templateForm.controls.name.setValue(`${template.name} (Kopie)`);
       this.setSectionsFromSchema(schema);
+      this.resetFieldForm();
       this.notification.show('Template wurde in den Builder geladen.');
     } catch {
       this.notification.showError('Schema konnte nicht geladen werden.');
@@ -368,6 +395,7 @@ export class Templates implements OnInit {
   resetBuilder(): void {
     this.sections.set([]);
     this.templateForm.reset({ name: '' });
+    this.resetFieldForm();
   }
 
   getCardsForSection(sectionId: string): BuilderCard[] {
@@ -379,6 +407,11 @@ export class Templates implements OnInit {
     return this.fieldTypeOptions.find((option) => option.value === type)?.label ?? type;
   }
 
+  getUsageCountLabel(template: TemplateDto | null): string {
+    const usageCount = template?.usageCount ?? 0;
+    return usageCount === 1 ? '1 Messung' : `${usageCount} Messungen`;
+  }
+
   private buildSchema(): BackendTemplateSchema {
     return {
       sections: this.sections().map((section) => ({
@@ -387,7 +420,7 @@ export class Templates implements OnInit {
           card.fields.map((field) => ({
             Name: this.buildFieldName(card.title, field.label),
             Type: mapUiTypeToBackendType(field.type),
-            Required: true,
+            Required: field.required ?? false,
             Description: field.hint,
             DefaultValue: null,
             UiType: field.type
@@ -418,6 +451,7 @@ export class Templates implements OnInit {
           const fieldName = field.name ?? field.Name ?? '';
           const fieldType = field.type ?? field.Type;
           const uiType = field.uiType ?? field.UiType;
+          const required = field.required ?? field.Required ?? false;
           const description = field.description ?? field.Description;
           const { cardTitle, fieldLabel } = splitFieldName(fieldName);
           if (!cardMap.has(cardTitle)) {
@@ -433,6 +467,7 @@ export class Templates implements OnInit {
             id: this.createId('field'),
             label: fieldLabel,
             type: mapBackendTypeToUiType(fieldType, uiType),
+            required,
             hint: description ?? ''
           });
         });
@@ -461,6 +496,7 @@ export class Templates implements OnInit {
                 id: field.id ?? this.createId('field'),
                 label: field.label ?? 'Feld',
                 type: field.type ?? 'text',
+                required: field.required ?? false,
                 hint: field.hint ?? ''
               })) ?? []
           })) ?? []
@@ -487,5 +523,17 @@ export class Templates implements OnInit {
 
   private createId(scope: string): string {
     return `${scope}-${Math.random().toString(36).slice(2, 9)}`;
+  }
+
+  private resetFieldForm(): void {
+    this.editingField.set(null);
+    this.fieldForm.reset({
+      sectionId: '',
+      cardId: '',
+      label: '',
+      type: 'text',
+      required: false,
+      hint: ''
+    });
   }
 }

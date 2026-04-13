@@ -123,19 +123,58 @@
       <div class="table-container">
         <table class="measurements-table">
           <thead>
-            <tr>
-              <th class="select-column"></th>
+            @if (hasMultipleTemplates()) {
+            <!-- Row 0: Template groups (only if multiple templates) -->
+            <tr class="header-templates">
+              <th class="select-column" [attr.rowspan]="4"></th>
               @if (isBaseColumnVisible('Mess-ID')) {
-              <th>Mess-ID</th>
+              <th [attr.rowspan]="4" class="base-header">Mess-ID</th>
               }
               @if (isBaseColumnVisible('Erstellt von')) {
-              <th>Erstellt von</th>
+              <th [attr.rowspan]="4" class="base-header">Erstellt von</th>
               }
               @if (isBaseColumnVisible('Erstellt am')) {
-              <th>Erstellt am</th>
+              <th [attr.rowspan]="4" class="base-header">Erstellt am</th>
               }
-              @for (column of getVisibleDataColumns(); track column) {
-              <th>{{ column }}</th>
+              @for (tpl of getTemplateHeaders(); track tpl.templateName) {
+              <th [attr.colspan]="tpl.totalFields" class="header-template tpl-color-{{ tpl.templateIndex }}">{{ tpl.templateName }}</th>
+              }
+            </tr>
+            }
+            <!-- Section groups -->
+            <tr class="header-sections">
+              @if (!hasMultipleTemplates()) {
+              <th class="select-column" [attr.rowspan]="3"></th>
+              @if (isBaseColumnVisible('Mess-ID')) {
+              <th [attr.rowspan]="3" class="base-header">Mess-ID</th>
+              }
+              @if (isBaseColumnVisible('Erstellt von')) {
+              <th [attr.rowspan]="3" class="base-header">Erstellt von</th>
+              }
+              @if (isBaseColumnVisible('Erstellt am')) {
+              <th [attr.rowspan]="3" class="base-header">Erstellt am</th>
+              }
+              }
+              @for (section of getHeaderStructure(); track section.sectionTitle) {
+              <th [attr.colspan]="section.totalFields" class="header-section color-{{ section.colorIndex }}">{{ section.sectionTitle }}</th>
+              }
+            </tr>
+            <!-- Card groups -->
+            <tr class="header-cards">
+              @for (section of getHeaderStructure(); track section.sectionTitle) {
+                @for (card of section.cards; track card.cardTitle) {
+                <th [attr.colspan]="card.fields.length" class="header-card color-{{ section.colorIndex }}">{{ card.cardTitle }}</th>
+                }
+              }
+            </tr>
+            <!-- Field names -->
+            <tr class="header-fields">
+              @for (section of getHeaderStructure(); track section.sectionTitle) {
+                @for (card of section.cards; track card.cardTitle) {
+                  @for (field of card.fields; track field.column) {
+                  <th class="header-field color-{{ section.colorIndex }}">{{ field.fieldLabel }}</th>
+                  }
+                }
               }
             </tr>
           </thead>
@@ -160,10 +199,14 @@
               @if (isBaseColumnVisible('Erstellt am')) {
               <td class="cell-date">{{ measurement.createdAt | date: 'dd.MM.yyyy HH:mm' }}</td>
               }
-              @for (column of getVisibleDataColumns(); track column) {
+              @for (section of getHeaderStructure(); track section.sectionTitle) {
+                @for (card of section.cards; track card.cardTitle) {
+                  @for (field of card.fields; track field.column) {
               <td class="cell-value">
-                {{ getValueForColumn(measurement, column) }}
+                {{ getValueForColumn(measurement, field.column) }}
               </td>
+                  }
+                }
               }
             </tr>
             }

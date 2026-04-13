@@ -25,6 +25,30 @@ import { AuthService } from '../../services/auth.service';
 import { NotificationService } from '../../services/notification.service';
 import { MediaAttachment } from '../../models/media-attachment';
 
+interface HeaderField {
+  column: string;
+  fieldLabel: string;
+}
+
+interface HeaderCard {
+  cardTitle: string;
+  fields: HeaderField[];
+}
+
+interface HeaderSection {
+  sectionTitle: string;
+  cards: HeaderCard[];
+  totalFields: number;
+  colorIndex: number;
+}
+
+interface HeaderTemplate {
+  templateName: string;
+  sections: HeaderSection[];
+  totalFields: number;
+  templateIndex: number;
+}
+
 @Component({
   selector: 'app-measurement-series-detail',
   imports: [CommonModule, Header, Footer],
@@ -516,6 +540,93 @@ export class MeasurementSeriesDetail implements OnInit {
     } catch {
       return value;
     }
+  }
+
+  getTemplateHeaders(): HeaderTemplate[] {
+    const measurements = this.measurements();
+    if (measurements.length === 0) return [];
+
+    const visible = this.visibleColumns();
+
+    // Group columns by templateName → preserve which sections belong to which template
+    const templateMap = new Map<string, Map<string, Map<string, HeaderField[]>>>();
+
+    for (const m of measurements) {
+      const tplName = m.templateName || 'Unbekannt';
+      if (!templateMap.has(tplName)) {
+        templateMap.set(tplName, new Map());
+      }
+      const sectionMap = templateMap.get(tplName)!;
+
+      for (const sectionName of Object.keys(m.data)) {
+        if (!sectionMap.has(sectionName)) {
+          sectionMap.set(sectionName, new Map());
+        }
+        const cardMap = sectionMap.get(sectionName)!;
+        const section = m.data[sectionName];
+
+        for (const fieldKey of Object.keys(section)) {
+          const fullColumn = `${sectionName} - ${fieldKey}`;
+          if (!visible.has(fullColumn)) continue;
+
+          const dashIdx = fieldKey.indexOf(' - ');
+          const cardTitle = dashIdx > -1 ? fieldKey.slice(0, dashIdx) : fieldKey;
+          const fieldLabel = dashIdx > -1 ? fieldKey.slice(dashIdx + 3) : fieldKey;
+
+          if (!cardMap.has(cardTitle)) {
+            cardMap.set(cardTitle, []);
+          }
+          const fields = cardMap.get(cardTitle)!;
+          if (!fields.some(f => f.column === fullColumn)) {
+            fields.push({ column: fullColumn, fieldLabel });
+          }
+        }
+      }
+    }
+
+    const SECTION_COLOR_COUNT = 6;
+    const TEMPLATE_COLOR_COUNT = 4;
+    let colorIndex = 0;
+    let templateIndex = 0;
+    const templates: HeaderTemplate[] = [];
+
+    for (const [templateName, sectionMap] of templateMap) {
+      const sections: HeaderSection[] = [];
+      let templateTotalFields = 0;
+
+      for (const [sectionTitle, cardMap] of sectionMap) {
+        const cards: HeaderCard[] = [];
+        let sectionTotalFields = 0;
+        for (const [cardTitle, fields] of cardMap) {
+          cards.push({ cardTitle, fields });
+          sectionTotalFields += fields.length;
+        }
+        sections.push({ sectionTitle, cards, totalFields: sectionTotalFields, colorIndex: colorIndex % SECTION_COLOR_COUNT });
+        colorIndex++;
+        templateTotalFields += sectionTotalFields;
+      }
+
+      templates.push({ templateName, sections, totalFields: templateTotalFields, templateIndex: templateIndex % TEMPLATE_COLOR_COUNT });
+      templateIndex++;
+    }
+
+    return templates;
+  }
+
+  hasMultipleTemplates(): boolean {
+    return this.getTemplateHeaders().length > 1;
+  }
+
+  getHeaderStructure(): HeaderSection[] {
+    return this.getTemplateHeaders().flatMap(t => t.sections);
+  }
+
+  getBaseColumnCount(): number {
+    let count = 1; // checkbox column
+    if (this.isBaseColumnVisible('Mess-ID')) count++;
+    if (this.isBaseColumnVisible('Erstellt von')) count++;
+    if (this.isBaseColumnVisible('Erstellt am')) count++;
+    return count;
   }
 
   private fetchMeasurements(seriesId: number): void {

@@ -49,15 +49,15 @@
         </div>
 
         <div class="control-block">
-          <h3>Feld hinzufügen</h3>
+          <h3>{{ editingField() ? 'Feld bearbeiten' : 'Feld hinzufügen' }}</h3>
           <form [formGroup]="fieldForm" (ngSubmit)="addField()">
-            <select formControlName="sectionId" (change)="handleFieldSectionChange()">
+            <select formControlName="sectionId" (change)="handleFieldSectionChange()" [disabled]="!!editingField()">
               <option value="">Sektion auswählen</option>
               @for (section of sections(); track section.id) {
               <option [value]="section.id">{{ section.title }}</option>
               }
             </select>
-            <select formControlName="cardId">
+            <select formControlName="cardId" [disabled]="!!editingField()">
               <option value="">Karte auswählen</option>
               @for (card of getCardsForSection(fieldForm.controls.sectionId.value); track card.id) {
               <option [value]="card.id">{{ card.title }}</option>
@@ -69,8 +69,19 @@
               <option [value]="option.value">{{ option.label }}</option>
               }
             </select>
+            <label class="inline-checkbox">
+              <input type="checkbox" formControlName="required" />
+              <span>Pflichtfeld</span>
+            </label>
             <input type="text" formControlName="hint" placeholder="Optional: Hilfetext oder Einheit" />
-            <button class="btn btn-outline" type="submit">Feld hinzufügen</button>
+            <div class="field-form-actions">
+              <button class="btn btn-outline" type="submit">
+                {{ editingField() ? 'Feld aktualisieren' : 'Feld hinzufügen' }}
+              </button>
+              @if (editingField()) {
+              <button class="btn btn-text" type="button" (click)="cancelFieldEdit()">Bearbeiten abbrechen</button>
+              }
+            </div>
           </form>
         </div>
       </div>
@@ -123,15 +134,32 @@
                 } @else {
                 @for (field of card.fields; track field.id) {
                 <li>
-                  <div>
-                    <span class="field-label">{{ field.label }}</span>
-                    <span class="field-type">{{ getFieldTypeLabel(field.type) }}</span>
+                  <div class="field-summary">
+                    <span class="field-label">
+                      {{ field.label }}
+                      @if (field.required) {
+                      <span class="required-indicator" title="Pflichtfeld">*</span>
+                      }
+                    </span>
+                    <div class="field-chips">
+                      <span class="field-chip field-chip--type">{{ getFieldTypeLabel(field.type) }}</span>
+                      @if (field.required) {
+                      <span class="field-chip field-chip--required">Pflicht</span>
+                      }
+                      @if (field.hint) {
+                      <span class="field-chip field-chip--hint">Hinweis</span>
+                      }
+                    </div>
                   </div>
                   @if (field.hint) {
                   <small>{{ field.hint }}</small>
                   }
-                  <button class="btn btn-icon small" type="button"
-                    (click)="removeField(section.id, card.id, field.id)" title="Feld entfernen">×</button>
+                  <div class="field-actions">
+                    <button class="btn btn-icon small" type="button"
+                      (click)="startEditField(section.id, card.id, field.id)" title="Feld bearbeiten">✎</button>
+                    <button class="btn btn-icon small" type="button"
+                      (click)="removeField(section.id, card.id, field.id)" title="Feld entfernen">×</button>
+                  </div>
                 </li>
                 }
                 }
@@ -168,6 +196,9 @@
               @if (template.isArchived) {
               <span class="badge-archived">Archiviert</span>
               }
+              <span class="badge-usage" [class.unused]="template.usageCount === 0">
+                {{ template.usageCount }} {{ template.usageCount === 1 ? 'Messung' : 'Messungen' }}
+              </span>
             </div>
             <small>ID: {{ template.id }}</small>
           </div>
@@ -199,12 +230,25 @@
 
 @if (confirmModalVisible()) {
 <div class="modal-backdrop">
-  <div class="modal-dialog">
+  <div class="modal-dialog template-confirm-dialog">
     <h2>Aktion bestätigen</h2>
     @if (confirmModalMode() === 'delete') {
     <p>Möchten Sie das Template "{{ templateForAction()?.name }}" wirklich löschen?</p>
     } @else {
-    <p>Möchten Sie das Template "{{ templateForAction()?.name }}" wirklich archivieren? Archivierte Templates können nicht mehr verwendet werden.</p>
+    <div class="archive-warning">
+      <p>
+        Möchten Sie das Template "<strong>{{ templateForAction()?.name }}</strong>" wirklich archivieren?
+      </p>
+      <p>
+        Archivierte Templates können nicht mehr verwendet werden.
+      </p>
+      <p class="archive-warning__impact">
+        Aktuell nutzen so viele Messungen dieses Template: <strong>{{ getUsageCountLabel(templateForAction()) }}</strong>
+      </p>
+      <p class="archive-warning__risk">
+        Die Archivierung kann bestehende Arbeitsabläufe beeinflussen und sollte nur bewusst durchgeführt werden.
+      </p>
+    </div>
     }
     <div class="modal-actions">
       <button class="modal-button" type="button" (click)="closeConfirmModal()" [disabled]="loading()">
