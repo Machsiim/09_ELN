@@ -2,6 +2,7 @@ import {
   Component,
   DestroyRef,
   OnInit,
+  computed,
   inject,
   signal
 } from '@angular/core';
@@ -45,6 +46,7 @@ interface BuilderCard extends TemplateCardSchema {
 }
 
 type BuilderField = TemplateFieldSchema;
+type TemplateArchiveFilter = 'all' | 'active' | 'archived';
 
 @Component({
   selector: 'app-templates',
@@ -53,6 +55,7 @@ type BuilderField = TemplateFieldSchema;
   styleUrl: './templates.scss'
 })
 export class Templates implements OnInit {
+  private readonly templatesPerPage = 5;
   private readonly fb = inject(FormBuilder);
   private readonly templateService = inject(TemplateService);
   private readonly authService = inject(AuthService);
@@ -61,6 +64,47 @@ export class Templates implements OnInit {
   private readonly notification = inject(NotificationService);
 
   readonly templates = signal<TemplateDto[]>([]);
+  readonly templateSearchTerm = signal('');
+  readonly templateArchiveFilter = signal<TemplateArchiveFilter>('all');
+  readonly templatePage = signal(1);
+  readonly filteredTemplates = computed(() => {
+    const query = this.normalizeSearchText(this.templateSearchTerm());
+    const archiveFilter = this.templateArchiveFilter();
+    const templates = this.templates().filter((template) => {
+      if (archiveFilter === 'active') {
+        return !template.isArchived;
+      }
+      if (archiveFilter === 'archived') {
+        return template.isArchived;
+      }
+      return true;
+    });
+
+    if (!query) {
+      return templates;
+    }
+
+    const terms = query.split(/\s+/).filter(Boolean);
+    return templates.filter((template) => {
+      const searchText = this.buildTemplateSearchText(template);
+      return terms.every((term) => searchText.includes(term));
+    });
+  });
+  readonly totalTemplatePages = computed(() =>
+    Math.max(1, Math.ceil(this.filteredTemplates().length / this.templatesPerPage))
+  );
+  readonly pagedTemplates = computed(() => {
+    const page = Math.min(this.templatePage(), this.totalTemplatePages());
+    const start = (page - 1) * this.templatesPerPage;
+    return this.filteredTemplates().slice(start, start + this.templatesPerPage);
+  });
+  readonly templatePageStart = computed(() => {
+    const total = this.filteredTemplates().length;
+    return total === 0 ? 0 : (Math.min(this.templatePage(), this.totalTemplatePages()) - 1) * this.templatesPerPage + 1;
+  });
+  readonly templatePageEnd = computed(() =>
+    Math.min(this.templatePageStart() + this.pagedTemplates().length - 1, this.filteredTemplates().length)
+  );
   readonly sections = signal<BuilderSection[]>([]);
   readonly loading = signal(false);
   readonly confirmModalVisible = signal(false);
@@ -107,6 +151,24 @@ export class Templates implements OnInit {
       return;
     }
     this.fetchTemplates();
+  }
+
+  onTemplateSearchChange(value: string): void {
+    this.templateSearchTerm.set(value);
+    this.templatePage.set(1);
+  }
+
+  onTemplateArchiveFilterChange(value: string): void {
+    this.templateArchiveFilter.set(this.isTemplateArchiveFilter(value) ? value : 'all');
+    this.templatePage.set(1);
+  }
+
+  previousTemplatePage(): void {
+    this.templatePage.update((page) => Math.max(1, page - 1));
+  }
+
+  nextTemplatePage(): void {
+    this.templatePage.update((page) => Math.min(this.totalTemplatePages(), page + 1));
   }
 
   addSection(): void {
@@ -519,6 +581,66 @@ export class Templates implements OnInit {
     const normalizedCard = cardTitle?.trim() || 'Allgemein';
     const normalizedField = fieldLabel?.trim() || 'Feld';
     return `${normalizedCard} - ${normalizedField}`;
+  }
+
+  private buildTemplateSearchText(template: TemplateDto): string {
+    const parts = [template.name];
+
+    try {
+      const schema = JSON.parse(template.schema) as unknown;
+      this.collectSchemaSearchParts(schema, parts);
+    } catch {
+      parts.push(template.schema);
+    }
+
+    return this.normalizeSearchText(parts.join(' '));
+  }
+
+  private collectSchemaSearchParts(schema: unknown, parts: string[]): void {
+    if (isUiSchema(schema)) {
+      schema.sections.forEach((section) => {
+        parts.push(section.title);
+        section.cards.forEach((card) => {
+          parts.push(card.title, card.subtitle ?? '');
+          card.fields.forEach((field) => {
+            parts.push(field.label, field.hint ?? '');
+          });
+        });
+      });
+      return;
+    }
+
+    if (isBackendSchema(schema)) {
+      schema.sections.forEach((section) => {
+        parts.push(section.name ?? '', section.Name ?? '');
+        const fields = section.fields ?? section.Fields ?? [];
+
+        fields.forEach((field) => {
+          const fieldName = field.name ?? field.Name ?? '';
+          const { cardTitle, fieldLabel } = splitFieldName(fieldName);
+          parts.push(
+            fieldName,
+            cardTitle,
+            fieldLabel,
+            field.description ?? '',
+            field.Description ?? ''
+          );
+        });
+      });
+    }
+  }
+
+  private normalizeSearchText(value: string): string {
+    return value
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/ß/g, 'ss')
+      .toLowerCase()
+      .trim();
+  }
+
+  private isTemplateArchiveFilter(value: string): value is TemplateArchiveFilter {
+    return value === 'all' || value === 'active' || value === 'archived';
   }
 
   private createId(scope: string): string {
