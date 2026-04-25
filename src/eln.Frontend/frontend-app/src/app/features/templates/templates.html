@@ -145,6 +145,8 @@
                       <span class="field-chip field-chip--type">{{ getFieldTypeLabel(field.type) }}</span>
                       @if (field.required) {
                       <span class="field-chip field-chip--required">Pflicht</span>
+                      } @else {
+                      <span class="field-chip field-chip--optional">Optional</span>
                       }
                       @if (field.hint) {
                       <span class="field-chip field-chip--hint">Hinweis</span>
