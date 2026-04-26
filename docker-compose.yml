@@ -33,6 +33,8 @@ services:
       - ConnectionStrings__DefaultConnection=Host=postgres;Database=elndb;Username=elnuser;Password=elnpassword
       - PYTHON_SERVICE_URL=http://python-service:8001
       - ELN_JWT_SECRET=${ELN_JWT_SECRET:-SuperSecretDevKeyThatIsAtLeast64BytesLong_ChangeInProduction123}
+      - ELN_ADMIN_USERNAME=${ELN_ADMIN_USERNAME:-admin}
+      - ELN_ADMIN_PASSWORD=${ELN_ADMIN_PASSWORD:-}
     depends_on:
       postgres:
         condition: service_healthy

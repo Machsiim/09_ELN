@@ -1,0 +1,39 @@
+using Microsoft.OpenApi.Any;
+using Microsoft.OpenApi.Models;
+using Swashbuckle.AspNetCore.SwaggerGen;
+
+namespace eln.Backend.Webapi;
+
+/// <summary>
+/// Sets example/default values in Swagger UI so you can click "Try it out" → "Execute" without typing.
+/// </summary>
+public class SwaggerDefaultValuesFilter : IOperationFilter
+{
+    private static readonly Dictionary<string, Dictionary<string, string>> Defaults = new()
+    {
+        // AggregationController
+        ["GetSeriesSummary"] = new() { ["seriesId"] = "1" },
+        ["GetGroupedAggregation"] = new() { ["seriesId"] = "1", ["groupBy"] = "standort" },
+
+        // VisualizationController
+        ["GetTimeline"] = new() { ["seriesId"] = "1" },
+        ["GetDistribution"] = new() { ["seriesId"] = "1", ["field"] = "temperatur" },
+        ["GetFields"] = new() { ["seriesId"] = "1" },
+    };
+
+    public void Apply(OpenApiOperation operation, OperationFilterContext context)
+    {
+        var methodName = context.MethodInfo.Name;
+
+        if (!Defaults.TryGetValue(methodName, out var paramDefaults))
+            return;
+
+        foreach (var param in operation.Parameters)
+        {
+            if (paramDefaults.TryGetValue(param.Name, out var value))
+            {
+                param.Example = new OpenApiString(value);
+            }
+        }
+    }
+}
