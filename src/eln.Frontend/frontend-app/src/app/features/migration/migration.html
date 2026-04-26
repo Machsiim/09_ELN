@@ -21,7 +21,26 @@
         </div>
 
         <div class="form-section">
-          <label for="template" class="form-label">Template</label>
+          <label class="form-label">Template</label>
+          <div class="radio-group">
+            <label class="radio-option">
+              <input type="radio" name="templateMode" value="existing"
+                [checked]="templateMode() === 'existing'"
+                (change)="templateMode.set('existing'); onTemplateModeChange()">
+              Bestehendes Template verwenden
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="templateMode" value="new"
+                [checked]="templateMode() === 'new'"
+                (change)="templateMode.set('new'); onTemplateModeChange()">
+              Neues Template erstellen
+            </label>
+          </div>
+        </div>
+
+        <!-- Bestehendes Template -->
+        @if (templateMode() === 'existing') {
+        <div class="form-section">
           <select id="template" class="form-select" [(ngModel)]="selectedTemplate" (change)="onTemplateChange()">
             <option value="">Bitte waehlen...</option>
             @for (template of templates(); track template.id) {
@@ -29,11 +48,184 @@
             }
           </select>
         </div>
+        }
+
+        <!-- Neues Template erstellen (Inline-Builder) -->
+        @if (templateMode() === 'new') {
+
+        <!-- Aus Datei generieren -->
+        <div class="form-section">
+          <label class="form-label">Aus Datei generieren (optional)</label>
+          <p class="migration-hint">
+            Laden Sie eine Excel- oder CSV-Datei hoch, um die Template-Struktur automatisch aus den Spalten abzuleiten.
+          </p>
+          <div class="builder-inline-row">
+            <input #genFileInput id="generatorFileInput" type="file" accept=".csv,.xlsx"
+              (change)="onGeneratorFileSelected($event)" style="display: none">
+            @if (!generatorFile()) {
+            <button type="button" class="btn btn-small btn-secondary"
+              (click)="genFileInput.click()">
+              Datei waehlen
+            </button>
+            } @else {
+            <div class="selected-file" style="flex: 1">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" />
+                <polyline points="14 2 14 8 20 8" />
+              </svg>
+              <span>{{ generatorFile()?.name }}</span>
+              <button type="button" class="remove-file" (click)="removeGeneratorFile(); $event.stopPropagation()">×</button>
+            </div>
+            <button type="button" class="btn btn-small btn-primary"
+              [disabled]="isParsingFile()"
+              (click)="onGenerateFromFile()">
+              @if (isParsingFile()) {
+                Wird geparst...
+              } @else {
+                Struktur ableiten
+              }
+            </button>
+            }
+          </div>
+        </div>
+
+        <div class="form-section">
+          <label class="form-label">Template-Name</label>
+          <input type="text" class="form-input" [(ngModel)]="newTemplateName"
+            placeholder="z.B. Lungenfunktionstest">
+        </div>
+
+        <!-- Sektion hinzufuegen -->
+        <div class="form-section">
+          <label class="form-label">Sektion hinzufuegen</label>
+          <div class="builder-inline-row">
+            <input type="text" class="form-input" [(ngModel)]="newSectionTitle"
+              placeholder="Name der Sektion" (keyup.enter)="addBuilderSection()">
+            <button type="button" class="btn btn-small btn-primary" (click)="addBuilderSection()"
+              [disabled]="!newSectionTitle.trim()">+ Sektion</button>
+          </div>
+        </div>
+
+        <!-- Sektionen-Uebersicht & Card/Field hinzufuegen -->
+        @if (builderSections().length > 0) {
+
+        <!-- Card hinzufuegen -->
+        <div class="form-section">
+          <label class="form-label">Bereich (Card) hinzufuegen</label>
+          <div class="builder-inline-row">
+            <select class="form-select builder-select" [(ngModel)]="newCardSectionId">
+              <option value="">Sektion waehlen...</option>
+              @for (s of builderSections(); track s.id) {
+              <option [value]="s.id">{{ s.title }}</option>
+              }
+            </select>
+            <input type="text" class="form-input" [(ngModel)]="newCardTitle"
+              placeholder="Name des Bereichs" (keyup.enter)="addBuilderCard()">
+            <button type="button" class="btn btn-small btn-primary" (click)="addBuilderCard()"
+              [disabled]="!newCardTitle.trim() || !newCardSectionId">+ Bereich</button>
+          </div>
+        </div>
+
+        <!-- Feld hinzufuegen -->
+        <div class="form-section">
+          <label class="form-label">Feld hinzufuegen</label>
+          <div class="builder-inline-row">
+            <select class="form-select builder-select" [(ngModel)]="newFieldSectionId"
+              (ngModelChange)="newFieldCardId = ''">
+              <option value="">Sektion...</option>
+              @for (s of builderSections(); track s.id) {
+              <option [value]="s.id">{{ s.title }}</option>
+              }
+            </select>
+            @if (newFieldSectionId) {
+            <select class="form-select builder-select" [(ngModel)]="newFieldCardId">
+              <option value="">Bereich...</option>
+              @for (c of getBuilderCardsForSection(newFieldSectionId); track c.id) {
+              <option [value]="c.id">{{ c.title }}</option>
+              }
+            </select>
+            }
+            <input type="text" class="form-input" [(ngModel)]="newFieldLabel"
+              placeholder="Feldname" (keyup.enter)="addBuilderField()">
+            <select class="form-select builder-select-sm" [(ngModel)]="newFieldType">
+              @for (opt of fieldTypeOptions; track opt.value) {
+              <option [value]="opt.value">{{ opt.label }}</option>
+              }
+            </select>
+            <button type="button" class="btn btn-small btn-primary" (click)="addBuilderField()"
+              [disabled]="!newFieldLabel.trim() || !newFieldSectionId || !newFieldCardId">+ Feld</button>
+          </div>
+        </div>
+
+        <!-- Vorschau der Template-Struktur -->
+        <div class="form-section">
+          <label class="form-label">Vorschau (klicken zum Bearbeiten)</label>
+          <div class="builder-preview">
+            @for (section of builderSections(); track section.id) {
+            <div class="builder-preview-section">
+              <div class="builder-preview-header">
+                <input class="builder-edit-input builder-edit-section" type="text"
+                  [value]="section.title"
+                  (change)="updateSectionTitle(section.id, $any($event.target).value)">
+                <button type="button" class="builder-remove-btn" (click)="removeBuilderSection(section.id)"
+                  title="Sektion entfernen">×</button>
+              </div>
+              @for (card of section.cards; track card.id) {
+              <div class="builder-preview-card">
+                <div class="builder-preview-card-header">
+                  <input class="builder-edit-input builder-edit-card" type="text"
+                    [value]="card.title"
+                    (change)="updateCardTitle(section.id, card.id, $any($event.target).value)">
+                  <button type="button" class="builder-remove-btn"
+                    (click)="removeBuilderCard(section.id, card.id)" title="Bereich entfernen">×</button>
+                </div>
+                @for (field of card.fields; track field.id) {
+                <div class="builder-preview-field">
+                  <input class="builder-edit-input builder-edit-field" type="text"
+                    [value]="field.label"
+                    (change)="updateFieldLabel(section.id, card.id, field.id, $any($event.target).value)">
+                  <select class="builder-edit-type"
+                    [value]="field.type"
+                    (change)="updateFieldType(section.id, card.id, field.id, $any($event.target).value)">
+                    @for (opt of fieldTypeOptions; track opt.value) {
+                    <option [value]="opt.value">{{ opt.label }}</option>
+                    }
+                  </select>
+                  <button type="button" class="builder-remove-btn"
+                    (click)="removeBuilderField(section.id, card.id, field.id)" title="Feld entfernen">×</button>
+                </div>
+                }
+                @if (card.fields.length === 0) {
+                <div class="builder-preview-empty">Noch keine Felder</div>
+                }
+              </div>
+              }
+              @if (section.cards.length === 0) {
+              <div class="builder-preview-empty">Noch keine Bereiche</div>
+              }
+            </div>
+            }
+          </div>
+        </div>
+        }
+        }
 
         <div class="button-group">
+          @if (templateMode() === 'existing') {
           <button type="button" class="btn btn-primary" [disabled]="!selectedTemplate" (click)="goToUpload()">
             Weiter
           </button>
+          } @else {
+          <button type="button" class="btn btn-primary"
+            [disabled]="!newTemplateName.trim() || !builderHasFields() || isCreatingTemplate()"
+            (click)="goToUpload()">
+            @if (isCreatingTemplate()) {
+              Template wird erstellt...
+            } @else {
+              Template erstellen & weiter
+            }
+          </button>
+          }
         </div>
         }
 
