@@ -27,12 +27,13 @@ public class ExportService
         if (series == null)
             throw new Exception($"Messserie mit ID {seriesId} nicht gefunden.");
 
-        var (columns, rows) = await GetSeriesData(seriesId);
+        var (columns, rows, columnSections) = await GetSeriesData(seriesId);
 
         var payload = JsonSerializer.Serialize(new
         {
             data = rows,
             columns = columns,
+            column_sections = columnSections,
             filename = series.Name,
             sheet_name = series.Name.Length > 31 ? series.Name[..31] : series.Name
         });
@@ -49,12 +50,13 @@ public class ExportService
         if (series == null)
             throw new Exception($"Messserie mit ID {seriesId} nicht gefunden.");
 
-        var (columns, rows) = await GetSeriesData(seriesId);
+        var (columns, rows, columnSections) = await GetSeriesData(seriesId);
 
         var payload = JsonSerializer.Serialize(new
         {
             data = rows,
             columns = columns,
+            column_sections = columnSections,
             filename = series.Name
         });
 
@@ -74,7 +76,7 @@ public class ExportService
         if (measurement == null)
             throw new Exception($"Messung mit ID {measurementId} nicht gefunden.");
 
-        var (columns, row) = FlattenMeasurement(measurement);
+        var (columns, row, columnSections) = FlattenMeasurement(measurement);
         var rows = new List<Dictionary<string, object?>> { row };
 
         var templateName = measurement.Template?.Name ?? "Messung";
@@ -82,13 +84,14 @@ public class ExportService
         {
             data = rows,
             columns = columns,
+            column_sections = columnSections,
             filename = $"{templateName}_Messung_{measurementId}"
         });
 
         return await CallPythonExport("/export/csv", payload);
     }
 
-    private async Task<(List<string> columns, List<Dictionary<string, object?>> rows)> GetSeriesData(int seriesId)
+    private async Task<(List<string> columns, List<Dictionary<string, object?>> rows, Dictionary<string, string> columnSections)> GetSeriesData(int seriesId)
     {
         var measurements = await _context.Measurements
             .Include(m => m.Template)
@@ -98,30 +101,44 @@ public class ExportService
             .ToListAsync();
 
         if (measurements.Count == 0)
-            return (new List<string>(), new List<Dictionary<string, object?>>());
+            return (new List<string>(), new List<Dictionary<string, object?>>(), new Dictionary<string, string>());
 
         // Collect all columns across all measurements + meta columns
         var metaColumns = new List<string> { "ID", "Erstellt von", "Erstellt am" };
         var dataColumnSet = new HashSet<string>();
         var flatRows = new List<Dictionary<string, object?>>();
+        var allColumnSections = new Dictionary<string, string>
+        {
+            ["ID"] = "Allgemein",
+            ["Erstellt von"] = "Allgemein",
+            ["Erstellt am"] = "Allgemein"
+        };
 
         foreach (var m in measurements)
         {
-            var (columns, row) = FlattenMeasurement(m);
+            var (columns, row, colSections) = FlattenMeasurement(m);
             foreach (var col in columns)
                 dataColumnSet.Add(col);
+            foreach (var kvp in colSections)
+            {
+                if (!allColumnSections.ContainsKey(kvp.Key))
+                    allColumnSections[kvp.Key] = kvp.Value;
+            }
             flatRows.Add(row);
         }
 
-        // Meta columns first, then data columns in stable order
+        // Meta columns first, then data columns grouped by section
         var allColumns = new List<string>(metaColumns);
-        var sortedDataCols = dataColumnSet.Except(metaColumns).OrderBy(c => c).ToList();
+        var sortedDataCols = dataColumnSet.Except(metaColumns)
+            .OrderBy(c => allColumnSections.TryGetValue(c, out var s) ? s : "")
+            .ThenBy(c => c)
+            .ToList();
         allColumns.AddRange(sortedDataCols);
 
-        return (allColumns, flatRows);
+        return (allColumns, flatRows, allColumnSections);
     }
 
-    private static (List<string> columns, Dictionary<string, object?> row) FlattenMeasurement(
+    private static (List<string> columns, Dictionary<string, object?> row, Dictionary<string, string> columnSections) FlattenMeasurement(
         Model.Measurement measurement)
     {
         var row = new Dictionary<string, object?>
@@ -132,6 +149,12 @@ public class ExportService
         };
 
         var columns = new List<string> { "ID", "Erstellt von", "Erstellt am" };
+        var columnSections = new Dictionary<string, string>
+        {
+            ["ID"] = "Allgemein",
+            ["Erstellt von"] = "Allgemein",
+            ["Erstellt am"] = "Allgemein"
+        };
 
         try
         {
@@ -146,6 +169,9 @@ public class ExportService
                         var colName = field.Key;
                         if (!columns.Contains(colName))
                             columns.Add(colName);
+
+                        if (!columnSections.ContainsKey(colName))
+                            columnSections[colName] = section.Key;
 
                         // Convert JsonElement to native types
                         row[colName] = field.Value switch
@@ -167,7 +193,7 @@ public class ExportService
         }
         catch { }
 
-        return (columns, row);
+        return (columns, row, columnSections);
     }
 
     private async Task<byte[]> CallPythonExport(string endpoint, string jsonPayload)

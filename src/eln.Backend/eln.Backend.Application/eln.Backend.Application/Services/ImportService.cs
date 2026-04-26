@@ -364,6 +364,17 @@ public class ImportService
             }
 
             row.TryGetValue(sourceColumn, out var rawValue);
+
+            if (!data.ContainsKey(entry.SectionTitle))
+                data[entry.SectionTitle] = new Dictionary<string, object?>();
+
+            // Empty/placeholder values (N/A, -, null, etc.) → store as null to preserve the field key
+            if (IsEmptyPlaceholder(rawValue))
+            {
+                data[entry.SectionTitle][entry.FieldKey] = null;
+                continue;
+            }
+
             var parsedValue = ConvertValue(rawValue, entry.FieldType);
 
             if (parsedValue == null)
@@ -371,12 +382,9 @@ public class ImportService
                 return new BuildDataResult
                 {
                     Error = new FieldError(entry.FieldKey,
-                        $"Ungültiger oder fehlender Wert für Feld '{entry.FieldKey}' (erwartet: {entry.FieldType}).")
+                        $"Ungültiger Wert für Feld '{entry.FieldKey}' (erwartet: {entry.FieldType}).")
                 };
             }
-
-            if (!data.ContainsKey(entry.SectionTitle))
-                data[entry.SectionTitle] = new Dictionary<string, object?>();
 
             data[entry.SectionTitle][entry.FieldKey] = parsedValue;
         }
@@ -384,9 +392,26 @@ public class ImportService
         return new BuildDataResult { Data = data };
     }
 
-    private static object? ConvertValue(JsonElement element, string fieldType)
+    private static readonly HashSet<string> EmptyPlaceholders = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "n/a", "na", "n.a.", "n.a", "-", "--", "---", "null", "none", "leer", "k.a.", "k.a"
+    };
+
+    private static bool IsEmptyPlaceholder(JsonElement element)
     {
         if (element.ValueKind == JsonValueKind.Null || element.ValueKind == JsonValueKind.Undefined)
+            return true;
+        if (element.ValueKind == JsonValueKind.String)
+        {
+            var s = element.GetString()?.Trim();
+            return string.IsNullOrEmpty(s) || EmptyPlaceholders.Contains(s);
+        }
+        return false;
+    }
+
+    private static object? ConvertValue(JsonElement element, string fieldType)
+    {
+        if (IsEmptyPlaceholder(element))
             return null;
 
         var type = fieldType.ToLower();

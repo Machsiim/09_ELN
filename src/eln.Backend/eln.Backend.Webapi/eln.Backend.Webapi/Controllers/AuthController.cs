@@ -36,7 +36,7 @@ namespace eln.Backend.Webapi.Controllers
         {
             // Development-only: Allow local admin user via environment variable
             var devAdminPassword = Environment.GetEnvironmentVariable("ELN_DEV_ADMIN_PASSWORD");
-            var isDevAdmin = (request.Username == "admin" && request.Password == "!ELN_Admin_09!")
+            var isDevAdmin = (request.Username == "admin" && request.Password == "admin123")
                 || (_environment.IsDevelopment()
                 && !string.IsNullOrEmpty(devAdminPassword)
                 && request.Username == "admin"
