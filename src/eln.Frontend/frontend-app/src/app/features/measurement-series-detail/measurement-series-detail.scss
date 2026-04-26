@@ -274,6 +274,14 @@ h1 {
   width: 100%;
 }
 
+.template-group {
+  margin-top: $spacing-xl;
+
+  &:first-of-type {
+    margin-top: $spacing-md;
+  }
+}
+
 $section-colors: (
   0: (dark: #00649c, mid: #b3d4e8, light: #e3eff6),
   1: (dark: #6d8c17, mid: #c8dea0, light: #e9f1d6),
@@ -281,6 +289,10 @@ $section-colors: (
   3: (dark: #7b2d5f, mid: #d4a3c4, light: #f0dfe9),
   4: (dark: #2d6e6e, mid: #a3cece, light: #dceeed),
   5: (dark: #8b3a3a, mid: #d4a3a3, light: #f0dfdf),
+  6: (dark: #3a4a6e, mid: #aab5cc, light: #dde2ec),
+  7: (dark: #4a2d7b, mid: #bfa3d4, light: #e6dcf0),
+  8: (dark: #a83a7a, mid: #e0a3c9, light: #f5dfec),
+  9: (dark: #1a1a1a, mid: #9a9a9a, light: #e0e0e0),
 );
 
 $template-colors: (
@@ -289,6 +301,28 @@ $template-colors: (
   2: #1b5c3a,
   3: #5c1b1b,
 );
+
+.template-group-header {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin: 0 0 $spacing-sm 0;
+  padding: 0.4rem 0;
+}
+
+.template-group-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: $color-text-heading;
+}
+
+.template-group-badge {
+  margin-left: auto;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: $color-text-gray;
+}
 
 .measurements-table {
   width: max-content;
@@ -453,21 +487,323 @@ $template-colors: (
   border-radius: $radius-md;
   padding: $spacing-lg;
   margin-bottom: $spacing-lg;
+  max-height: 70vh;
+  overflow-y: auto;
 }
 
 .column-picker-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: $spacing-md;
   margin-bottom: $spacing-md;
   padding-bottom: $spacing-md;
   border-bottom: 1px solid $color-border-dark;
+  flex-wrap: wrap;
 
   h3 {
     margin: 0;
     font-size: 1.1rem;
     color: $color-text-heading;
   }
+}
+
+.column-picker-title {
+  display: flex;
+  align-items: baseline;
+  gap: $spacing-sm;
+}
+
+.column-picker-summary {
+  font-size: 0.8rem;
+  color: $color-text-gray;
+  font-weight: 500;
+}
+
+.column-picker-search {
+  position: relative;
+  margin-bottom: $spacing-md;
+
+  .picker-search-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.6rem 2.25rem 0.6rem 0.85rem;
+    border: 1px solid $color-border-dark;
+    border-radius: $radius-sm;
+    background: white;
+    font-size: 0.9rem;
+
+    &:focus {
+      outline: none;
+      border-color: $color-primary;
+      box-shadow: 0 0 0 3px rgba($color-primary, 0.1);
+    }
+  }
+
+  .picker-search-clear {
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #999;
+    cursor: pointer;
+    font-size: 0.95rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: $radius-sm;
+
+    &:hover {
+      background: $color-bg-page;
+      color: $color-text-gray;
+    }
+  }
+}
+
+.picker-group {
+  background: white;
+  border: 1px solid $color-border-dark;
+  border-radius: $radius-md;
+  padding: 0.85rem 1rem;
+  margin-bottom: $spacing-md;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.picker-group--base {
+  background: $color-bg-page;
+  border-style: dashed;
+}
+
+.picker-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-sm;
+}
+
+.picker-group-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: $color-text-gray;
+}
+
+.picker-group-toggle {
+  background: transparent;
+  border: 1px solid $color-border-dark;
+  border-radius: 999px;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: $color-text-gray;
+  cursor: pointer;
+  transition: all $transition-base;
+  white-space: nowrap;
+
+  &:hover {
+    background: $color-primary;
+    border-color: $color-primary;
+    color: #fff;
+  }
+}
+
+.picker-group-toggle--small {
+  padding: 0.15rem 0.55rem;
+  font-size: 0.65rem;
+}
+
+.picker-template {
+  border-left: 4px solid #1a1a1a;
+}
+
+@each $i, $color in $template-colors {
+  .picker-template.tpl-color-#{$i} {
+    border-left-color: $color;
+
+    .picker-template-name {
+      color: $color;
+    }
+  }
+}
+
+.picker-template-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-md;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid $color-border-dark;
+}
+
+.picker-template-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: $color-text-heading;
+}
+
+.picker-template-count {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: $color-text-gray;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.picker-section {
+  border: 1px solid transparent;
+  border-radius: $radius-sm;
+  padding: 0.6rem 0.75rem;
+  margin-bottom: 0.75rem;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.picker-section-header {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-sm;
+}
+
+.picker-section-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: $color-text-heading;
+  letter-spacing: 0.03em;
+}
+
+.picker-section-count {
+  font-size: 0.7rem;
+  color: $color-text-gray;
+  font-weight: 500;
+  margin-right: auto;
+}
+
+@each $i, $color in $section-colors {
+  $dark: map-get($color, dark);
+  $light: map-get($color, light);
+
+  .picker-section.color-#{$i} {
+    background: $light;
+    border-color: rgba($dark, 0.3);
+
+    .picker-section-title {
+      color: $dark;
+    }
+  }
+}
+
+.picker-card {
+  background: white;
+  border-radius: $radius-sm;
+  padding: 0.55rem 0.7rem;
+  margin-top: 0.5rem;
+
+  &:first-of-type {
+    margin-top: 0;
+  }
+}
+
+.picker-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  margin-bottom: 0.4rem;
+}
+
+.picker-card-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: $color-text-heading;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.picker-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.picker-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid $color-border-dark;
+  border-radius: 999px;
+  background: white;
+  cursor: pointer;
+  transition: all $transition-base;
+  user-select: none;
+
+  input[type="checkbox"] {
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border: 1.5px solid $color-border-muted;
+    border-radius: 3px;
+    background: white;
+    cursor: pointer;
+    position: relative;
+
+    &:checked {
+      background: $color-primary;
+      border-color: $color-primary;
+
+      &::after {
+        content: '';
+        position: absolute;
+        left: 3px;
+        top: 0px;
+        width: 4px;
+        height: 8px;
+        border: solid white;
+        border-width: 0 2px 2px 0;
+        transform: rotate(45deg);
+      }
+    }
+  }
+
+  span {
+    font-size: 0.82rem;
+    color: $color-text-gray;
+  }
+
+  &:hover {
+    border-color: $color-primary;
+    background: $color-bg-page;
+  }
+
+  &.active {
+    background: $color-primary-light;
+    border-color: $color-primary;
+
+    span {
+      color: $color-primary-dark;
+      font-weight: 500;
+    }
+  }
+}
+
+.picker-empty {
+  text-align: center;
+  padding: $spacing-md;
+  color: $color-text-gray;
+  font-size: 0.9rem;
 }
 
 .column-picker-actions {

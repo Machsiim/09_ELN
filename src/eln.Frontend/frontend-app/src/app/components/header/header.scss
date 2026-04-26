@@ -105,6 +105,58 @@
   background-color: rgba(255, 255, 255, 0.25);
 }
 
+.tools-menu {
+  position: relative;
+}
+
+.tools-trigger {
+  width: 40px;
+  height: 40px;
+  justify-content: center;
+
+  .material-icons {
+    font-size: 22px;
+  }
+}
+
+.tools-dropdown {
+  position: absolute;
+  top: calc(100% + #{$spacing-sm});
+  right: 0;
+  min-width: 190px;
+  padding: $spacing-xs;
+  background: $color-bg-white;
+  border: 1px solid $color-border-light;
+  border-radius: $radius-md;
+  box-shadow: $shadow-lg;
+  z-index: $z-sticky + 2;
+}
+
+.tools-menu-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: 0.65rem 0.75rem;
+  border: 0;
+  border-radius: $radius-sm;
+  background: transparent;
+  color: $color-text-primary;
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+
+  .material-icons {
+    font-size: 20px;
+    color: $color-primary;
+  }
+
+  &:hover {
+    background: $color-bg-subtle;
+  }
+}
+
 .user-profile {
   display: flex;
   align-items: center;

@@ -36,6 +36,34 @@
   }
 }
 
+.template-select-group {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.template-search {
+  margin-bottom: $spacing-xs;
+}
+
+.template-search-result {
+  color: $color-text-muted;
+}
+
+.series-select-group {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.series-search {
+  margin-bottom: $spacing-xs;
+}
+
+.series-search-result {
+  color: $color-text-muted;
+}
+
 .series-select .label-row {
   display: flex;
   align-items: center;

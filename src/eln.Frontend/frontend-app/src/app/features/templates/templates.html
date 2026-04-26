@@ -145,6 +145,8 @@
                       <span class="field-chip field-chip--type">{{ getFieldTypeLabel(field.type) }}</span>
                       @if (field.required) {
                       <span class="field-chip field-chip--required">Pflicht</span>
+                      } @else {
+                      <span class="field-chip field-chip--optional">Optional</span>
                       }
                       @if (field.hint) {
                       <span class="field-chip field-chip--hint">Hinweis</span>
@@ -181,14 +183,51 @@
         </div>
         <button class="btn btn-text" type="button" (click)="fetchTemplates()" [disabled]="loading()">Aktualisieren</button>
       </div>
+      <div class="template-library-search">
+        <div class="template-library-filters">
+          <div class="template-library-query">
+            <label class="form-label" for="template-library-search">Templates suchen</label>
+            <input id="template-library-search"
+              type="search"
+              placeholder="Stichwort suchen: Name, Feld oder Sektion"
+              [disabled]="loading() || templates().length === 0"
+              [value]="templateSearchTerm()"
+              #templateLibrarySearch
+              (input)="onTemplateSearchChange(templateLibrarySearch.value)" />
+          </div>
+          <div class="template-library-status">
+            <label class="form-label" for="template-archive-filter">Status</label>
+            <select id="template-archive-filter"
+              [disabled]="loading() || templates().length === 0"
+              [value]="templateArchiveFilter()"
+              #templateArchiveFilterSelect
+              (change)="onTemplateArchiveFilterChange(templateArchiveFilterSelect.value)">
+              <option value="all">Alle</option>
+              <option value="active">Aktiv</option>
+              <option value="archived">Archiviert</option>
+            </select>
+          </div>
+        </div>
+        @if (!loading() && templateSearchTerm()) {
+        <small class="template-search-result">
+          @if (filteredTemplates().length > 0) {
+          {{ filteredTemplates().length }} von {{ templates().length }} Templates gefunden
+          } @else {
+          Keine Templates zum Suchbegriff gefunden.
+          }
+        </small>
+        }
+      </div>
 
       @if (loading()) {
       <p class="empty-state">Lade Templates...</p>
       } @else if (templates().length === 0) {
       <p class="empty-state">Noch keine Templates vorhanden. Speichern Sie rechts Ihr erstes Layout.</p>
+      } @else if (filteredTemplates().length === 0) {
+      <p class="empty-state">Keine Templates zum Suchbegriff gefunden.</p>
       } @else {
       <div class="templates-table">
-        @for (template of templates(); track template.id) {
+        @for (template of pagedTemplates(); track template.id) {
         <article class="template-row" [class.archived]="template.isArchived">
           <div>
             <div class="template-info-header">
@@ -221,6 +260,19 @@
         </article>
         }
       </div>
+      @if (filteredTemplates().length > 5) {
+      <div class="template-pagination">
+        <div class="template-pagination-actions">
+          <span>{{ templatePageStart() }}-{{ templatePageEnd() }} von {{ filteredTemplates().length }} Templates</span>
+          <button class="btn btn-icon" type="button" (click)="previousTemplatePage()" [disabled]="templatePage() === 1" title="Vorherige Seite">
+            <span class="material-icons">chevron_left</span>
+          </button>
+          <button class="btn btn-icon" type="button" (click)="nextTemplatePage()" [disabled]="templatePage() >= totalTemplatePages()" title="NÃ¤chste Seite">
+            <span class="material-icons">chevron_right</span>
+          </button>
+        </div>
+      </div>
+      }
       }
     </section>
   </main>

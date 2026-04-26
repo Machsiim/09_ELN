@@ -98,121 +98,187 @@
       @if (columnPickerVisible()) {
       <div class="column-picker">
         <div class="column-picker-header">
-          <h3>Spalten auswählen</h3>
+          <div class="column-picker-title">
+            <h3>Spalten auswählen</h3>
+            <span class="column-picker-summary">{{ getVisibleColumns().length }} von {{ getAllColumns().length }} sichtbar</span>
+          </div>
           <div class="column-picker-actions">
             <button type="button" class="picker-action-button" (click)="showAllColumns()">Alle anzeigen</button>
             <button type="button" class="picker-action-button" (click)="hideAllColumns()">Alle ausblenden</button>
           </div>
         </div>
-        <div class="column-list">
-          @for (column of getAllColumns(); track column) {
-          <label class="column-item">
-                  <input
-                    type="checkbox"
-                    [checked]="isColumnVisible(column)"
-                    (change)="toggleColumnVisibility(column)"
-                  />
-            <span>{{ column }}</span>
-          </label>
+
+        <div class="column-picker-search">
+          <input
+            type="search"
+            class="picker-search-input"
+            placeholder="Spalte suchen..."
+            [value]="columnPickerSearch()"
+            #pickerSearch
+            (input)="onColumnPickerSearchChange(pickerSearch.value)" />
+          @if (columnPickerSearch()) {
+          <button type="button" class="picker-search-clear" (click)="clearColumnPickerSearch()" title="Suche löschen">✕</button>
           }
         </div>
+
+        @if (baseColumnsMatchSearch()) {
+        <div class="picker-group picker-group--base">
+          <div class="picker-group-header">
+            <span class="picker-group-title">Basisspalten</span>
+            <button type="button" class="picker-group-toggle" (click)="toggleColumnList(filteredBaseColumns())">
+              {{ isAllVisibleInList(filteredBaseColumns()) ? 'Alle aus' : 'Alle ein' }}
+            </button>
+          </div>
+          <div class="picker-chip-list">
+            @for (col of filteredBaseColumns(); track col) {
+            <label class="picker-chip" [class.active]="isColumnVisible(col)">
+              <input type="checkbox" [checked]="isColumnVisible(col)" (change)="toggleColumnVisibility(col)" />
+              <span>{{ col }}</span>
+            </label>
+            }
+          </div>
+        </div>
+        }
+
+        @for (tpl of getColumnPickerTemplates(); track tpl.templateId) {
+        <div class="picker-group picker-template tpl-color-{{ tpl.templateIndex }}">
+          <div class="picker-template-header">
+            @if (hasMultipleTemplatesInPicker()) {
+            <span class="picker-template-name">{{ tpl.templateName }}</span>
+            } @else {
+            <span class="picker-template-name">Datenfelder</span>
+            }
+            <span class="picker-template-count">{{ tpl.visibleCount }} / {{ tpl.fieldCount }}</span>
+          </div>
+
+          @for (section of tpl.sections; track section.sectionTitle) {
+          <div class="picker-section color-{{ section.colorIndex }}">
+            <div class="picker-section-header">
+              <span class="picker-section-title">{{ section.sectionTitle }}</span>
+              <span class="picker-section-count">{{ section.visibleCount }} / {{ section.fieldCount }}</span>
+              <button type="button" class="picker-group-toggle"
+                (click)="toggleColumnList(sectionColumnNames(section))">
+                {{ isAllVisibleInList(sectionColumnNames(section)) ? 'Alle aus' : 'Alle ein' }}
+              </button>
+            </div>
+
+            @for (card of section.cards; track card.cardTitle) {
+            <div class="picker-card">
+              <div class="picker-card-header">
+                <span class="picker-card-title">{{ card.cardTitle }}</span>
+                <button type="button" class="picker-group-toggle picker-group-toggle--small"
+                  (click)="toggleColumnList(cardColumnNames(card))">
+                  {{ isAllVisibleInList(cardColumnNames(card)) ? 'Alle aus' : 'Alle ein' }}
+                </button>
+              </div>
+              <div class="picker-chip-list">
+                @for (field of card.fields; track field.column) {
+                <label class="picker-chip" [class.active]="isColumnVisible(field.column)">
+                  <input type="checkbox" [checked]="isColumnVisible(field.column)"
+                    (change)="toggleColumnVisibility(field.column)" />
+                  <span>{{ field.label }}</span>
+                </label>
+                }
+              </div>
+            </div>
+            }
+          </div>
+          }
+        </div>
+        }
+
+        @if (columnPickerSearch() && getColumnPickerTemplates().length === 0 && !baseColumnsMatchSearch()) {
+        <p class="picker-empty">Keine Spalten zum Suchbegriff gefunden.</p>
+        }
       </div>
       }
 
       @if (filteredMeasurements().length > 0) {
-      <div class="table-container">
-        <table class="measurements-table">
-          <thead>
-            @if (hasMultipleTemplates()) {
-            <!-- Row 0: Template groups (only if multiple templates) -->
-            <tr class="header-templates">
-              <th class="select-column" [attr.rowspan]="4"></th>
-              @if (isBaseColumnVisible('Mess-ID')) {
-              <th [attr.rowspan]="4" class="base-header">Mess-ID</th>
-              }
-              @if (isBaseColumnVisible('Erstellt von')) {
-              <th [attr.rowspan]="4" class="base-header">Erstellt von</th>
-              }
-              @if (isBaseColumnVisible('Erstellt am')) {
-              <th [attr.rowspan]="4" class="base-header">Erstellt am</th>
-              }
-              @for (tpl of getTemplateHeaders(); track tpl.templateName) {
-              <th [attr.colspan]="tpl.totalFields" class="header-template tpl-color-{{ tpl.templateIndex }}">{{ tpl.templateName }}</th>
-              }
-            </tr>
-            }
-            <!-- Section groups -->
-            <tr class="header-sections">
-              @if (!hasMultipleTemplates()) {
-              <th class="select-column" [attr.rowspan]="3"></th>
-              @if (isBaseColumnVisible('Mess-ID')) {
-              <th [attr.rowspan]="3" class="base-header">Mess-ID</th>
-              }
-              @if (isBaseColumnVisible('Erstellt von')) {
-              <th [attr.rowspan]="3" class="base-header">Erstellt von</th>
-              }
-              @if (isBaseColumnVisible('Erstellt am')) {
-              <th [attr.rowspan]="3" class="base-header">Erstellt am</th>
-              }
-              }
-              @for (section of getHeaderStructure(); track section.sectionTitle) {
-              <th [attr.colspan]="section.totalFields" class="header-section color-{{ section.colorIndex }}">{{ section.sectionTitle }}</th>
-              }
-            </tr>
-            <!-- Card groups -->
-            <tr class="header-cards">
-              @for (section of getHeaderStructure(); track section.sectionTitle) {
-                @for (card of section.cards; track card.cardTitle) {
-                <th [attr.colspan]="card.fields.length" class="header-card color-{{ section.colorIndex }}">{{ card.cardTitle }}</th>
+      @for (group of getTemplateGroups(); track group.templateId) {
+      <div class="template-group">
+        @if (hasMultipleTemplates()) {
+        <header class="template-group-header tpl-color-{{ group.templateIndex }}">
+          <h2 class="template-group-title">{{ group.templateName }}</h2>
+          <span class="template-group-badge">
+            {{ group.measurements.length }} Messung{{ group.measurements.length !== 1 ? 'en' : '' }}
+          </span>
+        </header>
+        }
+        <div class="table-container">
+          <table class="measurements-table">
+            <thead>
+              <!-- Section groups -->
+              <tr class="header-sections">
+                <th class="select-column" [attr.rowspan]="3"></th>
+                @if (isBaseColumnVisible('Mess-ID')) {
+                <th [attr.rowspan]="3" class="base-header">Mess-ID</th>
                 }
-              }
-            </tr>
-            <!-- Field names -->
-            <tr class="header-fields">
-              @for (section of getHeaderStructure(); track section.sectionTitle) {
-                @for (card of section.cards; track card.cardTitle) {
-                  @for (field of card.fields; track field.column) {
-                  <th class="header-field color-{{ section.colorIndex }}">{{ field.fieldLabel }}</th>
+                @if (isBaseColumnVisible('Erstellt von')) {
+                <th [attr.rowspan]="3" class="base-header">Erstellt von</th>
+                }
+                @if (isBaseColumnVisible('Erstellt am')) {
+                <th [attr.rowspan]="3" class="base-header">Erstellt am</th>
+                }
+                @for (section of group.sections; track section.sectionTitle) {
+                <th [attr.colspan]="section.totalFields" class="header-section color-{{ section.colorIndex }}">{{ section.sectionTitle }}</th>
+                }
+              </tr>
+              <!-- Card groups -->
+              <tr class="header-cards">
+                @for (section of group.sections; track section.sectionTitle) {
+                  @for (card of section.cards; track card.cardTitle) {
+                  <th [attr.colspan]="card.fields.length" class="header-card color-{{ section.colorIndex }}">{{ card.cardTitle }}</th>
                   }
                 }
-              }
-            </tr>
-          </thead>
-          <tbody>
-            @for (measurement of filteredMeasurements(); track trackById($index, measurement)) {
-            <tr (click)="goToMeasurement(measurement)" class="measurement-row">
-              <td class="select-column" (click)="$event.stopPropagation()">
-                      <input
-                        type="checkbox"
-                        [checked]="isSelected(measurement.id)"
-                        [disabled]="isLocked() && !isStaff"
-                  (click)="$event.stopPropagation()"
-                        (change)="toggleSelection(measurement.id, $any($event.target).checked)"
-                        />
-              </td>
-              @if (isBaseColumnVisible('Mess-ID')) {
-              <td class="cell-id">#{{ measurement.id }}</td>
-              }
-              @if (isBaseColumnVisible('Erstellt von')) {
-              <td class="cell-author">{{ measurement.createdByUsername }}</td>
-              }
-              @if (isBaseColumnVisible('Erstellt am')) {
-              <td class="cell-date">{{ measurement.createdAt | date: 'dd.MM.yyyy HH:mm' }}</td>
-              }
-              @for (section of getHeaderStructure(); track section.sectionTitle) {
-                @for (card of section.cards; track card.cardTitle) {
-                  @for (field of card.fields; track field.column) {
-              <td class="cell-value">
-                {{ getValueForColumn(measurement, field.column) }}
-              </td>
+              </tr>
+              <!-- Field names -->
+              <tr class="header-fields">
+                @for (section of group.sections; track section.sectionTitle) {
+                  @for (card of section.cards; track card.cardTitle) {
+                    @for (field of card.fields; track field.column) {
+                    <th class="header-field color-{{ section.colorIndex }}">{{ field.fieldLabel }}</th>
+                    }
                   }
                 }
+              </tr>
+            </thead>
+            <tbody>
+              @for (measurement of group.measurements; track trackById($index, measurement)) {
+              <tr (click)="goToMeasurement(measurement)" class="measurement-row">
+                <td class="select-column" (click)="$event.stopPropagation()">
+                  <input
+                    type="checkbox"
+                    [checked]="isSelected(measurement.id)"
+                    [disabled]="isLocked() && !isStaff"
+                    (click)="$event.stopPropagation()"
+                    (change)="toggleSelection(measurement.id, $any($event.target).checked)"
+                    />
+                </td>
+                @if (isBaseColumnVisible('Mess-ID')) {
+                <td class="cell-id">#{{ measurement.id }}</td>
+                }
+                @if (isBaseColumnVisible('Erstellt von')) {
+                <td class="cell-author">{{ measurement.createdByUsername }}</td>
+                }
+                @if (isBaseColumnVisible('Erstellt am')) {
+                <td class="cell-date">{{ measurement.createdAt | date: 'dd.MM.yyyy HH:mm' }}</td>
+                }
+                @for (section of group.sections; track section.sectionTitle) {
+                  @for (card of section.cards; track card.cardTitle) {
+                    @for (field of card.fields; track field.column) {
+                <td class="cell-value">
+                  {{ getValueForColumn(measurement, field.column) }}
+                </td>
+                    }
+                  }
+                }
+              </tr>
               }
-            </tr>
-            }
-          </tbody>
-        </table>
+            </tbody>
+          </table>
+        </div>
       </div>
+      }
       } @else {
       <div class="empty-state">
         <p class="empty-title">Keine Ergebnisse</p>

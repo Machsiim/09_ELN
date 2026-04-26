@@ -11,15 +11,32 @@
         </p>
       </div>
 
-      <div class="form-group">
+      <div class="form-group template-select-group">
         <label for="templateSelect">Template auswählen</label>
+        <input id="templateSearch"
+          type="search"
+          class="form-control template-search"
+          placeholder="Stichwort suchen: Name oder Feld"
+          [disabled]="loading() || templates().length === 0"
+          [value]="templateSearchTerm()"
+          #templateSearch
+          (input)="onTemplateSearchChange(templateSearch.value)">
+        @if (!loading() && templateSearchTerm()) {
+          <small class="template-search-result">
+            @if (filteredTemplates().length > 0) {
+              {{ filteredTemplates().length }} von {{ templates().length }} Templates gefunden
+            } @else {
+              Keine Templates zum Suchbegriff gefunden.
+            }
+          </small>
+        }
         <select id="templateSelect"
           class="form-control"
-          [disabled]="loading()"
+          [disabled]="loading() || filteredTemplates().length === 0"
           #templateSelect
           (change)="onTemplateChange(templateSelect.value)">
           <option value="">Bitte wählen</option>
-          @for (template of templates(); track trackById($index, template)) {
+          @for (template of filteredTemplates(); track trackById($index, template)) {
             <option
               [value]="template.id"
               [selected]="template.id === selectedTemplateId()">
@@ -51,7 +68,7 @@
         </div>
       }
 
-      <div class="form-group series-select">
+      <div class="form-group series-select series-select-group">
         <div class="label-row">
           <label for="seriesSelect">Messserien auswählen</label>
           @if (!showSeriesForm()) {
@@ -60,13 +77,30 @@
             </button>
           }
         </div>
+        <input id="seriesSearch"
+          type="search"
+          class="form-control series-search"
+          placeholder="Stichwort suchen: Name oder Beschreibung"
+          [disabled]="seriesLoading() || measurementSeries().length === 0"
+          [value]="seriesSearchTerm()"
+          #seriesSearch
+          (input)="onSeriesSearchChange(seriesSearch.value)">
+        @if (!seriesLoading() && seriesSearchTerm()) {
+          <small class="series-search-result">
+            @if (filteredMeasurementSeries().length > 0) {
+              {{ filteredMeasurementSeries().length }} von {{ measurementSeries().length }} Messserien gefunden
+            } @else {
+              Keine Messserien zum Suchbegriff gefunden.
+            }
+          </small>
+        }
         <select id="seriesSelect"
           class="form-control"
-          [disabled]="seriesLoading() || measurementSeries().length === 0"
+          [disabled]="seriesLoading() || filteredMeasurementSeries().length === 0"
           #seriesSelect
           (change)="onSeriesChange(seriesSelect.value)">
           <option value="">Bitte wählen</option>
-          @for (series of measurementSeries(); track trackById($index, series)) {
+          @for (series of filteredMeasurementSeries(); track trackById($index, series)) {
             <option
               [value]="series.id"
               [selected]="series.id === selectedSeriesId()">

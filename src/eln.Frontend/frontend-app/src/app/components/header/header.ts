@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 
@@ -11,12 +11,14 @@ import { AuthService } from '../../services/auth.service';
 export class Header {
   private readonly router = inject(Router);
   readonly authService = inject(AuthService);
+  readonly toolsMenuOpen = signal(false);
 
   onCreateMeasurement(): void {
     this.router.navigate(['/erstellen']);
   }
 
   onImport(): void {
+    this.closeToolsMenu();
     this.router.navigate(['/import']);
   }
 
@@ -25,11 +27,21 @@ export class Header {
   }
 
   onMigration(): void {
+    this.closeToolsMenu();
     this.router.navigate(['/migration']);
   }
 
   onExport(): void {
+    this.closeToolsMenu();
     this.router.navigate(['/exportieren']);
+  }
+
+  toggleToolsMenu(): void {
+    this.toolsMenuOpen.update((open) => !open);
+  }
+
+  closeToolsMenu(): void {
+    this.toolsMenuOpen.set(false);
   }
 
   onProfileClick(): void {
