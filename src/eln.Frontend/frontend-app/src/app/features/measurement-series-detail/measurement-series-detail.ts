@@ -49,6 +49,44 @@ interface HeaderTemplate {
   templateIndex: number;
 }
 
+interface TemplateGroup {
+  templateId: number;
+  templateName: string;
+  templateIndex: number;
+  sections: HeaderSection[];
+  totalFields: number;
+  measurements: MeasurementResponseDto[];
+}
+
+interface ColumnPickerField {
+  column: string;
+  label: string;
+  visible: boolean;
+}
+
+interface ColumnPickerCard {
+  cardTitle: string;
+  fields: ColumnPickerField[];
+  visibleCount: number;
+}
+
+interface ColumnPickerSection {
+  sectionTitle: string;
+  cards: ColumnPickerCard[];
+  colorIndex: number;
+  fieldCount: number;
+  visibleCount: number;
+}
+
+interface ColumnPickerTemplate {
+  templateId: number;
+  templateName: string;
+  templateIndex: number;
+  sections: ColumnPickerSection[];
+  fieldCount: number;
+  visibleCount: number;
+}
+
 @Component({
   selector: 'app-measurement-series-detail',
   imports: [CommonModule, Header, Footer],
@@ -78,6 +116,7 @@ export class MeasurementSeriesDetail implements OnInit {
   readonly confirmMessage = signal<string>('');
   readonly pendingDeletionIds = signal<number[]>([]);
   readonly columnPickerVisible = signal(false);
+  readonly columnPickerSearch = signal<string>('');
   readonly visibleColumns = signal<Set<string>>(new Set());
   readonly shareDialogVisible = signal(false);
   readonly shareLink = signal<string | null>(null);
@@ -477,6 +516,223 @@ export class MeasurementSeriesDetail implements OnInit {
     this.visibleColumns.set(new Set());
   }
 
+  onColumnPickerSearchChange(value: string): void {
+    this.columnPickerSearch.set(value);
+  }
+
+  clearColumnPickerSearch(): void {
+    this.columnPickerSearch.set('');
+  }
+
+  toggleBaseColumn(name: string): void {
+    this.toggleColumnVisibility(name);
+  }
+
+  isAllVisibleInList(columns: string[]): boolean {
+    if (columns.length === 0) return false;
+    const visible = this.visibleColumns();
+    return columns.every((col) => visible.has(col));
+  }
+
+  toggleColumnList(columns: string[]): void {
+    if (columns.length === 0) return;
+    const current = new Set(this.visibleColumns());
+    const allOn = columns.every((col) => current.has(col));
+    if (allOn) {
+      columns.forEach((col) => current.delete(col));
+    } else {
+      columns.forEach((col) => current.add(col));
+    }
+    this.visibleColumns.set(current);
+  }
+
+  getColumnPickerTemplates(): ColumnPickerTemplate[] {
+    const measurements = this.measurements();
+    if (measurements.length === 0) return [];
+
+    const visible = this.visibleColumns();
+    const query = this.columnPickerSearch().toLowerCase().trim();
+
+    const templateMap = new Map<number, {
+      templateName: string;
+      sectionMap: Map<string, Map<string, ColumnPickerField[]>>;
+    }>();
+
+    for (const m of measurements) {
+      const tplId = m.templateId ?? -1;
+      let entry = templateMap.get(tplId);
+      if (!entry) {
+        entry = {
+          templateName: m.templateName || 'Unbekannt',
+          sectionMap: new Map()
+        };
+        templateMap.set(tplId, entry);
+      }
+
+      for (const sectionName of Object.keys(m.data)) {
+        if (!entry.sectionMap.has(sectionName)) {
+          entry.sectionMap.set(sectionName, new Map());
+        }
+        const cardMap = entry.sectionMap.get(sectionName)!;
+        const section = m.data[sectionName];
+
+        for (const fieldKey of Object.keys(section)) {
+          const fullColumn = `${sectionName} - ${fieldKey}`;
+          const dashIdx = fieldKey.indexOf(' - ');
+          const cardTitle = dashIdx > -1 ? fieldKey.slice(0, dashIdx) : fieldKey;
+          const fieldLabel = dashIdx > -1 ? fieldKey.slice(dashIdx + 3) : fieldKey;
+
+          if (!cardMap.has(cardTitle)) {
+            cardMap.set(cardTitle, []);
+          }
+          const fields = cardMap.get(cardTitle)!;
+          if (!fields.some((f) => f.column === fullColumn)) {
+            fields.push({ column: fullColumn, label: fieldLabel, visible: visible.has(fullColumn) });
+          }
+        }
+      }
+    }
+
+    const TEMPLATE_COLOR_COUNT = 4;
+    let templateIndex = 0;
+    const templates: ColumnPickerTemplate[] = [];
+
+    for (const [templateId, entry] of templateMap) {
+      const sections: ColumnPickerSection[] = [];
+      let templateFieldCount = 0;
+      let templateVisibleCount = 0;
+
+      for (const [sectionTitle, cardMap] of entry.sectionMap) {
+        const cards: ColumnPickerCard[] = [];
+        let sectionFieldCount = 0;
+        let sectionVisibleCount = 0;
+
+        for (const [cardTitle, fields] of cardMap) {
+          const matchedFields = query
+            ? fields.filter(
+                (f) =>
+                  f.label.toLowerCase().includes(query) ||
+                  cardTitle.toLowerCase().includes(query) ||
+                  sectionTitle.toLowerCase().includes(query)
+              )
+            : fields;
+
+          if (matchedFields.length === 0) continue;
+
+          const cardVisible = matchedFields.filter((f) => f.visible).length;
+          cards.push({ cardTitle, fields: matchedFields, visibleCount: cardVisible });
+          sectionFieldCount += matchedFields.length;
+          sectionVisibleCount += cardVisible;
+        }
+
+        if (cards.length === 0) continue;
+
+        sections.push({
+          sectionTitle,
+          cards,
+          colorIndex: this.getSectionColorIndex(sectionTitle, templateId),
+          fieldCount: sectionFieldCount,
+          visibleCount: sectionVisibleCount
+        });
+        templateFieldCount += sectionFieldCount;
+        templateVisibleCount += sectionVisibleCount;
+      }
+
+      if (sections.length === 0) {
+        templateIndex++;
+        continue;
+      }
+
+      templates.push({
+        templateId,
+        templateName: entry.templateName,
+        templateIndex: templateIndex % TEMPLATE_COLOR_COUNT,
+        sections,
+        fieldCount: templateFieldCount,
+        visibleCount: templateVisibleCount
+      });
+      templateIndex++;
+    }
+
+    return templates;
+  }
+
+  hasMultipleTemplatesInPicker(): boolean {
+    return this.getColumnPickerTemplates().length > 1;
+  }
+
+  getBaseColumnsList(): string[] {
+    return this.getBaseColumns();
+  }
+
+  baseColumnsMatchSearch(): boolean {
+    const query = this.columnPickerSearch().toLowerCase().trim();
+    if (!query) return true;
+    return this.getBaseColumns().some((col) => col.toLowerCase().includes(query));
+  }
+
+  filteredBaseColumns(): string[] {
+    const query = this.columnPickerSearch().toLowerCase().trim();
+    const cols = this.getBaseColumns();
+    if (!query) return cols;
+    return cols.filter((col) => col.toLowerCase().includes(query));
+  }
+
+  cardColumnNames(card: ColumnPickerCard): string[] {
+    return card.fields.map((f) => f.column);
+  }
+
+  private static readonly SECTION_COLOR_COUNT = 10;
+
+  private sectionColorCache = new Map<string, number>();
+  private sectionColorCacheKey: string | null = null;
+
+  private sectionColorKey(templateId: number | null, sectionTitle: string): string {
+    return `${templateId ?? -1}::${sectionTitle}`;
+  }
+
+  private getSectionColorMap(): Map<string, number> {
+    const measurements = this.measurements();
+    const fingerprint = measurements
+      .map((m) => `${m.templateId ?? -1}:${Object.keys(m.data).join('|')}`)
+      .join('||');
+
+    if (this.sectionColorCacheKey === fingerprint) {
+      return this.sectionColorCache;
+    }
+
+    const total = MeasurementSeriesDetail.SECTION_COLOR_COUNT;
+    const map = new Map<string, number>();
+
+    for (const m of measurements) {
+      const tplId = m.templateId ?? null;
+      for (const sectionName of Object.keys(m.data)) {
+        const key = this.sectionColorKey(tplId, sectionName);
+        if (!map.has(key)) {
+          map.set(key, map.size % total);
+        }
+      }
+    }
+
+    this.sectionColorCache = map;
+    this.sectionColorCacheKey = fingerprint;
+    return map;
+  }
+
+  private getSectionColorIndex(sectionTitle: string, templateId: number | null = null): number {
+    return this.getSectionColorMap().get(this.sectionColorKey(templateId, sectionTitle)) ?? 0;
+  }
+
+  sectionColumnNames(section: ColumnPickerSection): string[] {
+    const result: string[] = [];
+    for (const card of section.cards) {
+      for (const field of card.fields) {
+        result.push(field.column);
+      }
+    }
+    return result;
+  }
+
   private resolveColumnValue(measurement: MeasurementResponseDto, column: string): unknown {
     const separatorIndex = column.indexOf(' - ');
     const sectionName = separatorIndex > -1 ? column.slice(0, separatorIndex) : column;
@@ -584,9 +840,7 @@ export class MeasurementSeriesDetail implements OnInit {
       }
     }
 
-    const SECTION_COLOR_COUNT = 6;
     const TEMPLATE_COLOR_COUNT = 4;
-    let colorIndex = 0;
     let templateIndex = 0;
     const templates: HeaderTemplate[] = [];
 
@@ -601,8 +855,7 @@ export class MeasurementSeriesDetail implements OnInit {
           cards.push({ cardTitle, fields });
           sectionTotalFields += fields.length;
         }
-        sections.push({ sectionTitle, cards, totalFields: sectionTotalFields, colorIndex: colorIndex % SECTION_COLOR_COUNT });
-        colorIndex++;
+        sections.push({ sectionTitle, cards, totalFields: sectionTotalFields, colorIndex: this.getSectionColorIndex(sectionTitle) });
         templateTotalFields += sectionTotalFields;
       }
 
@@ -614,11 +867,101 @@ export class MeasurementSeriesDetail implements OnInit {
   }
 
   hasMultipleTemplates(): boolean {
-    return this.getTemplateHeaders().length > 1;
+    return this.getTemplateGroups().length > 1;
   }
 
   getHeaderStructure(): HeaderSection[] {
     return this.getTemplateHeaders().flatMap(t => t.sections);
+  }
+
+  getTemplateGroups(): TemplateGroup[] {
+    const filtered = this.filteredMeasurements();
+    if (filtered.length === 0) return [];
+
+    const visible = this.visibleColumns();
+    const groupMap = new Map<number, {
+      templateName: string;
+      measurements: MeasurementResponseDto[];
+      sectionMap: Map<string, Map<string, HeaderField[]>>;
+    }>();
+
+    for (const m of filtered) {
+      const tplId = m.templateId ?? -1;
+      let group = groupMap.get(tplId);
+      if (!group) {
+        group = {
+          templateName: m.templateName || 'Unbekannt',
+          measurements: [],
+          sectionMap: new Map()
+        };
+        groupMap.set(tplId, group);
+      }
+      group.measurements.push(m);
+
+      for (const sectionName of Object.keys(m.data)) {
+        if (!group.sectionMap.has(sectionName)) {
+          group.sectionMap.set(sectionName, new Map());
+        }
+        const cardMap = group.sectionMap.get(sectionName)!;
+        const section = m.data[sectionName];
+
+        for (const fieldKey of Object.keys(section)) {
+          const fullColumn = `${sectionName} - ${fieldKey}`;
+          if (!visible.has(fullColumn)) continue;
+
+          const dashIdx = fieldKey.indexOf(' - ');
+          const cardTitle = dashIdx > -1 ? fieldKey.slice(0, dashIdx) : fieldKey;
+          const fieldLabel = dashIdx > -1 ? fieldKey.slice(dashIdx + 3) : fieldKey;
+
+          if (!cardMap.has(cardTitle)) {
+            cardMap.set(cardTitle, []);
+          }
+          const fields = cardMap.get(cardTitle)!;
+          if (!fields.some(f => f.column === fullColumn)) {
+            fields.push({ column: fullColumn, fieldLabel });
+          }
+        }
+      }
+    }
+
+    const TEMPLATE_COLOR_COUNT = 4;
+    let templateIndex = 0;
+    const groups: TemplateGroup[] = [];
+
+    for (const [templateId, group] of groupMap) {
+      const sections: HeaderSection[] = [];
+      let totalFields = 0;
+
+      for (const [sectionTitle, cardMap] of group.sectionMap) {
+        const cards: HeaderCard[] = [];
+        let sectionTotalFields = 0;
+        for (const [cardTitle, fields] of cardMap) {
+          if (fields.length === 0) continue;
+          cards.push({ cardTitle, fields });
+          sectionTotalFields += fields.length;
+        }
+        if (sectionTotalFields === 0) continue;
+        sections.push({
+          sectionTitle,
+          cards,
+          totalFields: sectionTotalFields,
+          colorIndex: this.getSectionColorIndex(sectionTitle, templateId)
+        });
+        totalFields += sectionTotalFields;
+      }
+
+      groups.push({
+        templateId,
+        templateName: group.templateName,
+        templateIndex: templateIndex % TEMPLATE_COLOR_COUNT,
+        sections,
+        totalFields,
+        measurements: group.measurements
+      });
+      templateIndex++;
+    }
+
+    return groups;
   }
 
   getBaseColumnCount(): number {
