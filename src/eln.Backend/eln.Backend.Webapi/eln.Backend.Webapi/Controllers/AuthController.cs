@@ -34,13 +34,15 @@ namespace eln.Backend.Webapi.Controllers
         [HttpPost("login")]
         public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginRequest request)
         {
-            // Development-only: Allow local admin user via environment variable
+            // Admin login via environment variables
+            var adminUsername = Environment.GetEnvironmentVariable("ELN_ADMIN_USERNAME") ?? "admin";
+            var adminPassword = Environment.GetEnvironmentVariable("ELN_ADMIN_PASSWORD");
             var devAdminPassword = Environment.GetEnvironmentVariable("ELN_DEV_ADMIN_PASSWORD");
-            var isDevAdmin = (request.Username == "admin" && request.Password == "!ELN_Admin_09!")
-                || (_environment.IsDevelopment()
-                && !string.IsNullOrEmpty(devAdminPassword)
-                && request.Username == "admin"
-                && request.Password == devAdminPassword);
+
+            var isDevAdmin = request.Username == adminUsername && (
+                (!string.IsNullOrEmpty(adminPassword) && request.Password == adminPassword)
+                || (_environment.IsDevelopment() && !string.IsNullOrEmpty(devAdminPassword) && request.Password == devAdminPassword)
+            );
 
             if (!isDevAdmin && !_ldapService.ValidateUser(request.Username, request.Password))
                 return Unauthorized();

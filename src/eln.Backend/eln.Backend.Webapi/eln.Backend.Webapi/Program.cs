@@ -39,6 +39,8 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
+    c.OperationFilter<eln.Backend.Webapi.SwaggerDefaultValuesFilter>();
+
     c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -74,6 +76,8 @@ builder.Services.AddScoped<eln.Backend.Application.Services.ShareLinkService>();
 builder.Services.AddScoped<eln.Backend.Application.Services.ImportService>();
 builder.Services.AddScoped<eln.Backend.Application.Services.ExportService>();
 builder.Services.AddScoped<eln.Backend.Application.Services.MappingProfileService>();
+builder.Services.AddScoped<eln.Backend.Application.Services.AggregationService>();
+builder.Services.AddScoped<eln.Backend.Application.Services.VisualizationService>();
 
 // HttpClient for Python Excel Microservice
 builder.Services.AddHttpClient("PythonService", client =>
@@ -247,11 +251,71 @@ if (app.Environment.IsDevelopment() && !runningInDocker)
             {
                 db.CreateDatabase(isDevelopment: true);
 
-                // Seed dummy user for testing only if no users exist
+                // Seed test data only if no users exist
                 if (!db.Users.Any())
                 {
-                    var dummyUser = new eln.Backend.Application.Model.User("testuser", "admin");
+                    var dummyUser = new eln.Backend.Application.Model.User("testuser", "Staff");
                     db.Users.Add(dummyUser);
+                    db.SaveChanges();
+
+                    // Template: Chemie-Labor Messvorlage
+                    var templateSchema = System.Text.Json.JsonDocument.Parse(@"{
+                        ""sections"": [
+                            {
+                                ""name"": ""Messwerte"",
+                                ""fields"": [
+                                    { ""key"": ""temperatur"", ""label"": ""Temperatur (°C)"", ""type"": ""number"" },
+                                    { ""key"": ""ph_wert"", ""label"": ""pH-Wert"", ""type"": ""number"" },
+                                    { ""key"": ""druck"", ""label"": ""Druck (hPa)"", ""type"": ""number"" }
+                                ]
+                            },
+                            {
+                                ""name"": ""Metadaten"",
+                                ""fields"": [
+                                    { ""key"": ""standort"", ""label"": ""Standort"", ""type"": ""text"" },
+                                    { ""key"": ""pruefer"", ""label"": ""Prüfer"", ""type"": ""text"" }
+                                ]
+                            }
+                        ]
+                    }");
+                    var template = new eln.Backend.Application.Model.Template("Chemie-Labor Messvorlage", templateSchema, dummyUser.Id);
+                    db.Templates.Add(template);
+                    db.SaveChanges();
+
+                    // Messserie
+                    var series = new eln.Backend.Application.Model.MeasurementSeries("Wasserqualität Frühling 2026", dummyUser.Id, "Messreihe zur Wasserqualität an verschiedenen Standorten");
+                    db.MeasurementSeries.Add(series);
+                    db.SaveChanges();
+
+                    // 15 Messungen mit realistischen Werten
+                    var random = new Random(42);
+                    var standorte = new[] { "Labor A", "Labor B", "Außenstelle" };
+                    var pruefer = new[] { "Müller", "Schmidt", "Weber" };
+                    var baseDate = new DateTime(2026, 3, 1, 8, 0, 0, DateTimeKind.Utc);
+
+                    for (int i = 0; i < 15; i++)
+                    {
+                        var standort = standorte[i % 3];
+                        var temp = Math.Round(18.0 + random.NextDouble() * 8.0, 1);   // 18-26°C
+                        var ph = Math.Round(6.5 + random.NextDouble() * 1.5, 2);       // 6.5-8.0
+                        var pressure = Math.Round(1010 + random.NextDouble() * 20, 1); // 1010-1030 hPa
+
+                        var data = System.Text.Json.JsonDocument.Parse($@"{{
+                            ""Messwerte"": {{
+                                ""temperatur"": {temp.ToString(System.Globalization.CultureInfo.InvariantCulture)},
+                                ""ph_wert"": {ph.ToString(System.Globalization.CultureInfo.InvariantCulture)},
+                                ""druck"": {pressure.ToString(System.Globalization.CultureInfo.InvariantCulture)}
+                            }},
+                            ""Metadaten"": {{
+                                ""standort"": ""{standort}"",
+                                ""pruefer"": ""{pruefer[i % 3]}""
+                            }}
+                        }}");
+
+                        var measurement = new eln.Backend.Application.Model.Measurement(series.Id, template.Id, data, dummyUser.Id);
+                        measurement.CreatedAt = baseDate.AddDays(i * 2);
+                        db.Measurements.Add(measurement);
+                    }
                     db.SaveChanges();
                 }
             }
@@ -276,7 +340,7 @@ else
             // Seed dummy user only in Development
             if (isDevelopment && !db.Users.Any())
             {
-                var dummyUser = new eln.Backend.Application.Model.User("testuser", "admin");
+                var dummyUser = new eln.Backend.Application.Model.User("testuser", "Staff");
                 db.Users.Add(dummyUser);
                 db.SaveChanges();
             }
