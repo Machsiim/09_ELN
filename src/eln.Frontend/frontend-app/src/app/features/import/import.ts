@@ -449,10 +449,10 @@ export class Import implements OnInit {
     let parseResponse: ExcelParseResponse;
     try {
       parseResponse = await firstValueFrom(
-        this.excelParseService.parseExcel(file, this.headerRow())
+        this.excelParseService.parseFile(file, this.headerRow())
       );
     } catch {
-      this.globalError.set('Excel-Datei konnte nicht geparst werden.');
+      this.globalError.set('Datei konnte nicht geparst werden.');
       return;
     }
 
