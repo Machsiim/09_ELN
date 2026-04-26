@@ -3,12 +3,13 @@ import { Header } from '../../components/header/header';
 import { Footer } from '../../components/footer/footer';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { TemplateSchema, TemplateFieldType } from '../../models/template-schema';
+import { TemplateSchema, TemplateFieldType, TemplateCardSchema, TemplateFieldSchema, TemplateSectionSchema } from '../../models/template-schema';
 import { BackendTemplateSchema } from '../../models/backend-template-schema';
 import {
   isBackendSchema,
   isUiSchema,
   mapBackendTypeToUiType,
+  mapUiTypeToBackendType,
   splitFieldName
 } from '../../utils/template-schema';
 import { ExcelParseService, ExcelParseResponse } from '../../services/excel-parse.service';
@@ -33,6 +34,16 @@ interface ColumnMapping {
   autoMapped: boolean;
 }
 
+interface BuilderSection extends TemplateSectionSchema {
+  cards: BuilderCard[];
+}
+
+interface BuilderCard extends TemplateCardSchema {
+  fields: BuilderField[];
+}
+
+type BuilderField = TemplateFieldSchema;
+
 type MigrationStep = 'template' | 'upload' | 'mapping' | 'series' | 'importing' | 'result';
 
 @Component({
@@ -46,8 +57,33 @@ export class Migration implements OnInit {
   currentStep = signal<MigrationStep>('template');
 
   // Step 1: Template
+  templateMode = signal<'existing' | 'new'>('existing');
   selectedTemplate = '';
   templates = signal<TemplateDto[]>([]);
+
+  // Template Builder (inline)
+  newTemplateName = '';
+  builderSections = signal<BuilderSection[]>([]);
+  newSectionTitle = '';
+  newCardSectionId = '';
+  newCardTitle = '';
+  newFieldSectionId = '';
+  newFieldCardId = '';
+  newFieldLabel = '';
+  newFieldType: TemplateFieldType = 'text';
+  isCreatingTemplate = signal(false);
+  generatorFile = signal<File | null>(null);
+  isParsingFile = signal(false);
+
+  readonly fieldTypeOptions: { value: TemplateFieldType; label: string }[] = [
+    { value: 'text', label: 'Kurztext' },
+    { value: 'number', label: 'Zahl' },
+    { value: 'multiline', label: 'Langtext' },
+    { value: 'table', label: 'Tabelle' },
+    { value: 'media', label: 'Bilder / Medien' },
+    { value: 'date', label: 'Datum' },
+    { value: 'boolean', label: 'Ja/Nein' }
+  ];
 
   // Step 2: Upload
   selectedFile = signal<File | null>(null);
@@ -150,6 +186,10 @@ export class Migration implements OnInit {
   }
 
   goToUpload(): void {
+    if (this.templateMode() === 'new') {
+      void this.createAndSelectTemplate();
+      return;
+    }
     if (!this.selectedTemplate) return;
     this.currentStep.set('upload');
   }
@@ -503,7 +543,303 @@ export class Migration implements OnInit {
     this.selectedProfileId = null;
     this.saveAsProfile = false;
     this.newProfileName = '';
+    this.templateMode.set('existing');
+    this.newTemplateName = '';
+    this.builderSections.set([]);
     this.currentStep.set('template');
+  }
+
+  // --- Template Builder ---
+
+  addBuilderSection(): void {
+    const title = this.newSectionTitle.trim();
+    if (!title) return;
+    const section: BuilderSection = {
+      id: `section-${Math.random().toString(36).slice(2, 9)}`,
+      title,
+      cards: []
+    };
+    this.builderSections.update(s => [...s, section]);
+    this.newSectionTitle = '';
+  }
+
+  removeBuilderSection(sectionId: string): void {
+    this.builderSections.update(s => s.filter(sec => sec.id !== sectionId));
+  }
+
+  addBuilderCard(): void {
+    const title = this.newCardTitle.trim();
+    if (!title || !this.newCardSectionId) return;
+    const card: BuilderCard = {
+      id: `card-${Math.random().toString(36).slice(2, 9)}`,
+      title,
+      fields: []
+    };
+    this.builderSections.update(sections =>
+      sections.map(s => s.id === this.newCardSectionId
+        ? { ...s, cards: [...s.cards, card] }
+        : s
+      )
+    );
+    this.newCardTitle = '';
+  }
+
+  removeBuilderCard(sectionId: string, cardId: string): void {
+    this.builderSections.update(sections =>
+      sections.map(s => s.id === sectionId
+        ? { ...s, cards: s.cards.filter(c => c.id !== cardId) }
+        : s
+      )
+    );
+  }
+
+  addBuilderField(): void {
+    const label = this.newFieldLabel.trim();
+    if (!label || !this.newFieldSectionId || !this.newFieldCardId) return;
+    const field: BuilderField = {
+      id: `field-${Math.random().toString(36).slice(2, 9)}`,
+      label,
+      type: this.newFieldType
+    };
+    this.builderSections.update(sections =>
+      sections.map(s => s.id === this.newFieldSectionId
+        ? {
+          ...s,
+          cards: s.cards.map(c => c.id === this.newFieldCardId
+            ? { ...c, fields: [...c.fields, field] }
+            : c
+          )
+        }
+        : s
+      )
+    );
+    this.newFieldLabel = '';
+  }
+
+  removeBuilderField(sectionId: string, cardId: string, fieldId: string): void {
+    this.builderSections.update(sections =>
+      sections.map(s => s.id === sectionId
+        ? {
+          ...s,
+          cards: s.cards.map(c => c.id === cardId
+            ? { ...c, fields: c.fields.filter(f => f.id !== fieldId) }
+            : c
+          )
+        }
+        : s
+      )
+    );
+  }
+
+  updateSectionTitle(sectionId: string, title: string): void {
+    this.builderSections.update(sections =>
+      sections.map(s => s.id === sectionId ? { ...s, title } : s)
+    );
+  }
+
+  updateCardTitle(sectionId: string, cardId: string, title: string): void {
+    this.builderSections.update(sections =>
+      sections.map(s => s.id === sectionId
+        ? { ...s, cards: s.cards.map(c => c.id === cardId ? { ...c, title } : c) }
+        : s
+      )
+    );
+  }
+
+  updateFieldLabel(sectionId: string, cardId: string, fieldId: string, label: string): void {
+    this.builderSections.update(sections =>
+      sections.map(s => s.id === sectionId
+        ? {
+          ...s,
+          cards: s.cards.map(c => c.id === cardId
+            ? { ...c, fields: c.fields.map(f => f.id === fieldId ? { ...f, label } : f) }
+            : c
+          )
+        }
+        : s
+      )
+    );
+  }
+
+  updateFieldType(sectionId: string, cardId: string, fieldId: string, type: TemplateFieldType): void {
+    this.builderSections.update(sections =>
+      sections.map(s => s.id === sectionId
+        ? {
+          ...s,
+          cards: s.cards.map(c => c.id === cardId
+            ? { ...c, fields: c.fields.map(f => f.id === fieldId ? { ...f, type } : f) }
+            : c
+          )
+        }
+        : s
+      )
+    );
+  }
+
+  getBuilderCardsForSection(sectionId: string): BuilderCard[] {
+    return this.builderSections().find(s => s.id === sectionId)?.cards ?? [];
+  }
+
+  builderHasFields(): boolean {
+    return this.builderSections().some(s => s.cards.some(c => c.fields.length > 0));
+  }
+
+  getFieldTypeLabel(type: TemplateFieldType): string {
+    return this.fieldTypeOptions.find(o => o.value === type)?.label ?? type;
+  }
+
+  onGeneratorFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      this.generatorFile.set(input.files[0]);
+    }
+  }
+
+  onGenerateFromFile(): void {
+    void this.generateTemplateFromFile();
+  }
+
+  private async generateTemplateFromFile(): Promise<void> {
+    const file = this.generatorFile();
+    if (!file) return;
+
+    this.isParsingFile.set(true);
+    this.globalError.set(null);
+
+    try {
+      const response = await firstValueFrom(
+        this.excelParseService.parseFile(file, 1)
+      );
+
+      const columns = response.columns ?? [];
+      const dtypes = response.dtypes ?? {};
+
+      if (columns.length === 0) {
+        this.globalError.set('Die Datei enthält keine Spalten.');
+        return;
+      }
+
+      // Group columns by card title using "Card - Field" pattern
+      const cardMap = new Map<string, BuilderField[]>();
+
+      for (const col of columns) {
+        const sepIdx = col.indexOf(' - ');
+        let cardTitle: string;
+        let fieldLabel: string;
+
+        if (sepIdx !== -1) {
+          cardTitle = col.slice(0, sepIdx).trim() || 'Allgemein';
+          fieldLabel = col.slice(sepIdx + 3).trim() || col;
+        } else {
+          cardTitle = 'Allgemein';
+          fieldLabel = col.trim();
+        }
+
+        if (!cardMap.has(cardTitle)) {
+          cardMap.set(cardTitle, []);
+        }
+
+        cardMap.get(cardTitle)!.push({
+          id: `field-${Math.random().toString(36).slice(2, 9)}`,
+          label: fieldLabel,
+          type: this.inferFieldType(dtypes[col])
+        });
+      }
+
+      // Build a single section with all cards
+      const cards: BuilderCard[] = Array.from(cardMap.entries()).map(([title, fields]) => ({
+        id: `card-${Math.random().toString(36).slice(2, 9)}`,
+        title,
+        fields
+      }));
+
+      const section: BuilderSection = {
+        id: `section-${Math.random().toString(36).slice(2, 9)}`,
+        title: 'Daten',
+        cards
+      };
+
+      this.builderSections.set([section]);
+
+      // Auto-fill template name from file name if empty
+      if (!this.newTemplateName.trim()) {
+        this.newTemplateName = file.name.replace(/\.[^/.]+$/, '');
+      }
+    } catch {
+      this.globalError.set('Datei konnte nicht geparst werden.');
+    } finally {
+      this.isParsingFile.set(false);
+    }
+  }
+
+  private inferFieldType(dtype: string | undefined): TemplateFieldType {
+    if (!dtype) return 'text';
+    const d = dtype.toLowerCase();
+    if (d.includes('int') || d.includes('float') || d.includes('number')) return 'number';
+    if (d.includes('bool')) return 'boolean';
+    if (d.includes('date') || d.includes('datetime')) return 'date';
+    return 'text';
+  }
+
+  removeGeneratorFile(): void {
+    this.generatorFile.set(null);
+  }
+
+  private buildBackendSchema(): BackendTemplateSchema {
+    return {
+      sections: this.builderSections().map(section => ({
+        Name: section.title,
+        Fields: section.cards.flatMap(card =>
+          card.fields.map(field => ({
+            Name: `${card.title.trim() || 'Allgemein'} - ${field.label.trim() || 'Feld'}`,
+            Type: mapUiTypeToBackendType(field.type),
+            Required: false,
+            Description: field.hint ?? undefined,
+            DefaultValue: null,
+            UiType: field.type
+          }))
+        )
+      }))
+    };
+  }
+
+  async createAndSelectTemplate(): Promise<void> {
+    const name = this.newTemplateName.trim();
+    if (!name || !this.builderHasFields()) return;
+
+    this.isCreatingTemplate.set(true);
+    this.globalError.set(null);
+
+    try {
+      const schema = this.buildBackendSchema();
+      const created = await firstValueFrom(
+        this.templateService.createTemplate({ name, schema })
+      );
+      this.templates.update(list => [created, ...list]);
+      this.selectedTemplate = String(created.id);
+      this.loadProfiles();
+
+      // Carry over the generator file as import file
+      if (this.generatorFile()) {
+        this.selectedFile.set(this.generatorFile());
+      }
+      this.currentStep.set('upload');
+    } catch {
+      this.globalError.set('Template konnte nicht erstellt werden.');
+    } finally {
+      this.isCreatingTemplate.set(false);
+    }
+  }
+
+  onTemplateModeChange(): void {
+    this.selectedTemplate = '';
+    this.excelColumns = [];
+    this.templateFields = [];
+    this.mappings = [];
+    this.importResult.set(null);
+    this.globalError.set(null);
+    this.selectedFile.set(null);
+    this.selectedProfileId = null;
   }
 
   // --- Schema helpers (same as Import) ---
