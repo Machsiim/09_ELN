@@ -78,6 +78,7 @@ builder.Services.AddScoped<eln.Backend.Application.Services.ExportService>();
 builder.Services.AddScoped<eln.Backend.Application.Services.MappingProfileService>();
 builder.Services.AddScoped<eln.Backend.Application.Services.AggregationService>();
 builder.Services.AddScoped<eln.Backend.Application.Services.VisualizationService>();
+builder.Services.AddScoped<eln.Backend.Application.Services.ActivityService>();
 
 // HttpClient for Python Excel Microservice
 builder.Services.AddHttpClient("PythonService", client =>

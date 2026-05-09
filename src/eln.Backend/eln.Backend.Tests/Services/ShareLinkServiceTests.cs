@@ -1,3 +1,4 @@
+using eln.Backend.Application;
 using eln.Backend.Application.DTOs;
 using eln.Backend.Application.Model;
 using eln.Backend.Application.Services;
@@ -95,7 +96,7 @@ public class ShareLinkServiceTests
             AllowedUserEmails = ["hacker@gmail.com"]
         };
 
-        await Assert.ThrowsAsync<Exception>(
+        await Assert.ThrowsAsync<ValidationException>(
             async () => await service.CreateShareLinkAsync(series.Id, dto, user.Id));
     }
 
@@ -112,7 +113,7 @@ public class ShareLinkServiceTests
         var service = new ShareLinkService(context);
         var dto = new CreateShareLinkDto { ExpiresInDays = 7, IsPublic = false, AllowedUserEmails = [] };
 
-        await Assert.ThrowsAsync<Exception>(
+        await Assert.ThrowsAsync<ValidationException>(
             async () => await service.CreateShareLinkAsync(series.Id, dto, user.Id));
     }
 
@@ -173,7 +174,7 @@ public class ShareLinkServiceTests
         await context.SaveChangesAsync();
 
         var service = new ShareLinkService(context);
-        await Assert.ThrowsAsync<Exception>(
+        await Assert.ThrowsAsync<ForbiddenException>(
             async () => await service.GetSharedSeriesAsync("tok2", "eve@gmail.com"));
     }
 
@@ -249,7 +250,7 @@ public class ShareLinkServiceTests
         await context.SaveChangesAsync();
 
         var service = new ShareLinkService(context);
-        await Assert.ThrowsAsync<Exception>(
+        await Assert.ThrowsAsync<ForbiddenException>(
             async () => await service.DeleteShareLinkAsync(series.Id, shareLink.Id, bob.Id));
     }
 
@@ -268,7 +269,7 @@ public class ShareLinkServiceTests
 
         var service = new ShareLinkService(context);
         // Pass the OTHER series ID — should fail
-        await Assert.ThrowsAsync<Exception>(
+        await Assert.ThrowsAsync<NotFoundException>(
             async () => await service.DeleteShareLinkAsync(otherSeries.Id, shareLink.Id, user.Id));
     }
 
@@ -308,7 +309,7 @@ public class ShareLinkServiceTests
         await context.SaveChangesAsync();
 
         var service = new ShareLinkService(context);
-        await Assert.ThrowsAsync<Exception>(
+        await Assert.ThrowsAsync<ForbiddenException>(
             async () => await service.DeactivateShareLinkAsync(series.Id, shareLink.Id, bob.Id));
     }
 
@@ -326,7 +327,7 @@ public class ShareLinkServiceTests
         await context.SaveChangesAsync();
 
         var service = new ShareLinkService(context);
-        await Assert.ThrowsAsync<Exception>(
+        await Assert.ThrowsAsync<NotFoundException>(
             async () => await service.DeactivateShareLinkAsync(otherSeries.Id, shareLink.Id, user.Id));
     }
 }

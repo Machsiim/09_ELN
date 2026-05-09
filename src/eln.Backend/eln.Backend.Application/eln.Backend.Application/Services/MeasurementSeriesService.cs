@@ -54,16 +54,22 @@ public class MeasurementSeriesService
         };
     }
 
-    public async Task<List<MeasurementSeriesResponseDto>> GetAllSeriesAsync()
+    public async Task<PagedResultDto<MeasurementSeriesResponseDto>> GetAllSeriesAsync(PaginationParams pagination)
     {
-        var allSeries = await _context.MeasurementSeries
+        var query = _context.MeasurementSeries
             .Include(s => s.Creator)
             .Include(s => s.Locker)
             .Include(s => s.Measurements)
-            .OrderByDescending(s => s.CreatedAt)
+            .OrderByDescending(s => s.CreatedAt);
+
+        var total = await query.CountAsync();
+
+        var allSeries = await query
+            .Skip((pagination.Page - 1) * pagination.PageSize)
+            .Take(pagination.PageSize)
             .ToListAsync();
 
-        return allSeries.Select(s => new MeasurementSeriesResponseDto
+        var items = allSeries.Select(s => new MeasurementSeriesResponseDto
         {
             Id = s.Id,
             Name = s.Name,
@@ -77,6 +83,14 @@ public class MeasurementSeriesService
             LockedByUsername = s.Locker?.Username,
             LockedAt = s.LockedAt
         }).ToList();
+
+        return new PagedResultDto<MeasurementSeriesResponseDto>
+        {
+            Items = items,
+            Total = total,
+            Page = pagination.Page,
+            PageSize = pagination.PageSize
+        };
     }
 
     public async Task DeleteSeriesAsync(int id)

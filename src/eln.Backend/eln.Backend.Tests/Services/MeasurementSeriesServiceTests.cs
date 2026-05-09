@@ -1,3 +1,4 @@
+using eln.Backend.Application;
 using eln.Backend.Application.DTOs;
 using eln.Backend.Application.Model;
 using eln.Backend.Application.Services;
@@ -48,9 +49,59 @@ public class MeasurementSeriesServiceTests
         context.MeasurementSeries.AddRange(series1, series2);
         await context.SaveChangesAsync();
         var service = new MeasurementSeriesService(context);
-        var result = await service.GetAllSeriesAsync();
+        var result = await service.GetAllSeriesAsync(new PaginationParams());
         Assert.NotNull(result);
-        Assert.Equal(2, result.Count);
+        Assert.Equal(2, result.Total);
+        Assert.Equal(2, result.Items.Count);
+    }
+
+    [Theory]
+    [InlineData(1, 2, 2, 5)]
+    [InlineData(2, 2, 2, 5)]
+    [InlineData(3, 2, 1, 5)]
+    [InlineData(4, 2, 0, 5)]
+    [InlineData(1, 10, 5, 5)]
+    [InlineData(1, 1, 1, 5)]
+    public async Task GetAllSeriesAsync_Pagination_ReturnsCorrectSlice(
+        int page, int pageSize, int expectedItems, int totalSeries)
+    {
+        var context = TestDbContextFactory.CreateInMemoryContext("Paginate" + Guid.NewGuid());
+        var user = new User("test@test.com", "Student");
+        context.Users.Add(user);
+        for (int i = 1; i <= totalSeries; i++)
+            context.MeasurementSeries.Add(new MeasurementSeries($"Series {i}", user.Id));
+        await context.SaveChangesAsync();
+
+        var service = new MeasurementSeriesService(context);
+        var result = await service.GetAllSeriesAsync(new PaginationParams { Page = page, PageSize = pageSize });
+
+        Assert.Equal(totalSeries, result.Total);
+        Assert.Equal(expectedItems, result.Items.Count);
+        Assert.Equal(page, result.Page);
+        Assert.Equal(pageSize, result.PageSize);
+    }
+
+    [Fact]
+    public async Task GetAllSeriesAsync_OrderedByCreatedAtDesc()
+    {
+        var context = TestDbContextFactory.CreateInMemoryContext("Order" + Guid.NewGuid());
+        var user = new User("test@test.com", "Student");
+        context.Users.Add(user);
+
+        var older = new MeasurementSeries("Older", user.Id);
+        await context.SaveChangesAsync();
+        context.MeasurementSeries.Add(older);
+        await context.SaveChangesAsync();
+        await Task.Delay(10);
+        var newer = new MeasurementSeries("Newer", user.Id);
+        context.MeasurementSeries.Add(newer);
+        await context.SaveChangesAsync();
+
+        var service = new MeasurementSeriesService(context);
+        var result = await service.GetAllSeriesAsync(new PaginationParams());
+
+        Assert.Equal("Newer", result.Items[0].Name);
+        Assert.Equal("Older", result.Items[1].Name);
     }
 
     [Fact]
@@ -97,7 +148,7 @@ public class MeasurementSeriesServiceTests
         context.MeasurementSeries.Add(series);
         await context.SaveChangesAsync();
         var service = new MeasurementSeriesService(context);
-        await Assert.ThrowsAsync<Exception>(async () => await service.LockSeriesAsync(series.Id, user.Id));
+        await Assert.ThrowsAsync<ValidationException>(async () => await service.LockSeriesAsync(series.Id, user.Id));
     }
 
     [Fact]
@@ -127,7 +178,7 @@ public class MeasurementSeriesServiceTests
         context.MeasurementSeries.Add(series);
         await context.SaveChangesAsync();
         var service = new MeasurementSeriesService(context);
-        await Assert.ThrowsAsync<Exception>(async () => await service.UnlockSeriesAsync(series.Id));
+        await Assert.ThrowsAsync<ValidationException>(async () => await service.UnlockSeriesAsync(series.Id));
     }
 
     [Fact]
@@ -142,7 +193,7 @@ public class MeasurementSeriesServiceTests
         await context.SaveChangesAsync();
         var service = new MeasurementSeriesService(context);
         var dto = new UpdateMeasurementSeriesDto { Name = "Updated", Description = "Updated" };
-        await Assert.ThrowsAsync<Exception>(async () => await service.UpdateSeriesAsync(series.Id, dto));
+        await Assert.ThrowsAsync<ValidationException>(async () => await service.UpdateSeriesAsync(series.Id, dto));
     }
 
     [Fact]

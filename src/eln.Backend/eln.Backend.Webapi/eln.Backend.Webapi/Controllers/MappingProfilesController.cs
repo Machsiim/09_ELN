@@ -23,13 +23,14 @@ public class MappingProfilesController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<MappingProfileResponseDto>>> GetByTemplate(
-        [FromQuery] int templateId)
+    public async Task<ActionResult<PagedResultDto<MappingProfileResponseDto>>> GetByTemplate(
+        [FromQuery] int templateId,
+        [FromQuery] PaginationParams pagination)
     {
         var userId = await GetUserId();
         if (userId == null) return Unauthorized();
 
-        var profiles = await _service.GetByTemplateAsync(templateId, userId.Value);
+        var profiles = await _service.GetByTemplateAsync(templateId, userId.Value, pagination);
         return Ok(profiles);
     }
 
