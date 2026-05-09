@@ -37,7 +37,7 @@ export class SharedSeries implements OnInit {
   private readonly sharedService = inject(SharedSeriesService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  private readonly authService = inject(AuthService);
+  readonly authService = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly loading = signal(false);
@@ -73,10 +73,10 @@ export class SharedSeries implements OnInit {
         },
         error: (err) => {
           this.loading.set(false);
-          const backendMessage = err.error?.error || '';
+          const backendMessage = this.getBackendErrorMessage(err);
           if (!this.authService.isAuthenticated() && this.isAccessDeniedMessage(backendMessage)) {
             this.requiresLogin.set(true);
-            this.error.set('Dieser Quick-Link ist nur fuer bestimmte Personen freigegeben. Bitte melden Sie sich mit dem freigegebenen Konto an.');
+            this.error.set('Dieser Quick-Link ist nur für bestimmte Personen freigegeben. Bitte melden Sie sich mit dem freigegebenen Konto an.');
             return;
           }
           this.error.set(backendMessage || 'Quick-Link konnte nicht geladen werden.');
@@ -131,6 +131,24 @@ export class SharedSeries implements OnInit {
 
   private isAccessDeniedMessage(message: string): boolean {
     const normalized = message.toLowerCase();
-    return normalized.includes("don't have access") || normalized.includes('access') || normalized.includes('forbidden');
+    return normalized.includes("don't have access") ||
+      normalized.includes('access') ||
+      normalized.includes('forbidden') ||
+      normalized.includes('nicht berechtigt') ||
+      normalized.includes('keine berechtigung');
+  }
+
+  private getBackendErrorMessage(err: unknown): string {
+    const error = (err as { error?: unknown })?.error;
+    if (typeof error === 'string') {
+      return error;
+    }
+    if (error && typeof error === 'object' && 'error' in error) {
+      return String((error as { error?: unknown }).error ?? '');
+    }
+    if (error && typeof error === 'object' && 'message' in error) {
+      return String((error as { message?: unknown }).message ?? '');
+    }
+    return '';
   }
 }

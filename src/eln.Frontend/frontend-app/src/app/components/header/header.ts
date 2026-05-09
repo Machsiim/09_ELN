@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, input, inject, signal } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 
@@ -12,6 +12,7 @@ export class Header {
   private readonly router = inject(Router);
   readonly authService = inject(AuthService);
   readonly toolsMenuOpen = signal(false);
+  readonly publicMode = input(false);
 
   onCreateMeasurement(): void {
     this.router.navigate(['/erstellen']);

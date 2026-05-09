@@ -148,7 +148,7 @@ public class ShareLinkService
             if (accessIdentifiers.Count == 0 ||
                 !accessIdentifiers.Any(identifier => shareLink.AllowedUserEmails.Contains(identifier)))
             {
-                throw new ForbiddenException("You don't have access to this shared series");
+                throw new ForbiddenException("Sie sind nicht berechtigt, diese geteile Messserie zu sehen.");
             }
         }
 
