@@ -6,7 +6,7 @@ import {
   inject,
   signal
 } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Header } from '../../components/header/header';
 import { Footer } from '../../components/footer/footer';
@@ -24,6 +24,7 @@ import {
   formatMediaSummary,
   formatValue
 } from '../measurement-detail/measurement-detail.utils';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-shared-series',
@@ -35,10 +36,13 @@ import {
 export class SharedSeries implements OnInit {
   private readonly sharedService = inject(SharedSeriesService);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly authService = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
+  readonly requiresLogin = signal(false);
   readonly series = signal<SharedSeriesDto | null>(null);
   readonly expandedMediaFields = signal<Set<string>>(new Set());
 
@@ -58,6 +62,7 @@ export class SharedSeries implements OnInit {
   private fetchSharedSeries(token: string): void {
     this.loading.set(true);
     this.error.set(null);
+    this.requiresLogin.set(false);
     this.sharedService
       .getSharedSeries(token)
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -66,11 +71,21 @@ export class SharedSeries implements OnInit {
           this.series.set(result);
           this.loading.set(false);
         },
-        error: () => {
+        error: (err) => {
           this.loading.set(false);
-          this.error.set('Quick-Link konnte nicht geladen werden.');
+          const backendMessage = err.error?.error || '';
+          if (!this.authService.isAuthenticated() && this.isAccessDeniedMessage(backendMessage)) {
+            this.requiresLogin.set(true);
+            this.error.set('Dieser Quick-Link ist nur fuer bestimmte Personen freigegeben. Bitte melden Sie sich mit dem freigegebenen Konto an.');
+            return;
+          }
+          this.error.set(backendMessage || 'Quick-Link konnte nicht geladen werden.');
         }
       });
+  }
+
+  goToLogin(): void {
+    this.router.navigate(['/login'], { queryParams: { returnUrl: this.router.url } });
   }
 
   getSections(measurement: SharedMeasurementDto): SectionEntry[] {
@@ -112,5 +127,10 @@ export class SharedSeries implements OnInit {
 
   private buildMediaFieldKey(measurementId: number, section: string, field: string): string {
     return `${measurementId}::${section}::${field}`;
+  }
+
+  private isAccessDeniedMessage(message: string): boolean {
+    const normalized = message.toLowerCase();
+    return normalized.includes("don't have access") || normalized.includes('access') || normalized.includes('forbidden');
   }
 }

@@ -1,6 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
@@ -13,6 +13,7 @@ export class Login {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   loginForm: FormGroup;
   loading = signal(false);
@@ -42,11 +43,12 @@ export class Login {
     this.error.set(null);
 
     const { username, password } = this.loginForm.value;
+    const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') || '/startseite';
 
     this.authService.login(username, password).subscribe({
-      next: (response) => {
+      next: () => {
         this.loading.set(false);
-        this.router.navigate(['/startseite']);
+        this.router.navigateByUrl(returnUrl);
       },
       error: (err) => {
         this.loading.set(false);

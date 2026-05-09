@@ -44,6 +44,17 @@
   gap: 18px;
 }
 
+.login-link-button {
+  border: 0;
+  border-radius: 8px;
+  padding: 0.65rem 1rem;
+  background: $color-primary;
+  color: $color-bg-white;
+  font-weight: 700;
+  cursor: pointer;
+  margin-bottom: 18px;
+}
+
 .measurement-card {
   border-radius: 16px;
   border: 1px solid $color-border;

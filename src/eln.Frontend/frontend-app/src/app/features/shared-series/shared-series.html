@@ -26,6 +26,9 @@
 
       @if (error(); as message) {
         <div class="status error">{{ message }}</div>
+        @if (requiresLogin()) {
+          <button type="button" class="login-link-button" (click)="goToLogin()">Anmelden</button>
+        }
       }
 
       @if (!loading() && series(); as shared) {
