@@ -15,14 +15,21 @@ public class MappingProfileService
         _context = context;
     }
 
-    public async Task<List<MappingProfileResponseDto>> GetByTemplateAsync(int templateId, int userId)
+    public async Task<PagedResultDto<MappingProfileResponseDto>> GetByTemplateAsync(
+        int templateId, int userId, PaginationParams pagination)
     {
-        var profiles = await _context.MappingProfiles
+        var query = _context.MappingProfiles
             .Where(p => p.TemplateId == templateId && p.CreatedBy == userId)
-            .OrderByDescending(p => p.CreatedAt)
+            .OrderByDescending(p => p.CreatedAt);
+
+        var total = await query.CountAsync();
+
+        var profiles = await query
+            .Skip((pagination.Page - 1) * pagination.PageSize)
+            .Take(pagination.PageSize)
             .ToListAsync();
 
-        return profiles.Select(p => new MappingProfileResponseDto
+        var items = profiles.Select(p => new MappingProfileResponseDto
         {
             Id = p.Id,
             Name = p.Name,
@@ -31,6 +38,14 @@ public class MappingProfileService
                 p.Mapping.RootElement.GetRawText()) ?? new(),
             CreatedAt = p.CreatedAt
         }).ToList();
+
+        return new PagedResultDto<MappingProfileResponseDto>
+        {
+            Items = items,
+            Total = total,
+            Page = pagination.Page,
+            PageSize = pagination.PageSize
+        };
     }
 
     public async Task<MappingProfileResponseDto?> GetByIdAsync(int id)

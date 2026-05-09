@@ -27,14 +27,15 @@ public class MeasurementSeriesController : ControllerBase
     }
 
     /// <summary>
-    /// Get all measurement series
+    /// Get all measurement series (paginated)
     /// </summary>
     [HttpGet]
-    public async Task<ActionResult<List<MeasurementSeriesResponseDto>>> GetAllSeries()
+    public async Task<ActionResult<PagedResultDto<MeasurementSeriesResponseDto>>> GetAllSeries(
+        [FromQuery] PaginationParams pagination)
     {
         try
         {
-            var results = await _seriesService.GetAllSeriesAsync();
+            var results = await _seriesService.GetAllSeriesAsync(pagination);
             return Ok(results);
         }
         catch (Exception ex)

@@ -42,5 +42,8 @@ public class TestElnContext : ElnContext
         // Ignoriere Listen für InMemory DB (JSONB in PostgreSQL)
         modelBuilder.Entity<eln.Backend.Application.Model.SeriesShareLink>()
             .Ignore(ssl => ssl.AllowedUserEmails);
+
+        modelBuilder.Entity<eln.Backend.Application.Model.MappingProfile>()
+            .Ignore(p => p.Mapping);
     }
 }

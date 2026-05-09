@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using System.Text.Json;
+using eln.Backend.Application.DTOs;
 using eln.Backend.Application.Infrastructure;
 using eln.Backend.Application.Model;
 using eln.Backend.Application.Services;
@@ -25,17 +26,30 @@ public class TemplatesController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<TemplateResponse>>> GetTemplates(CancellationToken cancellationToken)
+    public async Task<ActionResult<PagedResultDto<TemplateResponse>>> GetTemplates(
+        [FromQuery] PaginationParams pagination,
+        CancellationToken cancellationToken)
     {
-        var templates = await _context.Templates
-            .OrderBy(t => t.Name)
+        var query = _context.Templates.OrderBy(t => t.Name);
+        var total = await query.CountAsync(cancellationToken);
+
+        var templates = await query
+            .Skip((pagination.Page - 1) * pagination.PageSize)
+            .Take(pagination.PageSize)
             .Select(t => new { t.Id, t.Name, t.Schema, t.IsArchived, HasExistingMeasurements = t.Measurements.Any(), UsageCount = t.Measurements.Count() })
             .ToListAsync(cancellationToken);
 
-        var response = templates
-            .Select(t => new TemplateResponse(t.Id, t.Name, t.Schema.RootElement.GetRawText(), t.IsArchived, t.HasExistingMeasurements, t.UsageCount));
+        var items = templates
+            .Select(t => new TemplateResponse(t.Id, t.Name, t.Schema.RootElement.GetRawText(), t.IsArchived, t.HasExistingMeasurements, t.UsageCount))
+            .ToList();
 
-        return Ok(response);
+        return Ok(new PagedResultDto<TemplateResponse>
+        {
+            Items = items,
+            Total = total,
+            Page = pagination.Page,
+            PageSize = pagination.PageSize
+        });
     }
 
     [HttpGet("{id:int}")]

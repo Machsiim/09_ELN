@@ -99,12 +99,14 @@ public class MeasurementValidationService
             switch (expectedType.ToLower())
             {
                 case "int":
+                case "integer":
                     if (value is not int && !int.TryParse(value.ToString(), out _))
                         return $"Expected type 'int', got '{value.GetType().Name}'";
                     break;
 
                 case "float":
                 case "double":
+                case "number":
                     if (value is not float and not double && !double.TryParse(value.ToString(), out _))
                         return $"Expected type 'float', got '{value.GetType().Name}'";
                     break;
@@ -113,6 +115,7 @@ public class MeasurementValidationService
                 case "text":
                 case "multiline":
                 case "media":
+                case "table":
                     // String types - accept string or any serialized form
                     break;
 
@@ -129,8 +132,7 @@ public class MeasurementValidationService
                     break;
 
                 default:
-                    // Unknown type - accept any value
-                    break;
+                    return $"Unknown field type '{expectedType}'";
             }
 
             return null;
@@ -279,6 +281,20 @@ public class MeasurementValidationService
                         continue;
                     }
 
+                    // Check for empty string on required string-like fields
+                    if (isRequired
+                        && fieldElement.ValueKind == JsonValueKind.String
+                        && string.IsNullOrWhiteSpace(fieldElement.GetString()))
+                    {
+                        errors.Add(new ValidationErrorDto
+                        {
+                            Section = sectionName,
+                            Field = fieldLabel,
+                            Error = $"Required field '{fieldLabel}' cannot be empty"
+                        });
+                        continue;
+                    }
+
                     // Validate data type (only if value is present)
                     var typeError = ValidateJsonFieldType(fieldType, fieldElement);
                     if (typeError != null)
@@ -370,6 +386,7 @@ public class MeasurementValidationService
                 case "text":
                 case "multiline":
                 case "media":
+                case "table":
                     // Allow strings, arrays (for media attachments), and objects
                     if (value.ValueKind != JsonValueKind.String &&
                         value.ValueKind != JsonValueKind.Array &&
@@ -394,8 +411,7 @@ public class MeasurementValidationService
                     break;
 
                 default:
-                    // Unknown type - allow any value
-                    break;
+                    return $"Unknown field type '{expectedType}'";
             }
 
             return null;
