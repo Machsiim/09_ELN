@@ -24,12 +24,15 @@ public class VisualizationController : ControllerBase
     }
 
     [HttpGet("series/{seriesId:int}/distribution")]
-    public async Task<ActionResult> GetDistribution(int seriesId, [FromQuery] string field)
+    public async Task<ActionResult> GetDistribution(
+        int seriesId,
+        [FromQuery] string field,
+        [FromQuery] string? section = null)
     {
         if (string.IsNullOrWhiteSpace(field))
             return BadRequest(new { error = "field Parameter ist erforderlich." });
 
-        var result = await _visualizationService.GetDistributionAsync(seriesId, field);
+        var result = await _visualizationService.GetDistributionAsync(seriesId, section ?? string.Empty, field);
         return Ok(result);
     }
 
