@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable, map } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { PagedResult } from '../models/paged-result';
 
 export interface MappingProfile {
   id: number;
@@ -25,8 +26,20 @@ export class MappingProfileService {
 
   constructor(private readonly http: HttpClient) {}
 
+  getByTemplatePage(
+    templateId: number,
+    page = 1,
+    pageSize = 20
+  ): Observable<PagedResult<MappingProfile>> {
+    const params = new HttpParams()
+      .set('templateId', templateId)
+      .set('page', page)
+      .set('pageSize', pageSize);
+    return this.http.get<PagedResult<MappingProfile>>(this.baseUrl, { params });
+  }
+
   getByTemplate(templateId: number): Observable<MappingProfile[]> {
-    return this.http.get<MappingProfile[]>(`${this.baseUrl}?templateId=${templateId}`);
+    return this.getByTemplatePage(templateId, 1, 100).pipe(map((r) => r.items));
   }
 
   create(profile: CreateMappingProfile): Observable<MappingProfile> {

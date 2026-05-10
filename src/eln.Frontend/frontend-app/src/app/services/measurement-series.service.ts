@@ -1,8 +1,9 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { AuthService } from './auth.service';
+import { PagedResult } from '../models/paged-result';
 
 export interface MeasurementSeriesDto {
   id: number;
@@ -51,10 +52,17 @@ export class MeasurementSeriesService {
   private readonly authService = inject(AuthService);
   private readonly baseUrl = `${environment.apiUrl.replace(/\/$/, '')}/measurementseries`;
 
-  getSeries(): Observable<MeasurementSeriesDto[]> {
-    return this.http.get<MeasurementSeriesDto[]>(this.baseUrl).pipe(
-      map(series => this.filterSeriesByRole(series))
+  getSeriesPage(page = 1, pageSize = 20): Observable<PagedResult<MeasurementSeriesDto>> {
+    const params = new HttpParams()
+      .set('page', page)
+      .set('pageSize', pageSize);
+    return this.http.get<PagedResult<MeasurementSeriesDto>>(this.baseUrl, { params }).pipe(
+      map((result) => ({ ...result, items: this.filterSeriesByRole(result.items) }))
     );
+  }
+
+  getSeries(): Observable<MeasurementSeriesDto[]> {
+    return this.getSeriesPage(1, 100).pipe(map((r) => r.items));
   }
 
   private filterSeriesByRole(series: MeasurementSeriesDto[]): MeasurementSeriesDto[] {
