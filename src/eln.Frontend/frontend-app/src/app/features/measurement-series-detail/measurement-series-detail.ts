@@ -11,6 +11,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { firstValueFrom } from 'rxjs';
 import { Header } from '../../components/header/header';
 import { Footer } from '../../components/footer/footer';
+import { SeriesCharts } from '../../components/series-charts/series-charts';
 import {
   MeasurementResponseDto,
   MeasurementService
@@ -89,7 +90,7 @@ interface ColumnPickerTemplate {
 
 @Component({
   selector: 'app-measurement-series-detail',
-  imports: [CommonModule, Header, Footer],
+  imports: [CommonModule, Header, Footer, SeriesCharts],
   templateUrl: './measurement-series-detail.html',
   styleUrl: './measurement-series-detail.scss'
 })

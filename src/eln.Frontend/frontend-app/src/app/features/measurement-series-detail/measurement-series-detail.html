@@ -193,6 +193,12 @@
       </div>
       }
 
+      @if (seriesId(); as sid) {
+        @if (measurements().length > 0) {
+          <app-series-charts [seriesId]="sid" />
+        }
+      }
+
       @if (filteredMeasurements().length > 0) {
       @for (group of getTemplateGroups(); track group.templateId) {
       <div class="template-group">
