@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using eln.Backend.Application.DTOs;
 using eln.Backend.Application.Infrastructure;
@@ -25,32 +26,37 @@ public class VisualizationService
         if (measurements.Count == 0)
             throw new NotFoundException($"Keine Messungen in Serie {seriesId} gefunden.");
 
-        var labels = measurements.Select(m => m.CreatedAt.ToString("dd.MM.yyyy HH:mm")).ToList();
+        var labels = measurements
+            .Select(m => m.CreatedAt.ToString("o", CultureInfo.InvariantCulture))
+            .ToList();
 
-        // Collect all numeric fields across measurements
-        var allFields = new Dictionary<string, List<double?>>();
+        // Composite key (Section, Field) -> per-measurement value list aligned to labels
+        var allFields = new Dictionary<(string Section, string Field), List<double?>>();
 
-        foreach (var m in measurements)
+        for (var i = 0; i < measurements.Count; i++)
         {
-            var flat = FlattenNumericFields(m.Data);
+            var flat = FlattenNumericFields(measurements[i].Data);
+
             foreach (var key in flat.Keys)
             {
                 if (!allFields.ContainsKey(key))
-                    allFields[key] = new List<double?>(new double?[measurements.IndexOf(m)]);
+                {
+                    var padded = new List<double?>(i + 1);
+                    for (var p = 0; p < i; p++) padded.Add(null);
+                    allFields[key] = padded;
+                }
             }
+
             foreach (var kvp in allFields)
             {
-                if (flat.TryGetValue(kvp.Key, out var val))
-                    kvp.Value.Add(val);
-                else
-                    kvp.Value.Add(null);
+                kvp.Value.Add(flat.TryGetValue(kvp.Key, out var val) ? val : null);
             }
         }
 
         var datasets = allFields.Select(kvp => new TimelineDatasetDto
         {
-            Field = kvp.Key,
-            Section = "",
+            Field = kvp.Key.Field,
+            Section = kvp.Key.Section,
             Values = kvp.Value
         }).ToList();
 
@@ -61,8 +67,11 @@ public class VisualizationService
         };
     }
 
-    public async Task<DistributionDto> GetDistributionAsync(int seriesId, string fieldKey)
+    public async Task<DistributionDto> GetDistributionAsync(int seriesId, string section, string field)
     {
+        section ??= string.Empty;
+        field ??= string.Empty;
+
         var measurements = await _context.Measurements
             .Where(m => m.SeriesId == seriesId)
             .ToListAsync();
@@ -70,23 +79,24 @@ public class VisualizationService
         if (measurements.Count == 0)
             throw new NotFoundException($"Keine Messungen in Serie {seriesId} gefunden.");
 
+        var lookupKey = (section, field);
         var values = new List<double>();
         foreach (var m in measurements)
         {
             var flat = FlattenNumericFields(m.Data);
-            if (flat.TryGetValue(fieldKey, out var val) && val.HasValue)
+            if (flat.TryGetValue(lookupKey, out var val) && val.HasValue)
                 values.Add(val.Value);
         }
 
         if (values.Count == 0)
-            throw new NotFoundException($"Keine numerischen Werte für Feld '{fieldKey}' gefunden.");
+            throw new NotFoundException($"Keine numerischen Werte für Feld '{field}' in Sektion '{section}' gefunden.");
 
-        // Create histogram buckets
         var buckets = CreateBuckets(values);
 
         return new DistributionDto
         {
-            Field = fieldKey,
+            Field = field,
+            Section = section,
             Values = values.OrderBy(v => v).ToList(),
             Buckets = buckets
         };
@@ -97,13 +107,12 @@ public class VisualizationService
         var measurements = await _context.Measurements
             .Include(m => m.Template)
             .Where(m => m.SeriesId == seriesId)
-            .Take(10) // Sample first 10 to detect numeric fields
             .ToListAsync();
 
         if (measurements.Count == 0)
             throw new NotFoundException($"Keine Messungen in Serie {seriesId} gefunden.");
 
-        var fields = new Dictionary<string, VisualizableFieldDto>();
+        var fields = new Dictionary<(string Section, string Field), VisualizableFieldDto>();
 
         foreach (var m in measurements)
         {
@@ -117,16 +126,12 @@ public class VisualizationService
                 {
                     foreach (var field in section.Value)
                     {
-                        if (fields.ContainsKey(field.Key)) continue;
+                        var compositeKey = (section.Key, field.Key);
+                        if (fields.ContainsKey(compositeKey)) continue;
 
-                        var isNumeric = field.Value.ValueKind == JsonValueKind.Number
-                            || (field.Value.ValueKind == JsonValueKind.String
-                                && double.TryParse(field.Value.GetString()?.Replace(",", "."),
-                                    System.Globalization.CultureInfo.InvariantCulture, out _));
-
-                        if (isNumeric)
+                        if (IsNumeric(field.Value))
                         {
-                            fields[field.Key] = new VisualizableFieldDto
+                            fields[compositeKey] = new VisualizableFieldDto
                             {
                                 Key = field.Key,
                                 Label = field.Key,
@@ -143,9 +148,26 @@ public class VisualizationService
         return fields.Values.ToList();
     }
 
-    private static Dictionary<string, double?> FlattenNumericFields(JsonDocument data)
+    private static bool IsNumeric(JsonElement value)
     {
-        var result = new Dictionary<string, double?>();
+        if (value.ValueKind == JsonValueKind.Number)
+            return value.TryGetDouble(out var d) && !double.IsNaN(d) && !double.IsInfinity(d);
+
+        if (value.ValueKind == JsonValueKind.String)
+        {
+            var s = value.GetString();
+            if (string.IsNullOrWhiteSpace(s)) return false;
+            return double.TryParse(s.Replace(",", "."),
+                NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed)
+                && !double.IsNaN(parsed) && !double.IsInfinity(parsed);
+        }
+
+        return false;
+    }
+
+    private static Dictionary<(string Section, string Field), double?> FlattenNumericFields(JsonDocument data)
+    {
+        var result = new Dictionary<(string, string), double?>();
         try
         {
             var sections = JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, JsonElement>>>(
@@ -156,15 +178,24 @@ public class VisualizationService
             {
                 foreach (var field in section.Value)
                 {
-                    if (field.Value.ValueKind == JsonValueKind.Number && field.Value.TryGetDouble(out var num))
+                    var key = (section.Key, field.Key);
+
+                    if (field.Value.ValueKind == JsonValueKind.Number
+                        && field.Value.TryGetDouble(out var num)
+                        && !double.IsNaN(num) && !double.IsInfinity(num))
                     {
-                        result[field.Key] = num;
+                        result[key] = num;
                     }
-                    else if (field.Value.ValueKind == JsonValueKind.String
-                        && double.TryParse(field.Value.GetString()?.Replace(",", "."),
-                            System.Globalization.CultureInfo.InvariantCulture, out var parsed))
+                    else if (field.Value.ValueKind == JsonValueKind.String)
                     {
-                        result[field.Key] = parsed;
+                        var s = field.Value.GetString();
+                        if (!string.IsNullOrWhiteSpace(s)
+                            && double.TryParse(s.Replace(",", "."),
+                                NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed)
+                            && !double.IsNaN(parsed) && !double.IsInfinity(parsed))
+                        {
+                            result[key] = parsed;
+                        }
                     }
                 }
             }
