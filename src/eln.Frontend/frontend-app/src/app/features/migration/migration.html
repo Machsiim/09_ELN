@@ -159,7 +159,7 @@
 
         <!-- Vorschau der Template-Struktur -->
         <div class="form-section">
-          <label class="form-label">Vorschau (klicken zum Bearbeiten)</label>
+          <label class="form-label">Vorschau (klicken zum Bearbeiten, Griff zum Verschieben)</label>
           <div class="builder-preview">
             @for (section of builderSections(); track section.id) {
             <div class="builder-preview-section">
@@ -170,39 +170,73 @@
                 <button type="button" class="builder-remove-btn" (click)="removeBuilderSection(section.id)"
                   title="Sektion entfernen">×</button>
               </div>
-              @for (card of section.cards; track card.id) {
-              <div class="builder-preview-card">
-                <div class="builder-preview-card-header">
-                  <input class="builder-edit-input builder-edit-card" type="text"
-                    [value]="card.title"
-                    (change)="updateCardTitle(section.id, card.id, $any($event.target).value)">
-                  <button type="button" class="builder-remove-btn"
-                    (click)="removeBuilderCard(section.id, card.id)" title="Bereich entfernen">×</button>
-                </div>
-                @for (field of card.fields; track field.id) {
-                <div class="builder-preview-field">
-                  <input class="builder-edit-input builder-edit-field" type="text"
-                    [value]="field.label"
-                    (change)="updateFieldLabel(section.id, card.id, field.id, $any($event.target).value)">
-                  <select class="builder-edit-type"
-                    [value]="field.type"
-                    (change)="updateFieldType(section.id, card.id, field.id, $any($event.target).value)">
-                    @for (opt of fieldTypeOptions; track opt.value) {
-                    <option [value]="opt.value">{{ opt.label }}</option>
+              <div class="builder-preview-cards"
+                cdkDropList
+                [id]="'card-list-' + section.id"
+                [cdkDropListData]="section.cards"
+                [cdkDropListConnectedTo]="cardListIds()"
+                (cdkDropListDropped)="onCardDrop($event)">
+                @for (card of section.cards; track card.id) {
+                <div class="builder-preview-card" cdkDrag>
+                  <div class="builder-preview-card-header">
+                    <span class="drag-handle" cdkDragHandle title="Bereich verschieben">
+                      <svg viewBox="0 0 16 16" width="12" height="12" fill="currentColor" aria-hidden="true">
+                        <circle cx="5" cy="3" r="1.2" />
+                        <circle cx="11" cy="3" r="1.2" />
+                        <circle cx="5" cy="8" r="1.2" />
+                        <circle cx="11" cy="8" r="1.2" />
+                        <circle cx="5" cy="13" r="1.2" />
+                        <circle cx="11" cy="13" r="1.2" />
+                      </svg>
+                    </span>
+                    <input class="builder-edit-input builder-edit-card" type="text"
+                      [value]="card.title"
+                      (change)="updateCardTitle(section.id, card.id, $any($event.target).value)">
+                    <button type="button" class="builder-remove-btn"
+                      (click)="removeBuilderCard(section.id, card.id)" title="Bereich entfernen">×</button>
+                  </div>
+                  <div class="builder-preview-fields"
+                    cdkDropList
+                    [id]="'field-list-' + card.id"
+                    [cdkDropListData]="card.fields"
+                    [cdkDropListConnectedTo]="fieldListIds()"
+                    (cdkDropListDropped)="onFieldDrop($event)">
+                    @for (field of card.fields; track field.id) {
+                    <div class="builder-preview-field" cdkDrag>
+                      <span class="drag-handle" cdkDragHandle title="Feld verschieben">
+                        <svg viewBox="0 0 16 16" width="12" height="12" fill="currentColor" aria-hidden="true">
+                          <circle cx="5" cy="3" r="1.2" />
+                          <circle cx="11" cy="3" r="1.2" />
+                          <circle cx="5" cy="8" r="1.2" />
+                          <circle cx="11" cy="8" r="1.2" />
+                          <circle cx="5" cy="13" r="1.2" />
+                          <circle cx="11" cy="13" r="1.2" />
+                        </svg>
+                      </span>
+                      <input class="builder-edit-input builder-edit-field" type="text"
+                        [value]="field.label"
+                        (change)="updateFieldLabel(section.id, card.id, field.id, $any($event.target).value)">
+                      <select class="builder-edit-type"
+                        [value]="field.type"
+                        (change)="updateFieldType(section.id, card.id, field.id, $any($event.target).value)">
+                        @for (opt of fieldTypeOptions; track opt.value) {
+                        <option [value]="opt.value">{{ opt.label }}</option>
+                        }
+                      </select>
+                      <button type="button" class="builder-remove-btn"
+                        (click)="removeBuilderField(section.id, card.id, field.id)" title="Feld entfernen">×</button>
+                    </div>
                     }
-                  </select>
-                  <button type="button" class="builder-remove-btn"
-                    (click)="removeBuilderField(section.id, card.id, field.id)" title="Feld entfernen">×</button>
+                    @if (card.fields.length === 0) {
+                    <div class="builder-preview-empty builder-drop-target">Felder hier ablegen</div>
+                    }
+                  </div>
                 </div>
                 }
-                @if (card.fields.length === 0) {
-                <div class="builder-preview-empty">Noch keine Felder</div>
+                @if (section.cards.length === 0) {
+                <div class="builder-preview-empty builder-drop-target">Bereiche hier ablegen</div>
                 }
               </div>
-              }
-              @if (section.cards.length === 0) {
-              <div class="builder-preview-empty">Noch keine Bereiche</div>
-              }
             </div>
             }
           </div>

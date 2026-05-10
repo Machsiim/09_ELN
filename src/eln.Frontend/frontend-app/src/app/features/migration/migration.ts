@@ -1,8 +1,14 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, computed, signal } from '@angular/core';
 import { Header } from '../../components/header/header';
 import { Footer } from '../../components/footer/footer';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import {
+  CdkDragDrop,
+  DragDropModule,
+  moveItemInArray,
+  transferArrayItem
+} from '@angular/cdk/drag-drop';
 import { TemplateSchema, TemplateFieldType, TemplateCardSchema, TemplateFieldSchema, TemplateSectionSchema } from '../../models/template-schema';
 import { BackendTemplateSchema } from '../../models/backend-template-schema';
 import {
@@ -48,7 +54,7 @@ type MigrationStep = 'template' | 'upload' | 'mapping' | 'series' | 'importing' 
 
 @Component({
   selector: 'app-migration',
-  imports: [FormsModule, Header, Footer],
+  imports: [FormsModule, DragDropModule, Header, Footer],
   templateUrl: './migration.html',
   styleUrl: './migration.scss',
 })
@@ -682,6 +688,44 @@ export class Migration implements OnInit {
 
   builderHasFields(): boolean {
     return this.builderSections().some(s => s.cards.some(c => c.fields.length > 0));
+  }
+
+  // --- Drag & Drop ---
+
+  fieldListIds = computed(() =>
+    this.builderSections().flatMap(s => s.cards.map(c => `field-list-${c.id}`))
+  );
+
+  cardListIds = computed(() =>
+    this.builderSections().map(s => `card-list-${s.id}`)
+  );
+
+  onFieldDrop(event: CdkDragDrop<BuilderField[]>): void {
+    if (event.previousContainer === event.container) {
+      moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
+    } else {
+      transferArrayItem(
+        event.previousContainer.data,
+        event.container.data,
+        event.previousIndex,
+        event.currentIndex
+      );
+    }
+    this.builderSections.update(sections => [...sections]);
+  }
+
+  onCardDrop(event: CdkDragDrop<BuilderCard[]>): void {
+    if (event.previousContainer === event.container) {
+      moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
+    } else {
+      transferArrayItem(
+        event.previousContainer.data,
+        event.container.data,
+        event.previousIndex,
+        event.currentIndex
+      );
+    }
+    this.builderSections.update(sections => [...sections]);
   }
 
   getFieldTypeLabel(type: TemplateFieldType): string {
