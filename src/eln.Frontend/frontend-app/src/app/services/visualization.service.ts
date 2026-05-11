@@ -8,6 +8,7 @@ export interface VisualizableFieldDto {
   label: string;
   type: string;
   section: string;
+  templateName: string;
 }
 
 export interface TimelineDatasetDto {

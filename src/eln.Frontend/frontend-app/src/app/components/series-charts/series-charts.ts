@@ -17,6 +17,7 @@ import {
   VisualizableFieldDto,
   VisualizationService
 } from '../../services/visualization.service';
+import { MeasurementService } from '../../services/measurement.service';
 
 Chart.register(...registerables);
 
@@ -35,6 +36,8 @@ const PALETTE = [
   '#ea580c'
 ];
 
+const ALL_TEMPLATES = '__ALL__';
+
 @Component({
   selector: 'app-series-charts',
   standalone: true,
@@ -46,6 +49,7 @@ export class SeriesCharts {
   readonly seriesId = input.required<number>();
 
   private readonly visualization = inject(VisualizationService);
+  private readonly measurementService = inject(MeasurementService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly mode = signal<ChartMode>('timeline');
@@ -56,11 +60,32 @@ export class SeriesCharts {
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
 
+  // Map: measurement-time-ms -> templateName (used for timeline filtering by template)
+  readonly templateByTime = signal<Map<number, string>>(new Map());
+  readonly selectedTemplate = signal<string>(ALL_TEMPLATES);
+
+  /** Templates that show up in the visualization fields (drives both timeline + distribution dropdowns). */
+  readonly availableTemplates = computed(() => {
+    const set = new Set<string>();
+    for (const f of this.fields()) {
+      if (f.templateName) set.add(f.templateName);
+    }
+    return Array.from(set).sort();
+  });
+
+  // Distribution facet selection (independent dropdowns: template, section, card)
+  readonly distTemplate = signal<string>(ALL_TEMPLATES);
+  readonly distSection = signal<string>(ALL_TEMPLATES);
+  readonly distCard = signal<string>(ALL_TEMPLATES);
+
+  readonly allTemplatesValue = ALL_TEMPLATES;
+
   constructor() {
     effect(() => {
       const id = this.seriesId();
       if (id != null) {
         this.loadFields(id);
+        this.loadMeasurementMeta(id);
       }
     });
 
@@ -93,6 +118,47 @@ export class SeriesCharts {
     }
   }
 
+  selectTemplate(value: string): void {
+    this.selectedTemplate.set(value);
+  }
+
+  setDistTemplate(value: string): void {
+    this.distTemplate.set(value);
+    // Reset narrower facets when broader one changes
+    this.distSection.set(ALL_TEMPLATES);
+    this.distCard.set(ALL_TEMPLATES);
+    this.ensureValidFieldSelection();
+  }
+
+  setDistSection(value: string): void {
+    this.distSection.set(value);
+    this.distCard.set(ALL_TEMPLATES);
+    this.ensureValidFieldSelection();
+  }
+
+  setDistCard(value: string): void {
+    this.distCard.set(value);
+    this.ensureValidFieldSelection();
+  }
+
+  private ensureValidFieldSelection(): void {
+    const matching = this.filteredFields();
+    const current = this.selectedFieldKey();
+    if (matching.length === 0) {
+      this.selectedFieldKey.set(null);
+      this.distribution.set(null);
+      return;
+    }
+    if (!current || !matching.some((f) => this.fieldKey(f) === current)) {
+      const newKey = this.fieldKey(matching[0]);
+      this.selectedFieldKey.set(newKey);
+      const id = this.seriesId();
+      if (this.mode() === 'distribution' && id != null) {
+        this.loadDistributionForKey(id, newKey);
+      }
+    }
+  }
+
   private loadFields(seriesId: number): void {
     this.visualization.getFields(seriesId)
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -105,6 +171,28 @@ export class SeriesCharts {
         },
         error: () => {
           this.fields.set([]);
+        }
+      });
+  }
+
+  private loadMeasurementMeta(seriesId: number): void {
+    // Used only to know which measurement (by createdAt) belongs to which template
+    // for timeline filtering. Distribution filtering uses VisualizableFieldDto.templateName directly.
+    this.measurementService.getMeasurementsBySeriesId(seriesId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (items) => {
+          const timeMap = new Map<number, string>();
+          for (const m of items) {
+            const ts = new Date(m.createdAt).getTime();
+            if (!Number.isNaN(ts) && m.templateName) {
+              timeMap.set(ts, m.templateName);
+            }
+          }
+          this.templateByTime.set(timeMap);
+        },
+        error: () => {
+          this.templateByTime.set(new Map());
         }
       });
   }
@@ -155,6 +243,58 @@ export class SeriesCharts {
     return f.section ? `${f.section} – ${f.label || f.key}` : (f.label || f.key);
   }
 
+  hasMultipleTemplates = computed(() => this.availableTemplates().length > 1);
+
+  // ---------- Distribution: Filter helpers ----------
+
+  /** Splits "Card - Field" key into [card, field] when applicable. */
+  private splitFieldKey(key: string): { card: string | null; label: string } {
+    const idx = key.indexOf(' - ');
+    if (idx === -1) return { card: null, label: key };
+    return { card: key.slice(0, idx), label: key.slice(idx + 3) };
+  }
+
+  /** Felder, die zum aktuell gewählten Template gehören (oder alle, wenn ALL). */
+  private readonly fieldsForSelectedTemplate = computed<VisualizableFieldDto[]>(() => {
+    const all = this.fields();
+    const tpl = this.distTemplate();
+    if (tpl === ALL_TEMPLATES) return all;
+    return all.filter((f) => f.templateName === tpl);
+  });
+
+  readonly availableSections = computed(() => {
+    const set = new Set<string>();
+    for (const f of this.fieldsForSelectedTemplate()) {
+      if (f.section) set.add(f.section);
+    }
+    return Array.from(set).sort();
+  });
+
+  readonly availableCards = computed(() => {
+    const set = new Set<string>();
+    const sectionFilter = this.distSection();
+    for (const f of this.fieldsForSelectedTemplate()) {
+      if (sectionFilter !== ALL_TEMPLATES && f.section !== sectionFilter) continue;
+      const { card } = this.splitFieldKey(f.key);
+      if (card) set.add(card);
+    }
+    return Array.from(set).sort();
+  });
+
+  /** Distribution-Felder gefiltert nach Template + Sektion + Karte. */
+  readonly filteredFields = computed<VisualizableFieldDto[]>(() => {
+    const section = this.distSection();
+    const card = this.distCard();
+    return this.fieldsForSelectedTemplate().filter((f) => {
+      if (section !== ALL_TEMPLATES && f.section !== section) return false;
+      if (card !== ALL_TEMPLATES) {
+        const { card: fieldCard } = this.splitFieldKey(f.key);
+        if (fieldCard !== card) return false;
+      }
+      return true;
+    });
+  });
+
   // ---------- Line chart (Timeline) ----------
 
   readonly lineData = computed<ChartData<'line'> | null>(() => {
@@ -163,9 +303,41 @@ export class SeriesCharts {
       return null;
     }
 
+    const tplFilter = this.selectedTemplate();
+    const tplMap = this.templateByTime();
+    const useFilter = tplFilter !== ALL_TEMPLATES && tplMap.size > 0;
+
+    // Indices der Messungen, die zum gewählten Template gehören (matched per epoch ms)
+    const allowedIdx = useFilter
+      ? new Set(
+          data.labels
+            .map((iso, idx) => {
+              const ts = new Date(iso).getTime();
+              return tplMap.get(ts) === tplFilter ? idx : -1;
+            })
+            .filter((i) => i >= 0)
+        )
+      : null;
+
+    let labels = data.labels;
+    let datasetsRaw = data.datasets;
+
+    if (allowedIdx) {
+      // Reduce labels to allowed indices and align datasets
+      const keptIdx = Array.from(allowedIdx).sort((a, b) => a - b);
+      labels = keptIdx.map((i) => data.labels[i]);
+      datasetsRaw = data.datasets
+        .map((ds) => ({
+          ...ds,
+          values: keptIdx.map((i) => ds.values[i])
+        }))
+        // Drop datasets that became fully empty
+        .filter((ds) => ds.values.some((v) => v != null));
+    }
+
     return {
-      labels: data.labels.map((iso) => this.formatDateLabel(iso)),
-      datasets: data.datasets.map((ds, idx) => {
+      labels: labels.map((iso) => this.formatDateLabel(iso)),
+      datasets: datasetsRaw.map((ds, idx) => {
         const color = PALETTE[idx % PALETTE.length];
         return {
           label: ds.section ? `${ds.section} – ${ds.field}` : ds.field,
@@ -173,7 +345,7 @@ export class SeriesCharts {
           borderColor: color,
           backgroundColor: color + '33',
           tension: 0.25,
-          spanGaps: true,
+          spanGaps: false,
           pointRadius: 3,
           pointHoverRadius: 5,
           fill: false

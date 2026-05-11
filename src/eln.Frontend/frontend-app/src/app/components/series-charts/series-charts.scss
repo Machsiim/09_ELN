@@ -62,10 +62,14 @@
   align-items: center;
   gap: 8px;
   margin-bottom: 12px;
+  flex-wrap: wrap;
 
   label {
     font-size: 0.85rem;
     color: #475569;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
   }
 
   select {
@@ -74,9 +78,13 @@
     padding: 6px 10px;
     background: #ffffff;
     font-size: 0.85rem;
-    min-width: 220px;
+    min-width: 180px;
     cursor: pointer;
   }
+}
+
+.field-picker--multi {
+  gap: 16px;
 }
 
 .status {

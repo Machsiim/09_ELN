@@ -24,17 +24,71 @@
     </div>
   </header>
 
-  @if (mode() === 'distribution') {
+  @if (mode() === 'timeline' && hasMultipleTemplates()) {
     <div class="field-picker">
-      <label for="distField">Feld:</label>
+      <label for="tlTemplate">Template:</label>
       <select
-        id="distField"
-        [value]="selectedFieldKey()"
-        (change)="selectField($any($event.target).value)">
-        @for (f of fields(); track fieldKey(f)) {
-          <option [value]="fieldKey(f)">{{ fieldDisplay(f) }}</option>
+        id="tlTemplate"
+        [value]="selectedTemplate()"
+        (change)="selectTemplate($any($event.target).value)">
+        <option [value]="allTemplatesValue">Alle Templates</option>
+        @for (t of availableTemplates(); track t) {
+          <option [value]="t">{{ t }}</option>
         }
       </select>
+    </div>
+  }
+
+  @if (mode() === 'distribution') {
+    <div class="field-picker field-picker--multi">
+      @if (hasMultipleTemplates()) {
+        <label>
+          Template:
+          <select
+            [value]="distTemplate()"
+            (change)="setDistTemplate($any($event.target).value)">
+            <option [value]="allTemplatesValue">Alle Templates</option>
+            @for (t of availableTemplates(); track t) {
+              <option [value]="t">{{ t }}</option>
+            }
+          </select>
+        </label>
+      }
+
+      <label>
+        Sektion:
+        <select
+          [value]="distSection()"
+          (change)="setDistSection($any($event.target).value)">
+          <option [value]="allTemplatesValue">Alle Sektionen</option>
+          @for (s of availableSections(); track s) {
+            <option [value]="s">{{ s }}</option>
+          }
+        </select>
+      </label>
+
+      <label>
+        Karte:
+        <select
+          [value]="distCard()"
+          (change)="setDistCard($any($event.target).value)">
+          <option [value]="allTemplatesValue">Alle Karten</option>
+          @for (c of availableCards(); track c) {
+            <option [value]="c">{{ c }}</option>
+          }
+        </select>
+      </label>
+
+      <label>
+        Feld:
+        <select
+          [value]="selectedFieldKey()"
+          (change)="selectField($any($event.target).value)">
+          @for (f of filteredFields(); track fieldKey(f)) {
+            <option [value]="fieldKey(f)">{{ fieldDisplay(f) }}</option>
+          }
+        </select>
+      </label>
     </div>
   }
 
