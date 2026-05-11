@@ -160,6 +160,26 @@ public class ShareLinkServiceTests
     }
 
     [Fact]
+    public async Task GetSharedSeriesAsync_PrivateLink_AllowedEmail_MatchesUsernameClaim()
+    {
+        var context = TestDbContextFactory.CreateInMemoryContext("AccessAllowedUsername" + Guid.NewGuid());
+        var user = new User("alice@technikum-wien.at", "Student");
+        context.Users.Add(user);
+        var series = new MeasurementSeries("S", user.Id);
+        context.MeasurementSeries.Add(series);
+        var link = new SeriesShareLink(series.Id, "tok-username", false,
+            DateTime.UtcNow.AddDays(7), user.Id,
+            ["bob@technikum-wien.at"]);
+        context.SeriesShareLinks.Add(link);
+        await context.SaveChangesAsync();
+
+        var service = new ShareLinkService(context);
+        var result = await service.GetSharedSeriesAsync("tok-username", "bob");
+
+        Assert.Equal(series.Id, result.SeriesId);
+    }
+
+    [Fact]
     public async Task GetSharedSeriesAsync_PrivateLink_UnknownEmail_Throws()
     {
         var context = TestDbContextFactory.CreateInMemoryContext("AccessDenied" + Guid.NewGuid());

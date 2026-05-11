@@ -1,11 +1,16 @@
 <header class="app-header">
   <div class="header-container">
     <div class="logo-section">
+      @if (publicMode()) {
+        <img src="assets/Logo.png" alt="FH Technikum Wien Logo" class="logo">
+      } @else {
       <a routerLink="/startseite" class="logo-link">
         <img src="assets/Logo.png" alt="FH Technikum Wien Logo" class="logo">
       </a>
+      }
     </div>
 
+    @if (!publicMode()) {
     <nav class="main-nav">
       <a routerLink="/startseite" routerLinkActive="active">Startseite</a>
       <a routerLink="/dashboard" routerLinkActive="active">Dashboard</a>
@@ -73,5 +78,6 @@
         </button>
       </div>
     </div>
+    }
   </div>
 </header>

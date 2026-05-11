@@ -362,13 +362,18 @@
     </div>
     @if (!shareIsPublic()) {
     <div class="form-group">
-      <label for="shareEmails">Erlaubte E-Mails (kommagetrennt)</label>
+      <label for="shareEmails">Erlaubte Personen oder E-Mails</label>
           <input id="shareEmails"
             class="form-control"
             type="text"
             [value]="shareAllowedEmails()"
             (input)="updateAllowedEmails($any($event.target).value)"
-            placeholder="alice@example.com, bob@example.com" />
+            placeholder="alice, bob@technikum-wien.at" />
+      @if (shareAllowedEmailsNormalized().length > 0) {
+      <p class="hint">Gesendet wird: {{ shareAllowedEmailsNormalized().join(', ') }}</p>
+      } @else {
+      <p class="hint">Benutzernamen ohne Domain werden als @technikum-wien.at gesendet.</p>
+      }
     </div>
     }
 

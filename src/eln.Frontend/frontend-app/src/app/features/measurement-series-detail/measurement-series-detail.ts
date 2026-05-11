@@ -128,6 +128,7 @@ export class MeasurementSeriesDetail implements OnInit {
   readonly shareAllowedEmails = signal<string>('');
   readonly shareExpiresAt = signal<string | null>(null);
   readonly shareCreatedBy = signal<string | null>(null);
+  readonly shareAllowedEmailsNormalized = signal<string[]>([]);
 
   // Lock-related signals
   readonly isLocked = signal(false);
@@ -286,6 +287,7 @@ export class MeasurementSeriesDetail implements OnInit {
     this.shareExpiresAt.set(null);
     this.shareCreatedBy.set(null);
     this.shareAllowedEmails.set('');
+    this.shareAllowedEmailsNormalized.set([]);
     this.shareIsPublic.set(true);
   }
 
@@ -297,6 +299,7 @@ export class MeasurementSeriesDetail implements OnInit {
     this.shareExpiresAt.set(null);
     this.shareCreatedBy.set(null);
     this.shareAllowedEmails.set('');
+    this.shareAllowedEmailsNormalized.set([]);
     this.shareIsPublic.set(true);
   }
 
@@ -307,10 +310,16 @@ export class MeasurementSeriesDetail implements OnInit {
       return;
     }
 
+    const allowedUserEmails = this.shareIsPublic() ? [] : this.parseAllowedEmails();
+    if (!this.shareIsPublic() && allowedUserEmails.length === 0) {
+      this.shareError.set('Bitte mindestens eine Person oder E-Mail-Adresse eintragen.');
+      return;
+    }
+
     const payload: CreateShareLinkPayload = {
       expiresInDays: this.shareExpiresInDays(),
       isPublic: this.shareIsPublic(),
-      allowedUserEmails: this.shareIsPublic() ? [] : this.parseAllowedEmails()
+      allowedUserEmails
     };
 
     this.shareLoading.set(true);
@@ -325,9 +334,9 @@ export class MeasurementSeriesDetail implements OnInit {
           this.shareCreatedBy.set(response.createdByUsername);
           this.shareLoading.set(false);
         },
-        error: () => {
+        error: (err) => {
           this.shareLoading.set(false);
-          this.shareError.set('Quick-Link konnte nicht erstellt werden.');
+          this.shareError.set(err.error?.error || 'Quick-Link konnte nicht erstellt werden.');
         }
       });
   }
@@ -349,17 +358,28 @@ export class MeasurementSeriesDetail implements OnInit {
 
   updateShareVisibility(rawValue: string): void {
     this.shareIsPublic.set(rawValue === 'public');
+    this.shareError.set(null);
   }
 
   updateAllowedEmails(value: string): void {
     this.shareAllowedEmails.set(value);
+    this.shareAllowedEmailsNormalized.set(this.parseAllowedEmails());
   }
 
   private parseAllowedEmails(): string[] {
+    const seen = new Set<string>();
     return this.shareAllowedEmails()
-      .split(',')
-      .map((email) => email.trim())
-      .filter((email) => email.length > 0);
+      .split(/[,\n;]/)
+      .map((value) => value.trim().toLowerCase())
+      .filter((value) => value.length > 0)
+      .map((value) => value.includes('@') ? value : `${value}@technikum-wien.at`)
+      .filter((email) => {
+        if (seen.has(email)) {
+          return false;
+        }
+        seen.add(email);
+        return true;
+      });
   }
 
   private buildShareUrl(response: ShareLinkResponseDto): string {
