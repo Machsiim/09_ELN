@@ -33,6 +33,22 @@ public class ShareLinkService
         return parts[1].ToLowerInvariant() == AllowedEmailDomain;
     }
 
+    private static List<string> GetAccessIdentifiers(string usernameOrEmail)
+    {
+        var normalized = usernameOrEmail.Trim().ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(normalized))
+            return new List<string>();
+
+        if (normalized.Contains('@'))
+            return new List<string> { normalized };
+
+        return new List<string>
+        {
+            normalized,
+            $"{normalized}@{AllowedEmailDomain}"
+        };
+    }
+
     /// <summary>
     /// Create a share link for a measurement series.
     /// For private links, all AllowedUserEmails must belong to accepted university domains.
@@ -125,11 +141,14 @@ public class ShareLinkService
         // Access control for non-public links
         if (!shareLink.IsPublic)
         {
-            if (string.IsNullOrEmpty(requestingUserEmail) ||
-                !shareLink.AllowedUserEmails.Contains(
-                    requestingUserEmail.Trim().ToLowerInvariant()))
+            var accessIdentifiers = string.IsNullOrWhiteSpace(requestingUserEmail)
+                ? new List<string>()
+                : GetAccessIdentifiers(requestingUserEmail);
+
+            if (accessIdentifiers.Count == 0 ||
+                !accessIdentifiers.Any(identifier => shareLink.AllowedUserEmails.Contains(identifier)))
             {
-                throw new ForbiddenException("You don't have access to this shared series");
+                throw new ForbiddenException("Sie sind nicht berechtigt, diese geteile Messserie zu sehen.");
             }
         }
 

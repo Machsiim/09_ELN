@@ -2,10 +2,76 @@
   <app-header />
 
   <main class="main-content">
-    <div>
-      <h1>Dashboard</h1>
-      <p>Hier werden Ihre Messungen angezeigt.</p>
-    </div>
+    <header class="dashboard-header">
+      <div>
+        <h1>Dashboard</h1>
+        <p class="hint">Letzte Aktivitäten:</p>
+      </div>
+      <button type="button" class="refresh-button" (click)="refresh()" [disabled]="loading()">
+        Aktualisieren
+      </button>
+    </header>
+
+    <section class="activities-card">
+      <div class="activities-toolbar">
+        <label>
+          Typ:
+          <select
+            [value]="typeFilter()"
+            (change)="onTypeChange($any($event.target).value)">
+            @for (opt of typeOptions; track opt.value) {
+              <option [value]="opt.value">{{ opt.label }}</option>
+            }
+          </select>
+        </label>
+        <span class="activities-meta">
+          @if (total() > 0) {
+            {{ rangeStart() }}–{{ rangeEnd() }} von {{ total() }}
+          } @else if (!loading()) {
+            Keine Aktivitäten
+          }
+        </span>
+      </div>
+
+      @if (loading()) {
+        <div class="status info">Lade Aktivitäten ...</div>
+      } @else if (error(); as msg) {
+        <div class="status error">{{ msg }}</div>
+      } @else if (activities().length === 0) {
+        <div class="status info">Keine Aktivitäten vorhanden.</div>
+      } @else {
+        <ul class="activity-list">
+          @for (a of activities(); track a.timestamp + '-' + a.entityId) {
+            <li
+              class="activity-item"
+              [class.clickable]="a.seriesId"
+              (click)="goToTarget(a)">
+              <span class="activity-tag activity-tag--{{ a.type }}">{{ labelFor(a.type) }}</span>
+              <div class="activity-body">
+                <div class="activity-title">{{ a.description }}</div>
+                <div class="activity-meta">
+                  <span class="activity-user">{{ a.username }}</span>
+                  <span class="activity-time">{{ a.timestamp | date:'dd.MM.yyyy HH:mm' }}</span>
+                  @if (a.seriesName) {
+                    <span class="activity-series">in {{ a.seriesName }}</span>
+                  }
+                </div>
+              </div>
+            </li>
+          }
+        </ul>
+
+        <nav class="pagination" aria-label="Seitennavigation">
+          <button type="button" (click)="prev()" [disabled]="!hasPrev() || loading()">
+            ← Zurück
+          </button>
+          <span class="pagination-info">Seite {{ page() }} von {{ totalPages() }}</span>
+          <button type="button" (click)="next()" [disabled]="!hasNext() || loading()">
+            Weiter →
+          </button>
+        </nav>
+      }
+    </section>
   </main>
 
   <app-footer />

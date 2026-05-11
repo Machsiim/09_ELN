@@ -116,6 +116,7 @@ public class VisualizationService
 
         foreach (var m in measurements)
         {
+            var templateName = m.Template?.Name ?? string.Empty;
             try
             {
                 var sections = JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, JsonElement>>>(
@@ -136,7 +137,8 @@ public class VisualizationService
                                 Key = field.Key,
                                 Label = field.Key,
                                 Type = "number",
-                                Section = section.Key
+                                Section = section.Key,
+                                TemplateName = templateName
                             };
                         }
                     }

@@ -34,4 +34,5 @@ public class VisualizableFieldDto
     public string Label { get; set; } = "";
     public string Type { get; set; } = "";
     public string Section { get; set; } = "";
+    public string TemplateName { get; set; } = "";
 }

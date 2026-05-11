@@ -1,0 +1,134 @@
+<section class="charts-card">
+  <header class="charts-header">
+    <div>
+      <h2>Visualisierung</h2>
+      <p class="hint">Numerische Felder dieser Serie graphisch auswerten.</p>
+    </div>
+    <div class="mode-toggle" role="tablist">
+      <button
+        type="button"
+        role="tab"
+        [attr.aria-selected]="mode() === 'timeline'"
+        [class.active]="mode() === 'timeline'"
+        (click)="setMode('timeline')">
+        Zeitverlauf
+      </button>
+      <button
+        type="button"
+        role="tab"
+        [attr.aria-selected]="mode() === 'distribution'"
+        [class.active]="mode() === 'distribution'"
+        (click)="setMode('distribution')">
+        Verteilung
+      </button>
+    </div>
+  </header>
+
+  @if (mode() === 'timeline' && hasMultipleTemplates()) {
+    <div class="field-picker">
+      <label for="tlTemplate">Template:</label>
+      <select
+        id="tlTemplate"
+        [value]="selectedTemplate()"
+        (change)="selectTemplate($any($event.target).value)">
+        <option [value]="allTemplatesValue">Alle Templates</option>
+        @for (t of availableTemplates(); track t) {
+          <option [value]="t">{{ t }}</option>
+        }
+      </select>
+    </div>
+  }
+
+  @if (mode() === 'distribution') {
+    <div class="field-picker field-picker--multi">
+      @if (hasMultipleTemplates()) {
+        <label>
+          Template:
+          <select
+            [value]="distTemplate()"
+            (change)="setDistTemplate($any($event.target).value)">
+            <option [value]="allTemplatesValue">Alle Templates</option>
+            @for (t of availableTemplates(); track t) {
+              <option [value]="t">{{ t }}</option>
+            }
+          </select>
+        </label>
+      }
+
+      <label>
+        Sektion:
+        <select
+          [value]="distSection()"
+          (change)="setDistSection($any($event.target).value)">
+          <option [value]="allTemplatesValue">Alle Sektionen</option>
+          @for (s of availableSections(); track s) {
+            <option [value]="s">{{ s }}</option>
+          }
+        </select>
+      </label>
+
+      <label>
+        Karte:
+        <select
+          [value]="distCard()"
+          (change)="setDistCard($any($event.target).value)">
+          <option [value]="allTemplatesValue">Alle Karten</option>
+          @for (c of availableCards(); track c) {
+            <option [value]="c">{{ c }}</option>
+          }
+        </select>
+      </label>
+
+      <label>
+        Feld:
+        <select
+          [value]="selectedFieldKey()"
+          (change)="selectField($any($event.target).value)">
+          @for (f of filteredFields(); track fieldKey(f)) {
+            <option [value]="fieldKey(f)">{{ fieldDisplay(f) }}</option>
+          }
+        </select>
+      </label>
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="status info">Lade ...</div>
+  } @else if (error(); as msg) {
+    <div class="status error">{{ msg }}</div>
+  } @else if (mode() === 'timeline') {
+    @if (lineData(); as data) {
+      <div class="chart-canvas-wrapper">
+        <canvas
+          baseChart
+          [type]="'line'"
+          [data]="data"
+          [options]="lineOptions">
+        </canvas>
+      </div>
+    } @else {
+      <div class="status info">Keine numerischen Daten zum Anzeigen.</div>
+    }
+  } @else {
+    @if (barData(); as data) {
+      <div class="chart-canvas-wrapper">
+        <canvas
+          baseChart
+          [type]="'bar'"
+          [data]="data"
+          [options]="barOptions">
+        </canvas>
+      </div>
+      @if (distributionStats(); as s) {
+        <div class="stats">
+          <span><strong>n:</strong> {{ s.count }}</span>
+          <span><strong>Min:</strong> {{ s.min }}</span>
+          <span><strong>Max:</strong> {{ s.max }}</span>
+          <span><strong>Ø:</strong> {{ s.avg }}</span>
+        </div>
+      }
+    } @else {
+      <div class="status info">Wähle ein Feld mit numerischen Werten.</div>
+    }
+  }
+</section>
