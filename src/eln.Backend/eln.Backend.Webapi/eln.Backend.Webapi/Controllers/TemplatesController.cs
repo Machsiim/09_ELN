@@ -28,18 +28,43 @@ public class TemplatesController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<PagedResultDto<TemplateResponse>>> GetTemplates(
         [FromQuery] PaginationParams pagination,
+        [FromQuery] string? searchText,
+        [FromQuery] string? archiveFilter,
         CancellationToken cancellationToken)
     {
         var query = _context.Templates.OrderBy(t => t.Name);
-        var total = await query.CountAsync(cancellationToken);
-
         var templates = await query
-            .Skip((pagination.Page - 1) * pagination.PageSize)
-            .Take(pagination.PageSize)
             .Select(t => new { t.Id, t.Name, t.Schema, t.IsArchived, HasExistingMeasurements = t.Measurements.Any(), UsageCount = t.Measurements.Count() })
             .ToListAsync(cancellationToken);
 
-        var items = templates
+        var filtered = templates.AsEnumerable();
+
+        if (string.Equals(archiveFilter, "active", StringComparison.OrdinalIgnoreCase))
+        {
+            filtered = filtered.Where(t => !t.IsArchived);
+        }
+        else if (string.Equals(archiveFilter, "archived", StringComparison.OrdinalIgnoreCase))
+        {
+            filtered = filtered.Where(t => t.IsArchived);
+        }
+
+        if (!string.IsNullOrWhiteSpace(searchText))
+        {
+            var terms = NormalizeSearchText(searchText)
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+            filtered = filtered.Where(t =>
+            {
+                var searchable = NormalizeSearchText($"{t.Name} {t.Schema.RootElement.GetRawText()}");
+                return terms.All(searchable.Contains);
+            });
+        }
+
+        var total = filtered.Count();
+
+        var items = filtered
+            .Skip((pagination.Page - 1) * pagination.PageSize)
+            .Take(pagination.PageSize)
             .Select(t => new TemplateResponse(t.Id, t.Name, t.Schema.RootElement.GetRawText(), t.IsArchived, t.HasExistingMeasurements, t.UsageCount))
             .ToList();
 
@@ -213,4 +238,13 @@ public class TemplatesController : ControllerBase
 
         public JsonDocument? Schema { get; set; }
     }
+
+    private static string NormalizeSearchText(string value) =>
+        value
+            .Normalize(System.Text.NormalizationForm.FormD)
+            .Where(c => System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c) != System.Globalization.UnicodeCategory.NonSpacingMark)
+            .Aggregate(string.Empty, (current, c) => current + c)
+            .Replace("ß", "ss", StringComparison.OrdinalIgnoreCase)
+            .ToLowerInvariant()
+            .Trim();
 }

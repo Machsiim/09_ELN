@@ -316,6 +316,21 @@
   flex: 0 0 180px;
 }
 
+.template-search-actions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.template-library-query > .template-search-actions {
+  display: none;
+}
+
+.template-search-actions--wide {
+  flex: 0 0 auto;
+  align-self: flex-end;
+}
+
 .template-library-query,
 .template-library-status {
   display: flex;

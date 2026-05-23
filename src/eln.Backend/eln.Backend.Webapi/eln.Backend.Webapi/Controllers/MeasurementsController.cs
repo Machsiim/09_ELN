@@ -91,7 +91,9 @@ public class MeasurementsController : ControllerBase
     /// </summary>
     [HttpGet("series/{seriesId:int}")]
     [Authorize]
-    public async Task<ActionResult<List<MeasurementListDto>>> GetMeasurementsBySeries(int seriesId)
+    public async Task<ActionResult<List<MeasurementResponseDto>>> GetMeasurementsBySeries(
+        int seriesId,
+        [FromQuery] string? searchText)
     {
         try
         {
@@ -102,7 +104,8 @@ public class MeasurementsController : ControllerBase
             var results = await _measurementService.GetMeasurementsBySeriesAsync(
                 seriesId,
                 currentUser.Value.UserId,
-                currentUser.Value.UserRole);
+                currentUser.Value.UserRole,
+                searchText);
             return Ok(results);
         }
         catch (Exception ex)

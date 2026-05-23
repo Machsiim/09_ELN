@@ -105,7 +105,9 @@ export class MeasurementSeriesDetail implements OnInit {
 
   readonly measurements = signal<MeasurementResponseDto[]>([]);
   readonly filteredMeasurements = signal<MeasurementResponseDto[]>([]);
+  readonly hasLoadedMeasurements = signal(false);
   readonly searchQuery = signal<string>('');
+  readonly activeSearchQuery = signal<string>('');
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
   readonly seriesId = signal<number | null>(null);
@@ -157,6 +159,8 @@ export class MeasurementSeriesDetail implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (series) => {
+          this.seriesName.set(series.name);
+          this.seriesDescription.set(series.description ?? '');
           this.isLocked.set(series.isLocked);
           this.lockedByUsername.set(series.lockedByUsername ?? null);
           this.seriesCreatedByUsername.set(series.createdByUsername);
@@ -254,10 +258,14 @@ export class MeasurementSeriesDetail implements OnInit {
 
       const remaining = this.measurements().filter(m => !ids.includes(m.id));
       this.measurements.set(remaining);
+      this.hasLoadedMeasurements.set(remaining.length > 0);
       this.selectedMeasurementIds.set(new Set());
 
-      if (this.searchQuery().trim()) {
-        this.filterMeasurements();
+      if (this.activeSearchQuery().trim()) {
+        const seriesId = this.seriesId();
+        if (seriesId) {
+          this.fetchMeasurements(seriesId, this.activeSearchQuery());
+        }
       } else {
         this.filteredMeasurements.set(remaining);
       }
@@ -410,79 +418,25 @@ export class MeasurementSeriesDetail implements OnInit {
 
   onSearchChange(event: Event): void {
     const input = event.target as HTMLInputElement;
-    const value = input.value;
-    console.log('Search query changed:', value);
-    this.searchQuery.set(value);
-    this.filterMeasurements();
+    this.searchQuery.set(input.value);
+  }
+
+  submitSearch(): void {
+    const seriesId = this.seriesId();
+    if (seriesId) {
+      const query = this.searchQuery().trim();
+      this.activeSearchQuery.set(query);
+      this.fetchMeasurements(seriesId, query);
+    }
   }
 
   clearSearch(): void {
     this.searchQuery.set('');
-    this.filterMeasurements();
-  }
-
-  private filterMeasurements(): void {
-    const query = this.searchQuery().toLowerCase().trim();
-    const allMeasurements = this.measurements();
-
-    console.log('Filtering measurements:', {
-      query,
-      totalMeasurements: allMeasurements.length
-    });
-
-    if (!query) {
-      this.filteredMeasurements.set(allMeasurements);
-      console.log('No query, showing all measurements');
-      return;
+    this.activeSearchQuery.set('');
+    const seriesId = this.seriesId();
+    if (seriesId) {
+      this.fetchMeasurements(seriesId);
     }
-
-    const filtered = allMeasurements.filter(measurement => {
-      // Search in measurement ID
-      if (measurement.id.toString().includes(query)) {
-        return true;
-      }
-
-      // Search in template name
-      if (measurement.templateName.toLowerCase().includes(query)) {
-        return true;
-      }
-
-      // Search in username
-      if (measurement.createdByUsername.toLowerCase().includes(query)) {
-        return true;
-      }
-
-      // Search in date
-      const dateStr = new Date(measurement.createdAt).toLocaleDateString('de-DE');
-      if (dateStr.includes(query)) {
-        return true;
-      }
-
-      // Search in measurement data values
-      for (const sectionName of Object.keys(measurement.data)) {
-        const section = measurement.data[sectionName];
-        for (const fieldName of Object.keys(section)) {
-          const value = section[fieldName];
-          const valueStr = String(value).toLowerCase();
-          if (valueStr.includes(query)) {
-            return true;
-          }
-          // Also search in field names
-          if (fieldName.toLowerCase().includes(query)) {
-            return true;
-          }
-        }
-        // Also search in section names
-        if (sectionName.toLowerCase().includes(query)) {
-          return true;
-        }
-      }
-
-      return false;
-    });
-
-    console.log('Filtered results:', filtered.length);
-    this.filteredMeasurements.set(filtered);
   }
 
   getBaseColumns(): string[] {
@@ -1009,45 +963,24 @@ export class MeasurementSeriesDetail implements OnInit {
     return count;
   }
 
-  private fetchMeasurements(seriesId: number): void {
+  private fetchMeasurements(seriesId: number, searchText = ''): void {
     this.loading.set(true);
     this.error.set(null);
 
-    // First, get the list of measurements (without full data)
     this.measurementService
-      .searchMeasurements({ seriesId })
+      .getMeasurementsBySeriesId(seriesId, searchText)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: async (listItems) => {
-          if (listItems.length === 0) {
-            this.measurements.set([]);
-            this.filteredMeasurements.set([]);
-            this.loading.set(false);
-            return;
+        next: (measurements) => {
+          if (measurements.length > 0) {
+            this.seriesName.set(measurements[0].seriesName);
+            this.hasLoadedMeasurements.set(true);
           }
 
-          // Set series name from first item
-          this.seriesName.set(listItems[0].seriesName);
-
-          // Fetch full data for each measurement
-          const fullMeasurements: MeasurementResponseDto[] = [];
-
-          for (const item of listItems) {
-            try {
-              const fullData = await firstValueFrom(
-                this.measurementService.getMeasurementById(item.id)
-              );
-              fullMeasurements.push(fullData);
-            } catch (error) {
-              console.error(`Failed to load measurement ${item.id}:`, error);
-            }
-          }
-
-          this.measurements.set(fullMeasurements);
-          this.filteredMeasurements.set(fullMeasurements);
+          this.measurements.set(measurements);
+          this.filteredMeasurements.set(measurements);
           this.selectedMeasurementIds.set(new Set());
 
-          // Initialize all columns as visible on first load
           if (this.visibleColumns().size === 0) {
             this.showAllColumns();
           }

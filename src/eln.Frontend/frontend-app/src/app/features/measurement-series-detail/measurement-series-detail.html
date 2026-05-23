@@ -54,25 +54,31 @@
       <div class="status info">Messungen werden geladen ...</div>
       }
 
-      @if (!loading() && measurements().length > 0) {
+      @if (!loading() && (hasLoadedMeasurements() || searchQuery() || activeSearchQuery())) {
       <div class="search-container">
-        <div class="search-input-wrapper">
+        <div class="search-row">
+          <div class="search-input-wrapper">
             <input
               type="text"
               class="search-input"
               placeholder="Suche nach ID, Werten, Feldern..."
               [value]="searchQuery()"
               (input)="onSearchChange($event)"
+              (keydown.enter)="submitSearch()"
               />
           @if (searchQuery()) {
           <button type="button" class="clear-button" (click)="clearSearch()" title="Suche löschen">
             ✕
           </button>
           }
+          </div>
+          <button type="button" class="action-button search-submit-button" (click)="submitSearch()" [disabled]="loading()">
+            Suchen
+          </button>
         </div>
         <div class="results-actions">
           <div class="results-meta">
-              {{ filteredMeasurements().length }} von {{ measurements().length }} Messung{{ measurements().length !== 1 ? 'en' : '' }}
+              {{ filteredMeasurements().length }} Treffer
           </div>
           <div class="action-buttons">
               <button
@@ -196,7 +202,7 @@
       }
 
       @if (seriesId(); as sid) {
-        @if (measurements().length > 0) {
+        @if (hasLoadedMeasurements()) {
           <app-series-charts [seriesId]="sid" />
         }
       }
@@ -289,7 +295,7 @@
       }
       } @else {
       <div class="empty-state">
-        <p class="empty-title">Keine Ergebnisse</p>
+        <p class="empty-title">Keine Treffer</p>
         <p class="empty-text">
           Keine Messungen gefunden für "{{ searchQuery() }}".
         </p>

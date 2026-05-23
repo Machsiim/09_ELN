@@ -18,6 +18,11 @@ export interface SaveTemplateDto {
   schema: unknown;
 }
 
+export interface TemplateQuery {
+  searchText?: string;
+  archiveFilter?: 'all' | 'active' | 'archived';
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -25,10 +30,19 @@ export class TemplateService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = `${environment.apiUrl.replace(/\/$/, '')}/templates`;
 
-  getTemplatesPage(page = 1, pageSize = 20): Observable<PagedResult<TemplateDto>> {
-    const params = new HttpParams()
+  getTemplatesPage(page = 1, pageSize = 20, query: TemplateQuery = {}): Observable<PagedResult<TemplateDto>> {
+    let params = new HttpParams()
       .set('page', page)
       .set('pageSize', pageSize);
+
+    if (query.searchText?.trim()) {
+      params = params.set('searchText', query.searchText.trim());
+    }
+
+    if (query.archiveFilter && query.archiveFilter !== 'all') {
+      params = params.set('archiveFilter', query.archiveFilter);
+    }
+
     return this.http.get<PagedResult<TemplateDto>>(this.baseUrl, { params });
   }
 

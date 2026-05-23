@@ -140,9 +140,17 @@ h1 {
   margin-bottom: $spacing-lg;
 }
 
+.search-row {
+  display: flex;
+  align-items: stretch;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-md;
+}
+
 .search-input-wrapper {
   position: relative;
-  margin-bottom: $spacing-md;
+  flex: 1 1 auto;
+  min-width: 240px;
 }
 
 .search-input {
@@ -163,6 +171,10 @@ h1 {
   &::placeholder {
     color: #999;
   }
+}
+
+.search-submit-button {
+  flex: 0 0 auto;
 }
 
 .clear-button {

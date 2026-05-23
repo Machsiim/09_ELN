@@ -190,15 +190,26 @@
             <input id="template-library-search"
               type="search"
               placeholder="Stichwort suchen: Name, Feld oder Sektion"
-              [disabled]="loading() || templates().length === 0"
+              [disabled]="loading()"
               [value]="templateSearchTerm()"
               #templateLibrarySearch
-              (input)="onTemplateSearchChange(templateLibrarySearch.value)" />
+              (input)="onTemplateSearchChange(templateLibrarySearch.value)"
+              (keydown.enter)="submitTemplateSearch()" />
+            <div class="template-search-actions">
+              <button class="btn btn-secondary" type="button" (click)="submitTemplateSearch()" [disabled]="loading()">
+                Suchen
+              </button>
+              @if (templateSearchTerm()) {
+              <button class="btn btn-text" type="button" (click)="clearTemplateSearch()" [disabled]="loading()">
+                Zurücksetzen
+              </button>
+              }
+            </div>
           </div>
           <div class="template-library-status">
             <label class="form-label" for="template-archive-filter">Status</label>
             <select id="template-archive-filter"
-              [disabled]="loading() || templates().length === 0"
+              [disabled]="loading()"
               [value]="templateArchiveFilter()"
               #templateArchiveFilterSelect
               (change)="onTemplateArchiveFilterChange(templateArchiveFilterSelect.value)">
@@ -207,11 +218,21 @@
               <option value="archived">Archiviert</option>
             </select>
           </div>
+          <div class="template-search-actions template-search-actions--wide">
+            <button class="btn btn-secondary" type="button" (click)="submitTemplateSearch()" [disabled]="loading()">
+              Suchen
+            </button>
+            @if (templateSearchTerm()) {
+            <button class="btn btn-text" type="button" (click)="clearTemplateSearch()" [disabled]="loading()">
+              Zurücksetzen
+            </button>
+            }
+          </div>
         </div>
         @if (!loading() && templateSearchTerm()) {
         <small class="template-search-result">
           @if (filteredTemplates().length > 0) {
-          {{ filteredTemplates().length }} von {{ templates().length }} Templates gefunden
+          {{ totalTemplates() }} Templates gefunden
           } @else {
           Keine Templates zum Suchbegriff gefunden.
           }
@@ -221,7 +242,7 @@
 
       @if (loading()) {
       <p class="empty-state">Lade Templates...</p>
-      } @else if (templates().length === 0) {
+      } @else if (totalTemplates() === 0 && !templateSearchTerm() && templateArchiveFilter() === 'all') {
       <p class="empty-state">Noch keine Templates vorhanden. Speichern Sie rechts Ihr erstes Layout.</p>
       } @else if (filteredTemplates().length === 0) {
       <p class="empty-state">Keine Templates zum Suchbegriff gefunden.</p>
@@ -260,10 +281,10 @@
         </article>
         }
       </div>
-      @if (filteredTemplates().length > 5) {
+      @if (totalTemplates() > 5) {
       <div class="template-pagination">
         <div class="template-pagination-actions">
-          <span>{{ templatePageStart() }}-{{ templatePageEnd() }} von {{ filteredTemplates().length }} Templates</span>
+          <span>{{ templatePageStart() }}-{{ templatePageEnd() }} von {{ totalTemplates() }} Templates</span>
           <button class="btn btn-icon" type="button" (click)="previousTemplatePage()" [disabled]="templatePage() === 1" title="Vorherige Seite">
             <span class="material-icons">chevron_left</span>
           </button>
