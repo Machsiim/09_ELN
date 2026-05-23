@@ -19,6 +19,22 @@ public class SwaggerDefaultValuesFilter : IOperationFilter
         ["GetTimeline"] = new() { ["seriesId"] = "1" },
         ["GetDistribution"] = new() { ["seriesId"] = "1", ["field"] = "temperatur" },
         ["GetFields"] = new() { ["seriesId"] = "1" },
+
+        // MeasurementsController
+        ["GetMeasurementsBySeries"] = new() { ["seriesId"] = "1", ["searchText"] = "temperatur" },
+        ["SearchMeasurements"] = new() { ["seriesId"] = "1", ["searchText"] = "Labor" },
+
+        // TemplatesController
+        ["GetTemplates"] = new() { ["page"] = "1", ["pageSize"] = "5", ["searchText"] = "Temperatur", ["archiveFilter"] = "active" },
+    };
+
+    private static readonly Dictionary<string, string> ParameterDescriptions = new()
+    {
+        ["searchText"] = "Optionaler Suchbegriff. Wird serverseitig angewendet.",
+        ["archiveFilter"] = "Optionaler Template-Statusfilter: all, active oder archived.",
+        ["page"] = "Seitennummer fuer paginierte Ergebnisse.",
+        ["pageSize"] = "Anzahl der Ergebnisse pro Seite.",
+        ["seriesId"] = "ID der Messserie."
     };
 
     public void Apply(OpenApiOperation operation, OperationFilterContext context)
@@ -30,6 +46,11 @@ public class SwaggerDefaultValuesFilter : IOperationFilter
 
         foreach (var param in operation.Parameters)
         {
+            if (ParameterDescriptions.TryGetValue(param.Name, out var description))
+            {
+                param.Description ??= description;
+            }
+
             if (paramDefaults.TryGetValue(param.Name, out var value))
             {
                 param.Example = new OpenApiString(value);

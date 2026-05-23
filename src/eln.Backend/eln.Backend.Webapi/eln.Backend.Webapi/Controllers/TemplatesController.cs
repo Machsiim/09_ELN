@@ -25,6 +25,13 @@ public class TemplatesController : ControllerBase
         _importService = importService;
     }
 
+    /// <summary>
+    /// Get paginated templates with optional server-side search and archive filtering.
+    /// </summary>
+    /// <param name="pagination">Pagination settings.</param>
+    /// <param name="searchText">Optional search text for template name and schema content.</param>
+    /// <param name="archiveFilter">Optional status filter: all, active, or archived.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     [HttpGet]
     public async Task<ActionResult<PagedResultDto<TemplateResponse>>> GetTemplates(
         [FromQuery] PaginationParams pagination,

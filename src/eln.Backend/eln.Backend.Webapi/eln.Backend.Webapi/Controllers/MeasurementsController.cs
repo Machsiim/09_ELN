@@ -87,8 +87,10 @@ public class MeasurementsController : ControllerBase
     }
 
     /// <summary>
-    /// Get all measurements for a specific series
+    /// Get all measurements for a specific series with optional server-side search.
     /// </summary>
+    /// <param name="seriesId">Measurement series ID.</param>
+    /// <param name="searchText">Optional search text for measurement ID, template, creator, date, fields, sections, and values.</param>
     [HttpGet("series/{seriesId:int}")]
     [Authorize]
     public async Task<ActionResult<List<MeasurementResponseDto>>> GetMeasurementsBySeries(
