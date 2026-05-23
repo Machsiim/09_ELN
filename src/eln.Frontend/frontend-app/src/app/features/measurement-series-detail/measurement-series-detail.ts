@@ -111,6 +111,7 @@ export class MeasurementSeriesDetail implements OnInit {
   readonly seriesId = signal<number | null>(null);
   readonly seriesName = signal<string>('');
   readonly seriesDescription = signal<string>('');
+  readonly seriesCreatedByUsername = signal<string | null>(null);
   readonly selectedMeasurementIds = signal<Set<number>>(new Set());
   readonly deleteInProgress = signal(false);
   readonly confirmVisible = signal(false);
@@ -158,6 +159,7 @@ export class MeasurementSeriesDetail implements OnInit {
         next: (series) => {
           this.isLocked.set(series.isLocked);
           this.lockedByUsername.set(series.lockedByUsername ?? null);
+          this.seriesCreatedByUsername.set(series.createdByUsername);
         },
         error: (err) => {
           console.error('Failed to load series info:', err);
@@ -280,7 +282,21 @@ export class MeasurementSeriesDetail implements OnInit {
     this.router.navigate(['/messungen']);
   }
 
+  canShareSeries(): boolean {
+    if (this.isStaff) {
+      return true;
+    }
+
+    const currentUsername = this.authService.currentUser()?.username?.toLowerCase();
+    const createdByUsername = this.seriesCreatedByUsername()?.toLowerCase();
+    return !!currentUsername && !!createdByUsername && currentUsername === createdByUsername;
+  }
+
   openShareDialog(): void {
+    if (!this.canShareSeries()) {
+      return;
+    }
+
     this.shareDialogVisible.set(true);
     this.shareError.set(null);
     this.shareLink.set(null);

@@ -234,17 +234,18 @@ public class MeasurementSeriesController : ControllerBase
     {
         try
         {
-            // Extract username from JWT
-            var username = User.FindFirst(ClaimTypes.Name)?.Value;
-            if (string.IsNullOrEmpty(username))
+            var currentUser = await GetCurrentUserAsync();
+            if (currentUser is null)
                 return Unauthorized();
 
-            // Get user ID from database
-            var user = await _context.Users.SingleOrDefaultAsync(u => u.Username == username);
-            if (user == null)
-                return Unauthorized();
+            var series = await _context.MeasurementSeries.FindAsync(id);
+            if (series == null)
+                return NotFound(new { error = "Series not found" });
 
-            var result = await _shareLinkService.CreateShareLinkAsync(id, dto, user.Id);
+            if (IsStudent(currentUser.Value.UserRole) && series.CreatedBy != currentUser.Value.UserId)
+                return Forbid();
+
+            var result = await _shareLinkService.CreateShareLinkAsync(id, dto, currentUser.Value.UserId);
             return Ok(result);
         }
         catch (Exception ex)

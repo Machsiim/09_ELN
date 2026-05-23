@@ -28,9 +28,11 @@
           } @else if (isLocked()) {
           <span class="lock-badge">Gesperrt von {{ lockedByUsername() }}</span>
           }
+          @if (canShareSeries()) {
           <button type="button" class="share-button" (click)="openShareDialog()" title="Sharing-Link anzeigen">
             Link teilen
           </button>
+          }
         </div>
         <div>
           <p class="subtitle">Messserie #{{ seriesId() }}</p>
