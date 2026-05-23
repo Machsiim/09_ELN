@@ -101,13 +101,23 @@ public class MeasurementService
         };
     }
 
-    public async Task<List<MeasurementListDto>> GetMeasurementsBySeriesAsync(int seriesId)
+    public async Task<List<MeasurementListDto>> GetMeasurementsBySeriesAsync(
+        int seriesId,
+        int? userId = null,
+        string? userRole = null)
     {
-        var measurements = await _context.Measurements
+        var query = _context.Measurements
             .Include(m => m.Series)
             .Include(m => m.Template)
             .Include(m => m.Creator)
-            .Where(m => m.SeriesId == seriesId)
+            .Where(m => m.SeriesId == seriesId);
+
+        if (IsStudent(userRole) && userId.HasValue)
+        {
+            query = query.Where(m => m.CreatedBy == userId.Value);
+        }
+
+        var measurements = await query
             .OrderByDescending(m => m.CreatedAt)
             .ToListAsync();
 
@@ -147,8 +157,10 @@ public class MeasurementService
             .Include(m => m.Creator)
             .AsQueryable();
 
-        // RBAC: Students can see ALL measurements (no filter on viewing)
-        // They can only EDIT/DELETE their own (enforced in controller)
+        if (IsStudent(userRole))
+        {
+            query = query.Where(m => m.CreatedBy == userId);
+        }
 
         // Filter by Template ID
         if (filter.TemplateId.HasValue)
@@ -391,4 +403,7 @@ public class MeasurementService
 
         return changes;
     }
+
+    private static bool IsStudent(string? userRole) =>
+        string.Equals(userRole, "Student", StringComparison.OrdinalIgnoreCase);
 }

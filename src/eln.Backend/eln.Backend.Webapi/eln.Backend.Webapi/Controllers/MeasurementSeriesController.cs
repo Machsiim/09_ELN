@@ -30,12 +30,20 @@ public class MeasurementSeriesController : ControllerBase
     /// Get all measurement series (paginated)
     /// </summary>
     [HttpGet]
+    [Authorize]
     public async Task<ActionResult<PagedResultDto<MeasurementSeriesResponseDto>>> GetAllSeries(
         [FromQuery] PaginationParams pagination)
     {
         try
         {
-            var results = await _seriesService.GetAllSeriesAsync(pagination);
+            var currentUser = await GetCurrentUserAsync();
+            if (currentUser is null)
+                return Unauthorized();
+
+            var results = await _seriesService.GetAllSeriesAsync(
+                pagination,
+                currentUser.Value.UserId,
+                currentUser.Value.UserRole);
             return Ok(results);
         }
         catch (Exception ex)
@@ -48,11 +56,19 @@ public class MeasurementSeriesController : ControllerBase
     /// Get a single series by ID
     /// </summary>
     [HttpGet("{id:int}")]
+    [Authorize]
     public async Task<ActionResult<MeasurementSeriesResponseDto>> GetSeries(int id)
     {
         try
         {
+            var currentUser = await GetCurrentUserAsync();
+            if (currentUser is null)
+                return Unauthorized();
+
             var result = await _seriesService.GetSeriesByIdAsync(id);
+            if (IsStudent(currentUser.Value.UserRole) && result.CreatedBy != currentUser.Value.UserId)
+                return Forbid();
+
             return Ok(result);
         }
         catch (Exception ex)
@@ -100,16 +116,20 @@ public class MeasurementSeriesController : ControllerBase
     {
         try
         {
-            // Extract role from JWT
-            var userRole = User.FindFirst(ClaimTypes.Role)?.Value ?? "Student";
+            var currentUser = await GetCurrentUserAsync();
+            if (currentUser is null)
+                return Unauthorized();
 
             // Check if series is locked
             var series = await _context.MeasurementSeries.FindAsync(id);
             if (series == null)
                 return NotFound(new { error = "Series not found" });
 
-            if (series.IsLocked && userRole != "Staff")
+            if (series.IsLocked && !IsStaff(currentUser.Value.UserRole))
                 return BadRequest(new { error = "Cannot delete locked series. Only Staff can modify locked series." });
+
+            if (IsStudent(currentUser.Value.UserRole) && series.CreatedBy != currentUser.Value.UserId)
+                return Forbid();
 
             await _seriesService.DeleteSeriesAsync(id);
             return NoContent();
@@ -131,16 +151,20 @@ public class MeasurementSeriesController : ControllerBase
     {
         try
         {
-            // Extract role from JWT
-            var userRole = User.FindFirst(ClaimTypes.Role)?.Value ?? "Student";
+            var currentUser = await GetCurrentUserAsync();
+            if (currentUser is null)
+                return Unauthorized();
 
             // Check if series is locked
             var series = await _context.MeasurementSeries.FindAsync(id);
             if (series == null)
                 return NotFound(new { error = "Series not found" });
 
-            if (series.IsLocked && userRole != "Staff")
+            if (series.IsLocked && !IsStaff(currentUser.Value.UserRole))
                 return BadRequest(new { error = "Cannot update locked series. Only Staff can modify locked series." });
+
+            if (IsStudent(currentUser.Value.UserRole) && series.CreatedBy != currentUser.Value.UserId)
+                return Forbid();
 
             var result = await _seriesService.UpdateSeriesAsync(id, dto);
             return Ok(result);
@@ -305,4 +329,24 @@ public class MeasurementSeriesController : ControllerBase
             return BadRequest(new { error = ex.Message });
         }
     }
+
+    private async Task<(int UserId, string UserRole)?> GetCurrentUserAsync()
+    {
+        var username = User.FindFirst(ClaimTypes.Name)?.Value;
+        if (string.IsNullOrEmpty(username))
+            return null;
+
+        var user = await _context.Users.SingleOrDefaultAsync(u => u.Username == username);
+        if (user == null)
+            return null;
+
+        var userRole = User.FindFirst(ClaimTypes.Role)?.Value ?? "Student";
+        return (user.Id, userRole);
+    }
+
+    private static bool IsStudent(string? userRole) =>
+        string.Equals(userRole, "Student", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsStaff(string? userRole) =>
+        string.Equals(userRole, "Staff", StringComparison.OrdinalIgnoreCase);
 }
