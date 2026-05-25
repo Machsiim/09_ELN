@@ -13,45 +13,41 @@ import { Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Header } from '../../components/header/header';
 import { Footer } from '../../components/footer/footer';
+import { Pagination } from '../../components/pagination/pagination';
 import {
-  MeasurementListItem,
-  MeasurementService,
-  MeasurementSearchParams
-} from '../../services/measurement.service';
+  MeasurementSeriesGroupDto,
+  MeasurementSeriesService,
+  SeriesGroupParams
+} from '../../services/measurement-series.service';
 import { TemplateDto, TemplateService } from '../../services/template.service';
-
-interface MeasurementSeriesGroup {
-  seriesId: number;
-  seriesName: string;
-  measurementCount: number;
-  latestMeasurementId: number;
-  latestTemplateName: string;
-  latestCreatedAt: string;
-  templateNames: string[];
-  authorNames: string[];
-}
 
 @Component({
   selector: 'app-measurements',
-  imports: [CommonModule, ReactiveFormsModule, MatIconModule, Header, Footer],
+  imports: [CommonModule, ReactiveFormsModule, MatIconModule, Header, Footer, Pagination],
   templateUrl: './measurements.html',
   styleUrl: './measurements.scss'
 })
 export class Measurements implements OnInit {
-  private readonly measurementService = inject(MeasurementService);
+  private readonly seriesService = inject(MeasurementSeriesService);
   private readonly templateService = inject(TemplateService);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
-  readonly measurements = signal<MeasurementListItem[]>([]);
-  readonly groupedMeasurements = signal<MeasurementSeriesGroup[]>([]);
+  readonly pagedSeries = signal<MeasurementSeriesGroupDto[]>([]);
   readonly availableTemplates = signal<TemplateDto[]>([]);
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
   readonly success = signal<string | null>(null);
   readonly lastSearchTerm = signal('');
   readonly hasActiveQuery = computed(() => this.lastSearchTerm().length > 0);
+
+  // Pagination (serverseitig)
+  readonly pageSize = signal(10);
+  readonly page = signal(1);
+  readonly total = signal(0);
+  readonly totalPages = signal(1);
+
   readonly searchControl = new FormControl('', { nonNullable: true });
   readonly filterForm = this.fb.nonNullable.group({
     templateId: [''],
@@ -68,13 +64,14 @@ export class Measurements implements OnInit {
         const term = value.trim();
         if (term.length > 0 || this.lastSearchTerm().length > 0) {
           this.lastSearchTerm.set(term);
-          this.fetchMeasurements(term || undefined, this.buildFilterParams());
+          this.page.set(1);
+          this.fetchSeries();
         }
       });
   }
 
   ngOnInit(): void {
-    this.fetchMeasurements();
+    this.fetchSeries();
     this.loadTemplates();
   }
 
@@ -100,7 +97,8 @@ export class Measurements implements OnInit {
 
     if (hadValue || this.hasActiveQuery()) {
       this.lastSearchTerm.set('');
-      this.fetchMeasurements(undefined, this.buildFilterParams());
+      this.page.set(1);
+      this.fetchSeries();
     }
   }
 
@@ -113,8 +111,8 @@ export class Measurements implements OnInit {
   }
 
   applyFilters(): void {
-    const filters = this.buildFilterParams();
-    this.fetchMeasurements(this.lastSearchTerm() || undefined, filters);
+    this.page.set(1);
+    this.fetchSeries();
     this.filterPanelOpen.set(false);
   }
 
@@ -127,52 +125,69 @@ export class Measurements implements OnInit {
       dateFrom: '',
       dateTo: ''
     });
-    this.fetchMeasurements(this.lastSearchTerm() || undefined);
+    this.page.set(1);
+    this.fetchSeries();
   }
 
-  trackById(_: number, item: MeasurementSeriesGroup): number {
+  trackById(_: number, item: MeasurementSeriesGroupDto): number {
     return item.seriesId;
+  }
+
+  onPageChange(newPage: number): void {
+    this.page.set(newPage);
+    this.fetchSeries();
+  }
+
+  onPageSizeChange(newSize: number): void {
+    this.pageSize.set(newSize);
+    this.page.set(1);
+    this.fetchSeries();
   }
 
   navigateToSeriesDetail(seriesId: number): void {
     this.router.navigate(['/messungen/serie', seriesId]);
   }
 
-  private fetchMeasurements(searchText?: string, filterParams?: MeasurementSearchParams): void {
+  private fetchSeries(): void {
     this.loading.set(true);
     this.error.set(null);
     this.success.set(null);
 
-    const params: MeasurementSearchParams = {
-      ...(filterParams ?? {}),
-      ...(searchText ? { searchText } : {})
+    const params: SeriesGroupParams = {
+      page: this.page(),
+      pageSize: this.pageSize(),
+      ...this.buildFilterParams(),
+      ...(this.lastSearchTerm() ? { searchText: this.lastSearchTerm() } : {})
     };
 
-    this.measurementService
-      .searchMeasurements(params)
+    this.seriesService
+      .getSeriesGroups(params)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (data) => {
-          this.measurements.set(data);
-          const grouped = this.groupMeasurementsBySeries(data);
-          this.groupedMeasurements.set(grouped);
+        next: (result) => {
+          this.pagedSeries.set(result.items);
+          this.total.set(result.total);
+          this.totalPages.set(Math.max(1, result.totalPages));
           this.loading.set(false);
           this.success.set(
-            grouped.length > 0
-              ? `${grouped.length} Messserien entsprechen den aktiven Filtern.`
+            result.total > 0
+              ? `${result.total} Messserien entsprechen den aktiven Filtern.`
               : 'Keine Messserien entsprechen den aktiven Filtern.'
           );
         },
         error: () => {
+          this.pagedSeries.set([]);
+          this.total.set(0);
+          this.totalPages.set(1);
           this.loading.set(false);
-          this.error.set('Messungen konnten nicht geladen werden.');
+          this.error.set('Messserien konnten nicht geladen werden.');
         }
       });
   }
 
-  private buildFilterParams(): MeasurementSearchParams {
+  private buildFilterParams(): Partial<SeriesGroupParams> {
     const raw = this.filterForm.getRawValue();
-    const params: MeasurementSearchParams = {};
+    const params: Partial<SeriesGroupParams> = {};
 
     if (raw.templateId !== null && raw.templateId !== undefined && String(raw.templateId).trim().length > 0) {
       const parsed = Number(raw.templateId);
@@ -199,44 +214,5 @@ export class Measurements implements OnInit {
       (dateFrom && dateFrom.trim().length > 0) ||
       (dateTo && dateTo.trim().length > 0)
     );
-  }
-
-  private groupMeasurementsBySeries(data: MeasurementListItem[]): MeasurementSeriesGroup[] {
-    const map = new Map<number, MeasurementSeriesGroup & { templateSet: Set<string>; authorSet: Set<string> }>();
-
-    data.forEach((measurement) => {
-      const existing = map.get(measurement.seriesId);
-      if (!existing) {
-        map.set(measurement.seriesId, {
-          seriesId: measurement.seriesId,
-          seriesName: measurement.seriesName,
-          measurementCount: 1,
-          latestMeasurementId: measurement.id,
-          latestTemplateName: measurement.templateName,
-          latestCreatedAt: measurement.createdAt,
-          templateNames: [measurement.templateName],
-          authorNames: [measurement.createdByUsername],
-          templateSet: new Set([measurement.templateName]),
-          authorSet: new Set([measurement.createdByUsername])
-        });
-      } else {
-        existing.measurementCount += 1;
-        if (new Date(measurement.createdAt).getTime() > new Date(existing.latestCreatedAt).getTime()) {
-          existing.latestMeasurementId = measurement.id;
-          existing.latestTemplateName = measurement.templateName;
-          existing.latestCreatedAt = measurement.createdAt;
-        }
-        if (!existing.templateSet.has(measurement.templateName)) {
-          existing.templateSet.add(measurement.templateName);
-          existing.templateNames = Array.from(existing.templateSet);
-        }
-        if (!existing.authorSet.has(measurement.createdByUsername)) {
-          existing.authorSet.add(measurement.createdByUsername);
-          existing.authorNames = Array.from(existing.authorSet);
-        }
-      }
-    });
-
-    return Array.from(map.values()).map(({ templateSet, authorSet, ...group }) => group);
   }
 }

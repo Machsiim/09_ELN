@@ -24,13 +24,9 @@
             }
           </select>
         </label>
-        <span class="activities-meta">
-          @if (total() > 0) {
-            {{ rangeStart() }}–{{ rangeEnd() }} von {{ total() }}
-          } @else if (!loading()) {
-            Keine Aktivitäten
-          }
-        </span>
+        @if (total() === 0 && !loading()) {
+          <span class="activities-meta">Keine Aktivitäten</span>
+        }
       </div>
 
       @if (loading()) {
@@ -61,15 +57,16 @@
           }
         </ul>
 
-        <nav class="pagination" aria-label="Seitennavigation">
-          <button type="button" (click)="prev()" [disabled]="!hasPrev() || loading()">
-            ← Zurück
-          </button>
-          <span class="pagination-info">Seite {{ page() }} von {{ totalPages() }}</span>
-          <button type="button" (click)="next()" [disabled]="!hasNext() || loading()">
-            Weiter →
-          </button>
-        </nav>
+        <app-pagination
+          [page]="page()"
+          [totalPages]="totalPages()"
+          [total]="total()"
+          [pageSize]="pageSize()"
+          [loading]="loading()"
+          label="Aktivitäten"
+          (pageChange)="onPageChange($event)"
+          (pageSizeChange)="onPageSizeChange($event)">
+        </app-pagination>
       }
     </section>
   </main>

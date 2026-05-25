@@ -24,6 +24,26 @@ export interface CreateMeasurementSeriesDto {
   description?: string | null;
 }
 
+export interface MeasurementSeriesGroupDto {
+  seriesId: number;
+  seriesName: string;
+  measurementCount: number;
+  latestMeasurementId: number;
+  latestTemplateName: string;
+  latestCreatedAt: string;
+  templateNames: string[];
+  authorNames: string[];
+}
+
+export interface SeriesGroupParams {
+  page?: number;
+  pageSize?: number;
+  templateId?: number;
+  dateFrom?: string;
+  dateTo?: string;
+  searchText?: string;
+}
+
 export interface CreateShareLinkPayload {
   expiresInDays: number;
   isPublic: boolean;
@@ -55,6 +75,20 @@ export class MeasurementSeriesService {
       .set('page', page)
       .set('pageSize', pageSize);
     return this.http.get<PagedResult<MeasurementSeriesDto>>(this.baseUrl, { params });
+  }
+
+  getSeriesGroups(p: SeriesGroupParams = {}): Observable<PagedResult<MeasurementSeriesGroupDto>> {
+    let params = new HttpParams()
+      .set('page', p.page ?? 1)
+      .set('pageSize', p.pageSize ?? 10);
+    if (p.templateId != null) params = params.set('templateId', p.templateId);
+    if (p.dateFrom) params = params.set('dateFrom', p.dateFrom);
+    if (p.dateTo) params = params.set('dateTo', p.dateTo);
+    if (p.searchText) params = params.set('searchText', p.searchText);
+    return this.http.get<PagedResult<MeasurementSeriesGroupDto>>(
+      `${this.baseUrl}/grouped`,
+      { params }
+    );
   }
 
   getSeries(): Observable<MeasurementSeriesDto[]> {

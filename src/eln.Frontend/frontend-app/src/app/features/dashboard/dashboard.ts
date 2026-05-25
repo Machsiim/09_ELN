@@ -3,7 +3,6 @@ import {
   Component,
   DestroyRef,
   OnInit,
-  computed,
   inject,
   signal
 } from '@angular/core';
@@ -11,6 +10,7 @@ import { Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Header } from '../../components/header/header';
 import { Footer } from '../../components/footer/footer';
+import { Pagination } from '../../components/pagination/pagination';
 import {
   ActivityDto,
   ActivityService,
@@ -29,7 +29,7 @@ const TYPE_OPTIONS: { value: '' | ActivityType; label: string }[] = [
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, Header, Footer],
+  imports: [CommonModule, Header, Footer, Pagination],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss'
 })
@@ -48,15 +48,6 @@ export class Dashboard implements OnInit {
   readonly error = signal<string | null>(null);
 
   readonly typeOptions = TYPE_OPTIONS;
-
-  readonly hasPrev = computed(() => this.page() > 1);
-  readonly hasNext = computed(() => this.page() < this.totalPages());
-  readonly rangeStart = computed(() =>
-    this.total() === 0 ? 0 : (this.page() - 1) * this.pageSize() + 1
-  );
-  readonly rangeEnd = computed(() =>
-    Math.min(this.page() * this.pageSize(), this.total())
-  );
 
   ngOnInit(): void {
     this.load();
@@ -96,18 +87,15 @@ export class Dashboard implements OnInit {
     this.load();
   }
 
-  prev(): void {
-    if (this.hasPrev()) {
-      this.page.set(this.page() - 1);
-      this.load();
-    }
+  onPageChange(newPage: number): void {
+    this.page.set(newPage);
+    this.load();
   }
 
-  next(): void {
-    if (this.hasNext()) {
-      this.page.set(this.page() + 1);
-      this.load();
-    }
+  onPageSizeChange(newSize: number): void {
+    this.pageSize.set(newSize);
+    this.page.set(1);
+    this.load();
   }
 
   refresh(): void {
