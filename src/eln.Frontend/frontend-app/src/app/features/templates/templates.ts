@@ -64,46 +64,22 @@ export class Templates implements OnInit {
   private readonly notification = inject(NotificationService);
 
   readonly templates = signal<TemplateDto[]>([]);
+  readonly totalTemplates = signal(0);
   readonly templateSearchTerm = signal('');
+  readonly activeTemplateSearchTerm = signal('');
   readonly templateArchiveFilter = signal<TemplateArchiveFilter>('all');
   readonly templatePage = signal(1);
-  readonly filteredTemplates = computed(() => {
-    const query = this.normalizeSearchText(this.templateSearchTerm());
-    const archiveFilter = this.templateArchiveFilter();
-    const templates = this.templates().filter((template) => {
-      if (archiveFilter === 'active') {
-        return !template.isArchived;
-      }
-      if (archiveFilter === 'archived') {
-        return template.isArchived;
-      }
-      return true;
-    });
-
-    if (!query) {
-      return templates;
-    }
-
-    const terms = query.split(/\s+/).filter(Boolean);
-    return templates.filter((template) => {
-      const searchText = this.buildTemplateSearchText(template);
-      return terms.every((term) => searchText.includes(term));
-    });
-  });
+  readonly filteredTemplates = computed(() => this.templates());
   readonly totalTemplatePages = computed(() =>
-    Math.max(1, Math.ceil(this.filteredTemplates().length / this.templatesPerPage))
+    Math.max(1, Math.ceil(this.totalTemplates() / this.templatesPerPage))
   );
-  readonly pagedTemplates = computed(() => {
-    const page = Math.min(this.templatePage(), this.totalTemplatePages());
-    const start = (page - 1) * this.templatesPerPage;
-    return this.filteredTemplates().slice(start, start + this.templatesPerPage);
-  });
+  readonly pagedTemplates = computed(() => this.templates());
   readonly templatePageStart = computed(() => {
-    const total = this.filteredTemplates().length;
+    const total = this.totalTemplates();
     return total === 0 ? 0 : (Math.min(this.templatePage(), this.totalTemplatePages()) - 1) * this.templatesPerPage + 1;
   });
   readonly templatePageEnd = computed(() =>
-    Math.min(this.templatePageStart() + this.pagedTemplates().length - 1, this.filteredTemplates().length)
+    Math.min(this.templatePageStart() + this.pagedTemplates().length - 1, this.totalTemplates())
   );
   readonly sections = signal<BuilderSection[]>([]);
   readonly loading = signal(false);
@@ -155,20 +131,35 @@ export class Templates implements OnInit {
 
   onTemplateSearchChange(value: string): void {
     this.templateSearchTerm.set(value);
+  }
+
+  submitTemplateSearch(): void {
     this.templatePage.set(1);
+    this.activeTemplateSearchTerm.set(this.templateSearchTerm().trim());
+    this.fetchTemplates();
+  }
+
+  clearTemplateSearch(): void {
+    this.templateSearchTerm.set('');
+    this.activeTemplateSearchTerm.set('');
+    this.templatePage.set(1);
+    this.fetchTemplates();
   }
 
   onTemplateArchiveFilterChange(value: string): void {
     this.templateArchiveFilter.set(this.isTemplateArchiveFilter(value) ? value : 'all');
     this.templatePage.set(1);
+    this.fetchTemplates();
   }
 
   previousTemplatePage(): void {
     this.templatePage.update((page) => Math.max(1, page - 1));
+    this.fetchTemplates();
   }
 
   nextTemplatePage(): void {
     this.templatePage.update((page) => Math.min(this.totalTemplatePages(), page + 1));
+    this.fetchTemplates();
   }
 
   addSection(): void {
@@ -310,11 +301,15 @@ export class Templates implements OnInit {
     this.loading.set(true);
 
     this.templateService
-      .getTemplates()
+      .getTemplatesPage(this.templatePage(), this.templatesPerPage, {
+        searchText: this.activeTemplateSearchTerm(),
+        archiveFilter: this.templateArchiveFilter()
+      })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (templates) => {
-          this.templates.set(templates);
+        next: (result) => {
+          this.templates.set(result.items);
+          this.totalTemplates.set(result.total);
           this.loading.set(false);
         },
         error: () => {

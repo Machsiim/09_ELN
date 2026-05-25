@@ -55,22 +55,23 @@ public class MeasurementSeriesService
     }
 
     public async Task<PagedResultDto<MeasurementSeriesResponseDto>> GetAllSeriesAsync(
-        PaginationParams pagination, int? userId = null, string? role = null)
+        PaginationParams pagination,
+        int? userId = null,
+        string? userRole = null)
     {
-        var baseQuery = _context.MeasurementSeries
+        var query = _context.MeasurementSeries
             .Include(s => s.Creator)
             .Include(s => s.Locker)
             .Include(s => s.Measurements)
             .AsQueryable();
 
-        if (role != "Staff" && userId.HasValue)
-            baseQuery = baseQuery.Where(s => s.CreatedBy == userId.Value);
-
-        var query = baseQuery.OrderByDescending(s => s.CreatedAt);
+        if (IsStudent(userRole) && userId.HasValue)
+            query = query.Where(s => s.CreatedBy == userId.Value);
 
         var total = await query.CountAsync();
 
         var allSeries = await query
+            .OrderByDescending(s => s.CreatedAt)
             .Skip((pagination.Page - 1) * pagination.PageSize)
             .Take(pagination.PageSize)
             .ToListAsync();
@@ -98,6 +99,9 @@ public class MeasurementSeriesService
             PageSize = pagination.PageSize
         };
     }
+
+    private static bool IsStudent(string? userRole) =>
+        string.Equals(userRole, "Student", StringComparison.OrdinalIgnoreCase);
 
     public async Task DeleteSeriesAsync(int id)
     {

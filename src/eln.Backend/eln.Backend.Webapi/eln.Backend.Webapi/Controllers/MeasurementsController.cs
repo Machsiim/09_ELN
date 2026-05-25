@@ -65,11 +65,19 @@ public class MeasurementsController : ControllerBase
     /// Get a single measurement by ID
     /// </summary>
     [HttpGet("{id:int}")]
+    [Authorize]
     public async Task<ActionResult<MeasurementResponseDto>> GetMeasurement(int id)
     {
         try
         {
+            var currentUser = await GetCurrentUserAsync();
+            if (currentUser is null)
+                return Unauthorized();
+
             var result = await _measurementService.GetMeasurementByIdAsync(id);
+            if (IsStudent(currentUser.Value.UserRole) && result.CreatedBy != currentUser.Value.UserId)
+                return Forbid();
+
             return Ok(result);
         }
         catch (Exception ex)
@@ -79,25 +87,27 @@ public class MeasurementsController : ControllerBase
     }
 
     /// <summary>
-    /// Get all measurements for a specific series (RBAC: Students see only their own)
+    /// Get all measurements for a specific series with optional server-side search.
     /// </summary>
+    /// <param name="seriesId">Measurement series ID.</param>
+    /// <param name="searchText">Optional search text for measurement ID, template, creator, date, fields, sections, and values.</param>
     [HttpGet("series/{seriesId:int}")]
     [Authorize]
-    public async Task<ActionResult<List<MeasurementResponseDto>>> GetMeasurementsBySeries(int seriesId)
+    public async Task<ActionResult<List<MeasurementResponseDto>>> GetMeasurementsBySeries(
+        int seriesId,
+        [FromQuery] string? searchText)
     {
         try
         {
-            var username = User.FindFirst(ClaimTypes.Name)?.Value;
-            var userRole = User.FindFirst(ClaimTypes.Role)?.Value ?? "Student";
-
-            if (string.IsNullOrEmpty(username))
+            var currentUser = await GetCurrentUserAsync();
+            if (currentUser is null)
                 return Unauthorized();
 
-            var user = await _context.Users.SingleOrDefaultAsync(u => u.Username == username);
-            if (user == null)
-                return Unauthorized();
-
-            var results = await _measurementService.GetMeasurementsBySeriesAsync(seriesId, user.Id, userRole);
+            var results = await _measurementService.GetMeasurementsBySeriesAsync(
+                seriesId,
+                currentUser.Value.UserId,
+                currentUser.Value.UserRole,
+                searchText);
             return Ok(results);
         }
         catch (Exception ex)
@@ -122,16 +132,8 @@ public class MeasurementsController : ControllerBase
     {
         try
         {
-            // Extract username and role from JWT
-            var username = User.FindFirst(ClaimTypes.Name)?.Value;
-            var userRole = User.FindFirst(ClaimTypes.Role)?.Value ?? "Student";
-
-            if (string.IsNullOrEmpty(username))
-                return Unauthorized();
-
-            // Get user ID from database
-            var user = await _context.Users.SingleOrDefaultAsync(u => u.Username == username);
-            if (user == null)
+            var currentUser = await GetCurrentUserAsync();
+            if (currentUser is null)
                 return Unauthorized();
 
             var filter = new MeasurementFilterDto
@@ -143,7 +145,10 @@ public class MeasurementsController : ControllerBase
                 SearchText = searchText
             };
 
-            var results = await _measurementService.GetFilteredMeasurementsAsync(filter, user.Id, userRole);
+            var results = await _measurementService.GetFilteredMeasurementsAsync(
+                filter,
+                currentUser.Value.UserId,
+                currentUser.Value.UserRole);
             return Ok(results);
         }
         catch (Exception ex)
@@ -253,10 +258,19 @@ public class MeasurementsController : ControllerBase
     /// Get history of changes for a measurement
     /// </summary>
     [HttpGet("{id:int}/history")]
+    [Authorize]
     public async Task<ActionResult<List<MeasurementHistoryDto>>> GetMeasurementHistory(int id)
     {
         try
         {
+            var currentUser = await GetCurrentUserAsync();
+            if (currentUser is null)
+                return Unauthorized();
+
+            var measurement = await _measurementService.GetMeasurementByIdAsync(id);
+            if (IsStudent(currentUser.Value.UserRole) && measurement.CreatedBy != currentUser.Value.UserId)
+                return Forbid();
+
             var history = await _measurementService.GetMeasurementHistoryAsync(id);
             return Ok(history);
         }
@@ -265,4 +279,21 @@ public class MeasurementsController : ControllerBase
             return BadRequest(new { error = ex.Message });
         }
     }
+
+    private async Task<(int UserId, string UserRole)?> GetCurrentUserAsync()
+    {
+        var username = User.FindFirst(ClaimTypes.Name)?.Value;
+        if (string.IsNullOrEmpty(username))
+            return null;
+
+        var user = await _context.Users.SingleOrDefaultAsync(u => u.Username == username);
+        if (user == null)
+            return null;
+
+        var userRole = User.FindFirst(ClaimTypes.Role)?.Value ?? "Student";
+        return (user.Id, userRole);
+    }
+
+    private static bool IsStudent(string? userRole) =>
+        string.Equals(userRole, "Student", StringComparison.OrdinalIgnoreCase);
 }

@@ -102,8 +102,13 @@ export class MeasurementService {
     });
   }
 
-  getMeasurementsBySeriesId(seriesId: number): Observable<MeasurementResponseDto[]> {
-    return this.http.get<MeasurementResponseDto[]>(`${this.baseUrl}/series/${seriesId}`);
+  getMeasurementsBySeriesId(seriesId: number, searchText?: string): Observable<MeasurementResponseDto[]> {
+    let params = new HttpParams();
+    if (searchText?.trim()) {
+      params = params.set('searchText', searchText.trim());
+    }
+
+    return this.http.get<MeasurementResponseDto[]>(`${this.baseUrl}/series/${seriesId}`, { params });
   }
 
   getMeasurementById(id: number): Observable<MeasurementResponseDto> {
