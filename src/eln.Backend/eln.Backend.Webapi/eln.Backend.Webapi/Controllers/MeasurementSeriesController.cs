@@ -27,15 +27,26 @@ public class MeasurementSeriesController : ControllerBase
     }
 
     /// <summary>
-    /// Get all measurement series (paginated)
+    /// Get all measurement series (paginated, RBAC: Students see only their own)
     /// </summary>
     [HttpGet]
+    [Authorize]
     public async Task<ActionResult<PagedResultDto<MeasurementSeriesResponseDto>>> GetAllSeries(
         [FromQuery] PaginationParams pagination)
     {
         try
         {
-            var results = await _seriesService.GetAllSeriesAsync(pagination);
+            var username = User.FindFirst(ClaimTypes.Name)?.Value;
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value ?? "Student";
+
+            if (string.IsNullOrEmpty(username))
+                return Unauthorized();
+
+            var user = await _context.Users.SingleOrDefaultAsync(u => u.Username == username);
+            if (user == null)
+                return Unauthorized();
+
+            var results = await _seriesService.GetAllSeriesAsync(pagination, user.Id, userRole);
             return Ok(results);
         }
         catch (Exception ex)

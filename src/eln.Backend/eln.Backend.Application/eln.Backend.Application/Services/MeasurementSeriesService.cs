@@ -54,13 +54,19 @@ public class MeasurementSeriesService
         };
     }
 
-    public async Task<PagedResultDto<MeasurementSeriesResponseDto>> GetAllSeriesAsync(PaginationParams pagination)
+    public async Task<PagedResultDto<MeasurementSeriesResponseDto>> GetAllSeriesAsync(
+        PaginationParams pagination, int? userId = null, string? role = null)
     {
-        var query = _context.MeasurementSeries
+        var baseQuery = _context.MeasurementSeries
             .Include(s => s.Creator)
             .Include(s => s.Locker)
             .Include(s => s.Measurements)
-            .OrderByDescending(s => s.CreatedAt);
+            .AsQueryable();
+
+        if (role != "Staff" && userId.HasValue)
+            baseQuery = baseQuery.Where(s => s.CreatedBy == userId.Value);
+
+        var query = baseQuery.OrderByDescending(s => s.CreatedAt);
 
         var total = await query.CountAsync();
 
