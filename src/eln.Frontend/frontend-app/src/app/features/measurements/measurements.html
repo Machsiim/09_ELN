@@ -89,15 +89,14 @@
         <div class="status info">Messungen werden geladen ...</div>
       }
 
-      @if (!loading() && groupedMeasurements().length > 0) {
-        <div class="results-meta">
-          {{ groupedMeasurements().length }} Messserien
-          @if (hasActiveQuery()) {
-            <span>· Suchbegriff: „{{ lastSearchTerm() }}“</span>
-          }
-        </div>
+      @if (!loading() && pagedSeries().length > 0) {
+        @if (hasActiveQuery()) {
+          <div class="results-meta">
+            <span>Suchbegriff: „{{ lastSearchTerm() }}“</span>
+          </div>
+        }
         <div class="measurements-list">
-          @for (group of groupedMeasurements(); track trackById($index, group)) {
+          @for (group of pagedSeries(); track trackById($index, group)) {
             <article
               class="measurement-row"
               (click)="navigateToSeriesDetail(group.seriesId)"
@@ -129,6 +128,17 @@
             </article>
           }
         </div>
+
+        <app-pagination
+          [page]="page()"
+          [totalPages]="totalPages()"
+          [total]="total()"
+          [pageSize]="pageSize()"
+          [loading]="loading()"
+          label="Messserien"
+          (pageChange)="onPageChange($event)"
+          (pageSizeChange)="onPageSizeChange($event)">
+        </app-pagination>
       } @else {
         @if (!loading()) {
           <div class="empty-state">

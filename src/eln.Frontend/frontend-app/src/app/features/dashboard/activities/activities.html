@@ -1,0 +1,72 @@
+<div class="page-container">
+  <app-header />
+
+  <main class="main-content">
+    <header class="dashboard-header">
+      <div>
+        <h1>Dashboard</h1>
+        <p class="hint">Letzte Aktivitäten:</p>
+      </div>
+      <button type="button" class="refresh-button" (click)="refresh()" [disabled]="loading()">
+        Aktualisieren
+      </button>
+    </header>
+
+    <section class="activities-card">
+      <div class="activities-toolbar">
+        <label>
+          Typ:
+          <select
+            [value]="typeFilter()"
+            (change)="onTypeChange($any($event.target).value)">
+            @for (opt of typeOptions; track opt.value) {
+              <option [value]="opt.value">{{ opt.label }}</option>
+            }
+          </select>
+        </label>
+        @if (total() === 0 && !loading()) {
+          <span class="activities-meta">Keine Aktivitäten</span>
+        }
+      </div>
+
+      @if (loading()) {
+        <div class="status info">Lade Aktivitäten ...</div>
+      } @else if (error(); as msg) {
+        <div class="status error">{{ msg }}</div>
+      } @else if (activities().length === 0) {
+        <div class="status info">Keine Aktivitäten vorhanden.</div>
+      } @else {
+        <ul class="activity-list">
+          @for (a of activities(); track a.timestamp + '-' + a.entityId) {
+            <li
+              class="activity-item"
+              [class.clickable]="a.seriesId"
+              (click)="goToTarget(a)">
+              <span class="activity-tag activity-tag--{{ a.type }}">{{ labelFor(a.type) }}</span>
+              <div class="activity-body">
+                <div class="activity-title">{{ a.description }}</div>
+                <div class="activity-meta">
+                  <span class="activity-user">{{ a.username }}</span>
+                  <span class="activity-time">{{ a.timestamp | date:'dd.MM.yyyy HH:mm' }}</span>
+                </div>
+              </div>
+            </li>
+          }
+        </ul>
+
+        <app-pagination
+          [page]="page()"
+          [totalPages]="totalPages()"
+          [total]="total()"
+          [pageSize]="pageSize()"
+          [loading]="loading()"
+          label="Aktivitäten"
+          (pageChange)="onPageChange($event)"
+          (pageSizeChange)="onPageSizeChange($event)">
+        </app-pagination>
+      }
+    </section>
+  </main>
+
+  <app-footer />
+</div>

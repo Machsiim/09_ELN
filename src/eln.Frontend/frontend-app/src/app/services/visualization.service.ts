@@ -48,10 +48,18 @@ export class VisualizationService {
     return this.http.get<TimelineDto>(`${this.baseUrl}/series/${seriesId}/timeline`);
   }
 
-  getDistribution(seriesId: number, field: string, section?: string): Observable<DistributionDto> {
+  getDistribution(
+    seriesId: number,
+    field: string,
+    section?: string,
+    bins?: number
+  ): Observable<DistributionDto> {
     let params = new HttpParams().set('field', field);
     if (section) {
       params = params.set('section', section);
+    }
+    if (bins != null) {
+      params = params.set('bins', String(bins));
     }
     return this.http.get<DistributionDto>(
       `${this.baseUrl}/series/${seriesId}/distribution`,

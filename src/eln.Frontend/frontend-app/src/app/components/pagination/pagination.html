@@ -1,0 +1,32 @@
+<nav class="pagination" aria-label="Seitennavigation">
+  <div class="pagination-controls">
+    <button type="button" (click)="prev()" [disabled]="!hasPrev() || loading">
+      ← Zurück
+    </button>
+    <span class="pagination-info">Seite {{ currentPage() }} von {{ currentTotalPages() }}</span>
+    <button type="button" (click)="next()" [disabled]="!hasNext() || loading">
+      Weiter →
+    </button>
+  </div>
+
+  <div class="pagination-meta">
+    @if (showRange && currentTotal() > 0) {
+      <span class="pagination-range">
+        {{ rangeStart() }}–{{ rangeEnd() }} von {{ currentTotal() }} {{ label }}
+      </span>
+    }
+
+    @if (showPageSize) {
+      <label class="pagination-page-size">
+        Pro Seite:
+        <select
+          [disabled]="loading"
+          (change)="onPageSizeChange($any($event.target).value)">
+          @for (opt of pageSizeOptions; track opt) {
+            <option [value]="opt" [selected]="opt === currentPageSize()">{{ opt }}</option>
+          }
+        </select>
+      </label>
+    }
+  </div>
+</nav>

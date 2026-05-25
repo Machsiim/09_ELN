@@ -37,6 +37,13 @@ export const routes: Routes = [
     canActivate: [authGuard]
   },
   {
+    path: 'dashboard/activities',
+    loadComponent: () =>
+      import('./features/dashboard/activities/activities').then(m => m.DashboardActivities),
+    title: 'Aktivitäten - Biomedical Research Notebook',
+    canActivate: [authGuard]
+  },
+  {
     path: 'messungen',
     loadComponent: () => import('./features/measurements/measurements').then(m => m.Measurements),
     title: 'Messungen - Biomedical Research Notebook',
