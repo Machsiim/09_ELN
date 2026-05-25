@@ -2,7 +2,6 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { AuthService } from './auth.service';
 import { PagedResult } from '../models/paged-result';
 
 export interface MeasurementSeriesDto {
@@ -49,34 +48,17 @@ export interface ShareLinkResponseDto {
 })
 export class MeasurementSeriesService {
   private readonly http = inject(HttpClient);
-  private readonly authService = inject(AuthService);
   private readonly baseUrl = `${environment.apiUrl.replace(/\/$/, '')}/measurementseries`;
 
   getSeriesPage(page = 1, pageSize = 20): Observable<PagedResult<MeasurementSeriesDto>> {
     const params = new HttpParams()
       .set('page', page)
       .set('pageSize', pageSize);
-    return this.http.get<PagedResult<MeasurementSeriesDto>>(this.baseUrl, { params }).pipe(
-      map((result) => ({ ...result, items: this.filterSeriesByRole(result.items) }))
-    );
+    return this.http.get<PagedResult<MeasurementSeriesDto>>(this.baseUrl, { params });
   }
 
   getSeries(): Observable<MeasurementSeriesDto[]> {
     return this.getSeriesPage(1, 100).pipe(map((r) => r.items));
-  }
-
-  private filterSeriesByRole(series: MeasurementSeriesDto[]): MeasurementSeriesDto[] {
-    const currentUser = this.authService.currentUser();
-
-    if (!currentUser) {
-      return [];
-    }
-
-    if (this.authService.isStaff()) {
-      return series;
-    }
-
-    return series.filter(s => s.createdByUsername === currentUser.username);
   }
 
   createSeries(payload: CreateMeasurementSeriesDto): Observable<MeasurementSeriesDto> {

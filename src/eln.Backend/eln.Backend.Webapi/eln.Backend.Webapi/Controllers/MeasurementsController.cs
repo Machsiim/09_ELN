@@ -79,14 +79,25 @@ public class MeasurementsController : ControllerBase
     }
 
     /// <summary>
-    /// Get all measurements for a specific series
+    /// Get all measurements for a specific series (RBAC: Students see only their own)
     /// </summary>
     [HttpGet("series/{seriesId:int}")]
-    public async Task<ActionResult<List<MeasurementListDto>>> GetMeasurementsBySeries(int seriesId)
+    [Authorize]
+    public async Task<ActionResult<List<MeasurementResponseDto>>> GetMeasurementsBySeries(int seriesId)
     {
         try
         {
-            var results = await _measurementService.GetMeasurementsBySeriesAsync(seriesId);
+            var username = User.FindFirst(ClaimTypes.Name)?.Value;
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value ?? "Student";
+
+            if (string.IsNullOrEmpty(username))
+                return Unauthorized();
+
+            var user = await _context.Users.SingleOrDefaultAsync(u => u.Username == username);
+            if (user == null)
+                return Unauthorized();
+
+            var results = await _measurementService.GetMeasurementsBySeriesAsync(seriesId, user.Id, userRole);
             return Ok(results);
         }
         catch (Exception ex)
