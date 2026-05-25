@@ -13,23 +13,22 @@ src/
 
 **Voraussetzungen:** Docker & Docker Compose, .NET 8 SDK (optional), Node.js 20+
 
-### Backend
+### Mit Docker (empfohlen)
 
 ```bash
-cd src/eln.Backend
 cp .env.example .env
 docker-compose up -d
 ```
 
-### Frontend
+Backend: `http://localhost:5100` | Frontend: `http://localhost:4200`
+
+### Frontend ohne Docker
 
 ```bash
 cd src/eln.Frontend/frontend-app
 npm install
 npm start
 ```
-
-Frontend: `http://localhost:4200`
 
 ### Dev-Login
 
@@ -38,30 +37,20 @@ Username `admin` / Password `!ELN_Admin_09!` (nur bei `ASPNETCORE_ENVIRONMENT=De
 ## Production Deployment
 
 ```bash
-cd src/eln.Backend
-cp .env.production.example .env
+cp .env.example .env
 ```
 
 Secrets generieren und in `.env` eintragen:
 
 ```bash
-openssl rand -base64 32   # DB_PASSWORD
-openssl rand -base64 64   # JWT_SECRET (mind. 64 Bytes)
-```
-
-```bash
-# .env
-DB_USER=elnuser
-DB_PASSWORD=<generiert>
-JWT_SECRET=<generiert>
-CORS_ORIGIN=http://localhost
-ASPNETCORE_ENVIRONMENT=Production
+openssl rand -base64 32   # -> DB_PASSWORD
+openssl rand -base64 64   # -> JWT_SECRET (mind. 64 Bytes)
 ```
 
 Starten:
 
 ```bash
-chmod +x deploy.sh && ./deploy.sh
+./deploy.sh
 # oder manuell:
 docker-compose -f docker-compose.production.yml up -d --build
 ```
@@ -99,6 +88,6 @@ docker-compose -f docker-compose.production.yml up -d
 
 ## Sicherheit
 
-- `.env` / `.env.production` niemals committen
+- `.env` niemals committen
 - HTTPS via Reverse Proxy (nginx/traefik) in Production
 - DB-Backup: `docker exec eln-postgres pg_dump -U elnuser elndb > backup.sql`

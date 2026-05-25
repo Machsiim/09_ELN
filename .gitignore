@@ -45,6 +45,7 @@ src/lookappweb.Webapi/obj/
 .env
 .env.local
 .env.production
+!.env.example
 src/eln.Backend/.env
 src/eln.Backend/.env.*
 !src/eln.Backend/.env.example
