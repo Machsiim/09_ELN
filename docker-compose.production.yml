@@ -37,6 +37,8 @@ services:
       - Cors__AllowedOrigins__0=${CORS_ORIGIN}
       - ELN_UPLOAD_PATH=/app/uploads
       - PYTHON_SERVICE_URL=http://python-service:8001
+      - ELN_ADMIN_USERNAME=${ELN_ADMIN_USERNAME:-admin}
+      - ELN_ADMIN_PASSWORD=${ELN_ADMIN_PASSWORD:-}
     volumes:
       - uploads_data:/app/uploads
     depends_on:
@@ -64,8 +66,6 @@ services:
       dockerfile: Dockerfile
     container_name: eln-python-service
     restart: always
-    ports:
-      - "8001:8001"
     networks:
       - eln-network
 

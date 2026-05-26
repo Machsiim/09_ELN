@@ -30,9 +30,9 @@ npm install
 npm start
 ```
 
-### Dev-Login
+### Admin-Login
 
-Username `admin` / Password `!ELN_Admin_09!` (nur bei `ASPNETCORE_ENVIRONMENT=Development`)
+Username und Passwort werden über die Env-Vars `ELN_ADMIN_USERNAME` und `ELN_ADMIN_PASSWORD` in der `.env` gesetzt.
 
 ## Production Deployment
 
@@ -60,7 +60,9 @@ Health Check: `curl http://localhost/health`
 | Service | URL |
 |---------|-----|
 | Frontend | `http://localhost` |
-| Backend API | `http://localhost:5100` |
+| Backend API | `http://localhost:5100` (intern via `/api/` Proxy durch Nginx) |
+
+Nur das Frontend (Port 80) ist nach außen erreichbar. Backend, Python-Service und Postgres kommunizieren intern über das Docker-Netzwerk. Der Backend-Port-Forward (5100) bleibt nur für Debugging-Zwecke offen.
 
 ## Environment Variables
 
@@ -70,16 +72,15 @@ Health Check: `curl http://localhost/health`
 | `DB_PASSWORD` | PostgreSQL-Passwort (mind. 20 Zeichen) |
 | `JWT_SECRET` | Token-Signierung (mind. 64 Bytes, `openssl rand -base64 64`) |
 | `CORS_ORIGIN` | Frontend-URL, kein trailing slash |
-| `ASPNETCORE_ENVIRONMENT` | `Development` (Swagger, Admin-Login) oder `Production` |
+| `ASPNETCORE_ENVIRONMENT` | `Development` (Swagger, Seed-Daten) oder `Production` |
+| `ELN_ADMIN_USERNAME` | Admin-Benutzername (default: `admin`) |
+| `ELN_ADMIN_PASSWORD` | Admin-Passwort |
 
 ## Troubleshooting
 
 ```bash
 # Logs
 docker-compose -f docker-compose.production.yml logs -f backend
-
-# DB Migration (nur bei Updates bestehender Systeme)
-docker exec eln-postgres psql -U elnuser -d elndb -f /scripts/migrate.sql
 
 # DB komplett zurücksetzen (loescht alle Daten!)
 docker-compose -f docker-compose.production.yml down -v
