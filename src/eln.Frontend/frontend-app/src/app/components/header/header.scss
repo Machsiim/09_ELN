@@ -109,7 +109,8 @@
   position: relative;
 }
 
-.tools-trigger {
+.tools-trigger,
+.user-menu-trigger {
   width: 40px;
   height: 40px;
   justify-content: center;
@@ -119,7 +120,8 @@
   }
 }
 
-.tools-dropdown {
+.tools-dropdown,
+.user-dropdown {
   position: absolute;
   top: calc(100% + #{$spacing-sm});
   right: 0;
@@ -132,7 +134,8 @@
   z-index: $z-sticky + 2;
 }
 
-.tools-menu-item {
+.tools-menu-item,
+.user-menu-item {
   width: 100%;
   display: flex;
   align-items: center;
@@ -155,6 +158,10 @@
   &:hover {
     background: $color-bg-subtle;
   }
+}
+
+.user-menu {
+  position: relative;
 }
 
 .user-profile {

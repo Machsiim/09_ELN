@@ -342,6 +342,7 @@ export class MeasurementSeriesDetail implements OnInit {
     this.shareIsPublic.set(true);
   }
 
+
   generateShareLink(): void {
     const seriesId = this.seriesId();
     if (!seriesId) {
@@ -430,6 +431,7 @@ export class MeasurementSeriesDetail implements OnInit {
     }
     return `${window.location.origin}${response.shareUrl.startsWith('/') ? '' : '/'}${response.shareUrl}`;
   }
+
 
   onSearchChange(event: Event): void {
     const input = event.target as HTMLInputElement;

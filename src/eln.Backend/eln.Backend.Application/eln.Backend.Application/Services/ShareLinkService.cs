@@ -110,7 +110,7 @@ public class ShareLinkService
         // Get creator username
         var creator = await _context.Users.FindAsync(userId);
 
-        return MapToResponseDto(shareLink, creator?.Username ?? "Unknown");
+        return MapToResponseDto(shareLink, creator?.Username ?? "Unknown", series.Name);
     }
 
     /// <summary>
@@ -129,7 +129,7 @@ public class ShareLinkService
                 .ThenInclude(s => s!.Creator)
             .FirstOrDefaultAsync(ssl => ssl.Token == token);
 
-        EnsureShareAccess(shareLink, requestingUserEmail);
+        await EnsureShareAccessAsync(shareLink, requestingUserEmail);
 
         var series = shareLink.Series!;
 
@@ -172,7 +172,7 @@ public class ShareLinkService
         var shareLink = await _context.SeriesShareLinks
             .FirstOrDefaultAsync(ssl => ssl.Token == token);
 
-        EnsureShareAccess(shareLink, requestingUserEmail);
+        await EnsureShareAccessAsync(shareLink, requestingUserEmail);
         return shareLink!.SeriesId;
     }
 
@@ -183,11 +183,67 @@ public class ShareLinkService
     {
         var shareLinks = await _context.SeriesShareLinks
             .Include(ssl => ssl.Creator)
+            .Include(ssl => ssl.Series)
             .Where(ssl => ssl.SeriesId == seriesId)
             .OrderByDescending(ssl => ssl.CreatedAt)
             .ToListAsync();
 
-        return shareLinks.Select(ssl => MapToResponseDto(ssl, ssl.Creator?.Username ?? "Unknown")).ToList();
+        return shareLinks
+            .Select(ssl => MapToResponseDto(
+                ssl,
+                ssl.Creator?.Username ?? "Unknown",
+                ssl.Series?.Name ?? "Unknown"))
+            .ToList();
+    }
+
+    /// <summary>
+    /// Get all share links created by a user across all measurement series.
+    /// </summary>
+    public async Task<List<ShareLinkResponseDto>> GetShareLinksByCreatorAsync(
+        int userId,
+        string? searchText = null,
+        string? status = null,
+        string? visibility = null)
+    {
+        var now = DateTime.UtcNow;
+        var query = _context.SeriesShareLinks
+            .Include(ssl => ssl.Creator)
+            .Include(ssl => ssl.Series)
+            .Where(ssl => ssl.CreatedBy == userId);
+
+        if (!string.IsNullOrWhiteSpace(searchText))
+        {
+            var normalizedSearch = searchText.Trim().ToLower();
+            query = query.Where(ssl =>
+                ssl.Token.ToLower().Contains(normalizedSearch) ||
+                (ssl.Series != null && ssl.Series.Name.ToLower().Contains(normalizedSearch)));
+        }
+
+        query = status?.ToLower() switch
+        {
+            "active" => query.Where(ssl => ssl.IsActive && ssl.ExpiresAt > now),
+            "inactive" => query.Where(ssl => !ssl.IsActive),
+            "expired" => query.Where(ssl => ssl.IsActive && ssl.ExpiresAt <= now),
+            _ => query
+        };
+
+        query = visibility?.ToLower() switch
+        {
+            "public" => query.Where(ssl => ssl.IsPublic),
+            "private" => query.Where(ssl => !ssl.IsPublic),
+            _ => query
+        };
+
+        var shareLinks = await query
+            .OrderByDescending(ssl => ssl.CreatedAt)
+            .ToListAsync();
+
+        return shareLinks
+            .Select(ssl => MapToResponseDto(
+                ssl,
+                ssl.Creator?.Username ?? "Unknown",
+                ssl.Series?.Name ?? "Unknown"))
+            .ToList();
     }
 
     /// <summary>
@@ -230,7 +286,7 @@ public class ShareLinkService
 
     // ── Private helpers ──────────────────────────────────────────────────────
 
-    private static void EnsureShareAccess(
+    private async Task EnsureShareAccessAsync(
         SeriesShareLink? shareLink,
         string? requestingUserEmail)
     {
@@ -247,17 +303,33 @@ public class ShareLinkService
             ? new List<string>()
             : GetAccessIdentifiers(requestingUserEmail);
 
-        if (accessIdentifiers.Count == 0 ||
-            !accessIdentifiers.Any(identifier => shareLink.AllowedUserEmails.Contains(identifier)))
+        if (accessIdentifiers.Count == 0)
+            throw new ForbiddenException("Sie sind nicht berechtigt, diese geteilte Messserie zu sehen.");
+
+        var creatorUsername = await _context.Users
+            .Where(user => user.Id == shareLink.CreatedBy)
+            .Select(user => user.Username.ToLower())
+            .FirstOrDefaultAsync();
+
+        var isCreator = creatorUsername != null && accessIdentifiers.Contains(creatorUsername);
+        var isAllowedUser = accessIdentifiers.Any(
+            identifier => shareLink.AllowedUserEmails.Contains(identifier));
+
+        if (!isCreator && !isAllowedUser)
         {
             throw new ForbiddenException("Sie sind nicht berechtigt, diese geteilte Messserie zu sehen.");
         }
     }
 
-    private static ShareLinkResponseDto MapToResponseDto(SeriesShareLink ssl, string createdByUsername) =>
+    private static ShareLinkResponseDto MapToResponseDto(
+        SeriesShareLink ssl,
+        string createdByUsername,
+        string seriesName) =>
         new ShareLinkResponseDto
         {
             Id = ssl.Id,
+            SeriesId = ssl.SeriesId,
+            SeriesName = seriesName,
             Token = ssl.Token,
             ShareUrl = $"/shared/{ssl.Token}",
             IsPublic = ssl.IsPublic,

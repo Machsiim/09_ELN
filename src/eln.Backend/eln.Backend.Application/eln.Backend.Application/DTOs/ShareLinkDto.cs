@@ -28,6 +28,8 @@ public class CreateShareLinkDto
 public class ShareLinkResponseDto
 {
     public int Id { get; set; }
+    public int SeriesId { get; set; }
+    public string SeriesName { get; set; } = string.Empty;
     public string Token { get; set; } = string.Empty;
     public string ShareUrl { get; set; } = string.Empty;
     public bool IsPublic { get; set; }

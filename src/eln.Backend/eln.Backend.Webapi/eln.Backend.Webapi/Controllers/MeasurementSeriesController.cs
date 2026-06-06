@@ -290,6 +290,36 @@ public class MeasurementSeriesController : ControllerBase
     }
 
     /// <summary>
+    /// Get all share links created by the current user.
+    /// GET /api/measurementseries/shares/mine
+    /// </summary>
+    [HttpGet("shares/mine")]
+    [Authorize]
+    public async Task<ActionResult<List<ShareLinkResponseDto>>> GetMyShareLinks(
+        [FromQuery] string? searchText = null,
+        [FromQuery] string? status = null,
+        [FromQuery] string? visibility = null)
+    {
+        try
+        {
+            var currentUser = await GetCurrentUserAsync();
+            if (currentUser is null)
+                return Unauthorized();
+
+            var result = await _shareLinkService.GetShareLinksByCreatorAsync(
+                currentUser.Value.UserId,
+                searchText,
+                status,
+                visibility);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
     /// Get all share links for a series
     /// GET /api/measurementseries/{id}/shares
     /// </summary>

@@ -1,0 +1,204 @@
+<div class="page-container">
+  <app-header />
+
+  <main class="main-content">
+    <section class="shared-links-card">
+      <header class="shared-links-header">
+        <p class="subtitle">Freigaben</p>
+        <h1>Geteilte Links</h1>
+        <p class="hint">Alle von dir ausgestellten Links zu Messserien.</p>
+      </header>
+
+      <div class="filter-toolbar">
+        <div class="search-field">
+          <label for="sharedLinkSearch">Stichwortsuche</label>
+          <input
+            id="sharedLinkSearch"
+            type="search"
+            placeholder="Messserie oder Link suchen"
+            [value]="searchText()"
+            (input)="updateSearchText($any($event.target).value)"
+            (keydown.enter)="search()">
+        </div>
+
+        <div class="filter-field">
+          <label for="sharedLinkStatus">Status</label>
+          <select
+            id="sharedLinkStatus"
+            [value]="statusFilter()"
+            (change)="updateStatus($any($event.target).value)">
+            <option value="">Alle</option>
+            <option value="active">Aktiv</option>
+            <option value="inactive">Deaktiviert</option>
+            <option value="expired">Abgelaufen</option>
+          </select>
+        </div>
+
+        <div class="filter-field">
+          <label for="sharedLinkVisibility">Sichtbarkeit</label>
+          <select
+            id="sharedLinkVisibility"
+            [value]="visibilityFilter()"
+            (change)="updateVisibility($any($event.target).value)">
+            <option value="">Alle</option>
+            <option value="public">Öffentlich</option>
+            <option value="private">Privat</option>
+          </select>
+        </div>
+
+        <button
+          type="button"
+          class="search-button"
+          (click)="search()"
+          [disabled]="loading()">
+          Suchen
+        </button>
+      </div>
+
+      @if (loading()) {
+        <div class="status info">Geteilte Links werden geladen ...</div>
+      }
+
+      @if (error(); as message) {
+        <div class="status error">{{ message }}</div>
+      }
+
+      @if (!loading() && !error()) {
+        @if (links().length === 0) {
+          <div class="empty-state">
+            <p class="empty-title">
+              {{ filtersApplied() ? 'Keine Treffer' : 'Keine geteilten Links' }}
+            </p>
+            <p class="empty-text">
+              {{ filtersApplied()
+                ? 'Für die gewählten Suchkriterien wurden keine Links gefunden.'
+                : 'Du hast bisher keine Messserie über einen Link geteilt.' }}
+            </p>
+          </div>
+        } @else {
+          <p class="result-count">{{ links().length }} Treffer</p>
+          <div class="links-table-wrapper">
+            <table class="links-table">
+              <thead>
+                <tr>
+                  <th>Messserie</th>
+                  <th>Sichtbarkeit</th>
+                  <th>Status</th>
+                  <th>Gültig bis</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (link of links(); track link.id) {
+                  <tr
+                    class="link-row"
+                    tabindex="0"
+                    (click)="openDetails(link)"
+                    (keydown.enter)="openDetails(link)"
+                    (keydown.space)="openDetails(link); $event.preventDefault()">
+                    <td>
+                      <strong>{{ link.seriesName }}</strong>
+                      <span class="series-id">#{{ link.seriesId }}</span>
+                    </td>
+                    <td>
+                      <span class="visibility" [class.private]="!link.isPublic">
+                        {{ link.isPublic ? 'Öffentlich' : 'Privat' }}
+                      </span>
+                    </td>
+                    <td>
+                      @switch (getStatus(link)) {
+                        @case ('active') {
+                          <span class="link-status active">Aktiv</span>
+                        }
+                        @case ('expired') {
+                          <span class="link-status expired">Abgelaufen</span>
+                        }
+                        @default {
+                          <span class="link-status inactive">Deaktiviert</span>
+                        }
+                      }
+                    </td>
+                    <td>{{ link.expiresAt | date: 'dd.MM.yyyy HH:mm' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      }
+    </section>
+  </main>
+
+  <app-footer />
+</div>
+
+@if (selectedLink(); as link) {
+  <div class="modal-backdrop" (click)="closeDetails()">
+    <section
+      class="link-details-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="linkDetailsTitle"
+      (click)="$event.stopPropagation()">
+      <header class="dialog-header">
+        <div>
+          <p class="dialog-eyebrow">Geteilter Link</p>
+          <h2 id="linkDetailsTitle">{{ link.seriesName }}</h2>
+        </div>
+        <button type="button" class="close-button" (click)="closeDetails()" aria-label="Schließen">
+          &times;
+        </button>
+      </header>
+
+      <dl class="details-list">
+        <div>
+          <dt>Messserie</dt>
+          <dd>{{ link.seriesName }} (#{{ link.seriesId }})</dd>
+        </div>
+        <div>
+          <dt>Sichtbarkeit</dt>
+          <dd>{{ link.isPublic ? 'Öffentlich' : 'Privat' }}</dd>
+        </div>
+        <div>
+          <dt>Status</dt>
+          <dd>
+            @switch (getStatus(link)) {
+              @case ('active') { Aktiv }
+              @case ('expired') { Abgelaufen }
+              @default { Deaktiviert }
+            }
+          </dd>
+        </div>
+        <div>
+          <dt>Erstellt am</dt>
+          <dd>{{ link.createdAt | date: 'dd.MM.yyyy HH:mm' }}</dd>
+        </div>
+        <div>
+          <dt>Gültig bis</dt>
+          <dd>{{ link.expiresAt | date: 'dd.MM.yyyy HH:mm' }}</dd>
+        </div>
+        @if (!link.isPublic) {
+          <div class="details-wide">
+            <dt>Freigegeben für</dt>
+            <dd>
+              {{ link.allowedUserEmails.length > 0
+                ? link.allowedUserEmails.join(', ')
+                : 'Keine Personen eingetragen' }}
+            </dd>
+          </div>
+        }
+        <div class="details-wide">
+          <dt>Link-URL</dt>
+          <dd>
+            <a [href]="getLinkUrl(link)" target="_blank" rel="noopener noreferrer">
+              {{ getLinkUrl(link) }}
+            </a>
+          </dd>
+        </div>
+      </dl>
+
+      <footer class="dialog-actions">
+        <button type="button" class="dialog-button" (click)="closeDetails()">Schließen</button>
+      </footer>
+    </section>
+  </div>
+}

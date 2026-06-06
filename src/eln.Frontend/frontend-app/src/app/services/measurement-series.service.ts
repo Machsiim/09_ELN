@@ -52,6 +52,8 @@ export interface CreateShareLinkPayload {
 
 export interface ShareLinkResponseDto {
   id: number;
+  seriesId: number;
+  seriesName: string;
   token: string;
   shareUrl: string;
   isPublic: boolean;
@@ -61,6 +63,12 @@ export interface ShareLinkResponseDto {
   isActive: boolean;
   createdBy: number;
   createdByUsername: string;
+}
+
+export interface MyShareLinksParams {
+  searchText?: string;
+  status?: 'active' | 'inactive' | 'expired';
+  visibility?: 'public' | 'private';
 }
 
 @Injectable({
@@ -117,6 +125,14 @@ export class MeasurementSeriesService {
 
   getShareLinks(seriesId: number): Observable<ShareLinkResponseDto[]> {
     return this.http.get<ShareLinkResponseDto[]>(`${this.baseUrl}/${seriesId}/shares`);
+  }
+
+  getMyShareLinks(p: MyShareLinksParams = {}): Observable<ShareLinkResponseDto[]> {
+    let params = new HttpParams();
+    if (p.searchText) params = params.set('searchText', p.searchText);
+    if (p.status) params = params.set('status', p.status);
+    if (p.visibility) params = params.set('visibility', p.visibility);
+    return this.http.get<ShareLinkResponseDto[]>(`${this.baseUrl}/shares/mine`, { params });
   }
 
   deleteShareLink(seriesId: number, shareId: number): Observable<void> {

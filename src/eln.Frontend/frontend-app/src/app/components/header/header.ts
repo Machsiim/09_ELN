@@ -12,6 +12,7 @@ export class Header {
   private readonly router = inject(Router);
   readonly authService = inject(AuthService);
   readonly toolsMenuOpen = signal(false);
+  readonly userMenuOpen = signal(false);
   readonly publicMode = input(false);
 
   onCreateMeasurement(): void {
@@ -38,6 +39,7 @@ export class Header {
   }
 
   toggleToolsMenu(): void {
+    this.userMenuOpen.set(false);
     this.toolsMenuOpen.update((open) => !open);
   }
 
@@ -45,8 +47,14 @@ export class Header {
     this.toolsMenuOpen.set(false);
   }
 
-  onProfileClick(): void {
-    this.router.navigate(['/login']);
+  toggleUserMenu(): void {
+    this.toolsMenuOpen.set(false);
+    this.userMenuOpen.update((open) => !open);
+  }
+
+  onSharedLinks(): void {
+    this.userMenuOpen.set(false);
+    this.router.navigate(['/geteilte-links']);
   }
 
   onLogout(): void {

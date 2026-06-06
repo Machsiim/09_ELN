@@ -32,6 +32,14 @@ public class SwaggerDefaultValuesFilter : IOperationFilter
         ["GetMeasurementsBySeries"] = new() { ["seriesId"] = "1", ["searchText"] = "temperatur" },
         ["SearchMeasurements"] = new() { ["seriesId"] = "1", ["searchText"] = "Labor" },
 
+        // MeasurementSeriesController
+        ["GetMyShareLinks"] = new()
+        {
+            ["searchText"] = "Temperatur",
+            ["status"] = "active",
+            ["visibility"] = "public"
+        },
+
         // TemplatesController
         ["GetTemplates"] = new() { ["page"] = "1", ["pageSize"] = "5", ["searchText"] = "Temperatur", ["archiveFilter"] = "active" },
     };
@@ -40,6 +48,8 @@ public class SwaggerDefaultValuesFilter : IOperationFilter
     {
         ["searchText"] = "Optionaler Suchbegriff. Wird serverseitig angewendet.",
         ["archiveFilter"] = "Optionaler Template-Statusfilter: all, active oder archived.",
+        ["status"] = "Optionaler Statusfilter: active, inactive oder expired.",
+        ["visibility"] = "Optionaler Sichtbarkeitsfilter: public oder private.",
         ["page"] = "Seitennummer fuer paginierte Ergebnisse.",
         ["pageSize"] = "Anzahl der Ergebnisse pro Seite.",
         ["seriesId"] = "ID der Messserie."
