@@ -129,28 +129,7 @@ public class ShareLinkService
                 .ThenInclude(s => s!.Creator)
             .FirstOrDefaultAsync(ssl => ssl.Token == token);
 
-        if (shareLink == null)
-            throw new NotFoundException("Share link not found");
-
-        if (!shareLink.IsActive)
-            throw new ValidationException("Share link has been disabled");
-
-        if (shareLink.ExpiresAt < DateTime.UtcNow)
-            throw new ValidationException("Share link has expired");
-
-        // Access control for non-public links
-        if (!shareLink.IsPublic)
-        {
-            var accessIdentifiers = string.IsNullOrWhiteSpace(requestingUserEmail)
-                ? new List<string>()
-                : GetAccessIdentifiers(requestingUserEmail);
-
-            if (accessIdentifiers.Count == 0 ||
-                !accessIdentifiers.Any(identifier => shareLink.AllowedUserEmails.Contains(identifier)))
-            {
-                throw new ForbiddenException("Sie sind nicht berechtigt, diese geteile Messserie zu sehen.");
-            }
-        }
+        EnsureShareAccess(shareLink, requestingUserEmail);
 
         var series = shareLink.Series!;
 
@@ -181,6 +160,20 @@ public class ShareLinkService
             ExpiresAt = shareLink.ExpiresAt,
             Measurements = measurements
         };
+    }
+
+    /// <summary>
+    /// Resolve the series ID after validating a public or private share link.
+    /// </summary>
+    public async Task<int> GetAuthorizedSeriesIdAsync(
+        string token,
+        string? requestingUserEmail = null)
+    {
+        var shareLink = await _context.SeriesShareLinks
+            .FirstOrDefaultAsync(ssl => ssl.Token == token);
+
+        EnsureShareAccess(shareLink, requestingUserEmail);
+        return shareLink!.SeriesId;
     }
 
     /// <summary>
@@ -236,6 +229,30 @@ public class ShareLinkService
     }
 
     // ── Private helpers ──────────────────────────────────────────────────────
+
+    private static void EnsureShareAccess(
+        SeriesShareLink? shareLink,
+        string? requestingUserEmail)
+    {
+        if (shareLink == null)
+            throw new NotFoundException("Share link not found");
+        if (!shareLink.IsActive)
+            throw new ValidationException("Share link has been disabled");
+        if (shareLink.ExpiresAt < DateTime.UtcNow)
+            throw new ValidationException("Share link has expired");
+        if (shareLink.IsPublic)
+            return;
+
+        var accessIdentifiers = string.IsNullOrWhiteSpace(requestingUserEmail)
+            ? new List<string>()
+            : GetAccessIdentifiers(requestingUserEmail);
+
+        if (accessIdentifiers.Count == 0 ||
+            !accessIdentifiers.Any(identifier => shareLink.AllowedUserEmails.Contains(identifier)))
+        {
+            throw new ForbiddenException("Sie sind nicht berechtigt, diese geteilte Messserie zu sehen.");
+        }
+    }
 
     private static ShareLinkResponseDto MapToResponseDto(SeriesShareLink ssl, string createdByUsername) =>
         new ShareLinkResponseDto

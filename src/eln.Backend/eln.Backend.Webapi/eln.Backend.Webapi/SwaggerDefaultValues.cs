@@ -18,6 +18,14 @@ public class SwaggerDefaultValuesFilter : IOperationFilter
         // VisualizationController
         ["GetTimeline"] = new() { ["seriesId"] = "1" },
         ["GetDistribution"] = new() { ["seriesId"] = "1", ["field"] = "temperatur" },
+        ["GetSharedFields"] = new() { ["token"] = "share-token" },
+        ["GetSharedTimeline"] = new() { ["token"] = "share-token" },
+        ["GetSharedDistribution"] = new()
+        {
+            ["token"] = "share-token",
+            ["field"] = "temperatur",
+            ["bins"] = "10"
+        },
         ["GetFields"] = new() { ["seriesId"] = "1" },
 
         // MeasurementsController

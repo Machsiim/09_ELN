@@ -17,7 +17,7 @@ import {
   VisualizableFieldDto,
   VisualizationService
 } from '../../services/visualization.service';
-import { MeasurementService } from '../../services/measurement.service';
+import { SharedSeriesService } from '../../services/shared-series.service';
 
 Chart.register(...registerables);
 
@@ -46,10 +46,11 @@ const ALL_TEMPLATES = '__ALL__';
   styleUrl: './series-charts.scss'
 })
 export class SeriesCharts {
-  readonly seriesId = input.required<number>();
+  readonly seriesId = input<number | null>(null);
+  readonly sharedToken = input<string | null>(null);
 
   private readonly visualization = inject(VisualizationService);
-  private readonly measurementService = inject(MeasurementService);
+  private readonly sharedSeriesService = inject(SharedSeriesService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly mode = signal<ChartMode>('timeline');
@@ -60,8 +61,6 @@ export class SeriesCharts {
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
 
-  // Map: measurement-time-ms -> templateName (used for timeline filtering by template)
-  readonly templateByTime = signal<Map<number, string>>(new Map());
   readonly selectedTemplate = signal<string>(ALL_TEMPLATES);
 
   /** Templates that show up in the visualization fields (drives both timeline + distribution dropdowns). */
@@ -88,16 +87,31 @@ export class SeriesCharts {
 
   constructor() {
     effect(() => {
+      const token = this.sharedToken();
+      if (token) {
+        this.loadSharedFields(token);
+        return;
+      }
+
       const id = this.seriesId();
       if (id != null) {
         this.loadFields(id);
-        this.loadMeasurementMeta(id);
       }
     });
 
     effect(() => {
+      const token = this.sharedToken();
       const id = this.seriesId();
       const m = this.mode();
+      if (token) {
+        if (m === 'distribution') {
+          const key = this.selectedFieldKey();
+          if (key) this.loadSharedDistributionForKey(token, key);
+        } else {
+          this.loadSharedTimeline(token);
+        }
+        return;
+      }
       if (id == null) return;
       if (m === 'timeline') {
         this.loadTimeline(id);
@@ -121,6 +135,11 @@ export class SeriesCharts {
   selectField(key: string): void {
     this.selectedFieldKey.set(key);
     if (this.mode() === 'distribution') {
+      const token = this.sharedToken();
+      if (token) {
+        this.loadSharedDistributionForKey(token, key);
+        return;
+      }
       const id = this.seriesId();
       if (id != null) {
         this.loadDistributionForKey(id, key);
@@ -161,8 +180,13 @@ export class SeriesCharts {
     const clamped = Math.min(this.maxBins, Math.max(this.minBins, Math.round(raw)));
     if (clamped === this.binCount()) return;
     this.binCount.set(clamped);
-    const id = this.seriesId();
+    const token = this.sharedToken();
     const key = this.selectedFieldKey();
+    if (this.mode() === 'distribution' && token && key) {
+      this.loadSharedDistributionForKey(token, key);
+      return;
+    }
+    const id = this.seriesId();
     if (this.mode() === 'distribution' && id != null && key) {
       this.loadDistributionForKey(id, key);
     }
@@ -179,6 +203,11 @@ export class SeriesCharts {
     if (!current || !matching.some((f) => this.fieldKey(f) === current)) {
       const newKey = this.fieldKey(matching[0]);
       this.selectedFieldKey.set(newKey);
+      const token = this.sharedToken();
+      if (this.mode() === 'distribution' && token) {
+        this.loadSharedDistributionForKey(token, newKey);
+        return;
+      }
       const id = this.seriesId();
       if (this.mode() === 'distribution' && id != null) {
         this.loadDistributionForKey(id, newKey);
@@ -212,24 +241,63 @@ export class SeriesCharts {
       });
   }
 
-  private loadMeasurementMeta(seriesId: number): void {
-    // Used only to know which measurement (by createdAt) belongs to which template
-    // for timeline filtering. Distribution filtering uses VisualizableFieldDto.templateName directly.
-    this.measurementService.getMeasurementsBySeriesId(seriesId)
+  private loadSharedFields(token: string): void {
+    this.sharedSeriesService.getVisualizationFields(token)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (items) => {
-          const timeMap = new Map<number, string>();
-          for (const m of items) {
-            const ts = new Date(m.createdAt).getTime();
-            if (!Number.isNaN(ts) && m.templateName) {
-              timeMap.set(ts, m.templateName);
+        next: (fields) => {
+          this.fields.set(fields ?? []);
+          if (!this.selectedFieldKey() && fields.length > 0) {
+            this.selectedFieldKey.set(this.fieldKey(fields[0]));
+          }
+          if (!this.templateDefaultApplied) {
+            const templates = this.availableTemplates();
+            if (templates.length > 0) {
+              this.selectedTemplate.set(templates[0]);
+              this.templateDefaultApplied = true;
             }
           }
-          this.templateByTime.set(timeMap);
         },
-        error: () => {
-          this.templateByTime.set(new Map());
+        error: () => this.fields.set([])
+      });
+  }
+
+  private loadSharedTimeline(token: string): void {
+    this.loading.set(true);
+    this.error.set(null);
+    this.sharedSeriesService.getVisualizationTimeline(token)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (data) => {
+          this.timeline.set(data);
+          this.loading.set(false);
+        },
+        error: (err) => {
+          this.timeline.set(null);
+          this.loading.set(false);
+          this.error.set(err?.error?.error ?? 'Zeitverlauf konnte nicht geladen werden.');
+        }
+      });
+  }
+
+  private loadSharedDistributionForKey(token: string, key: string): void {
+    const field = this.fields().find((candidate) => this.fieldKey(candidate) === key);
+    if (!field) return;
+
+    this.loading.set(true);
+    this.error.set(null);
+    this.sharedSeriesService
+      .getVisualizationDistribution(token, field.key, field.section, this.binCount())
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (data) => {
+          this.distribution.set(data);
+          this.loading.set(false);
+        },
+        error: (err) => {
+          this.distribution.set(null);
+          this.loading.set(false);
+          this.error.set(err?.error?.error ?? 'Verteilung konnte nicht geladen werden.');
         }
       });
   }
@@ -341,16 +409,17 @@ export class SeriesCharts {
     }
 
     const tplFilter = this.selectedTemplate();
-    const tplMap = this.templateByTime();
-    const useFilter = tplFilter !== ALL_TEMPLATES && tplMap.size > 0;
+    const useFilter =
+      tplFilter !== ALL_TEMPLATES &&
+      Array.isArray(data.templates) &&
+      data.templates.length === data.labels.length;
 
     // Indices der Messungen, die zum gewählten Template gehören (matched per epoch ms)
     const allowedIdx = useFilter
       ? new Set(
           data.labels
             .map((iso, idx) => {
-              const ts = new Date(iso).getTime();
-              return tplMap.get(ts) === tplFilter ? idx : -1;
+              return data.templates[idx] === tplFilter ? idx : -1;
             })
             .filter((i) => i >= 0)
         )

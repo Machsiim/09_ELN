@@ -80,6 +80,11 @@ export const routes: Routes = [
     canActivate: [authGuard]
   },
   {
+    path: 'shared/:token/measurement/:measurementId',
+    loadComponent: () => import('./features/shared-measurement-detail/shared-measurement-detail').then(m => m.SharedMeasurementDetail),
+    title: 'Geteilte Messung - Biomedical Research Notebook'
+  },
+  {
     path: 'shared/:token',
     loadComponent: () => import('./features/shared-series/shared-series').then(m => m.SharedSeries),
     title: 'Geteilte Messserie - Biomedical Research Notebook'

@@ -1,10 +1,18 @@
 @use '../../styles/variables' as *;
 
+.main-content {
+  flex: 1;
+  width: 100%;
+  max-width: $max-width-wide;
+  margin: 0 auto;
+  padding: $spacing-xl $spacing-md;
+}
+
 .shared-series-card {
   background: $color-bg-white;
-  border-radius: 20px;
-  padding: 32px;
-  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+  border-radius: $radius-md;
+  padding: $spacing-xl;
+  box-shadow: $shadow-md;
 }
 
 .shared-series-header {

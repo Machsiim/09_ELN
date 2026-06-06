@@ -208,91 +208,14 @@
       }
 
       @if (filteredMeasurements().length > 0) {
-      @for (group of getTemplateGroups(); track group.templateId) {
-      <div class="template-group">
-        @if (hasMultipleTemplates()) {
-        <header class="template-group-header tpl-color-{{ group.templateIndex }}">
-          <h2 class="template-group-title">{{ group.templateName }}</h2>
-          <span class="template-group-badge">
-            {{ group.measurements.length }} Messung{{ group.measurements.length !== 1 ? 'en' : '' }}
-          </span>
-        </header>
-        }
-        <div class="table-container">
-          <table class="measurements-table">
-            <thead>
-              <!-- Section groups -->
-              <tr class="header-sections">
-                <th class="select-column" [attr.rowspan]="3"></th>
-                @if (isBaseColumnVisible('Mess-ID')) {
-                <th [attr.rowspan]="3" class="base-header">Mess-ID</th>
-                }
-                @if (isBaseColumnVisible('Erstellt von')) {
-                <th [attr.rowspan]="3" class="base-header">Erstellt von</th>
-                }
-                @if (isBaseColumnVisible('Erstellt am')) {
-                <th [attr.rowspan]="3" class="base-header">Erstellt am</th>
-                }
-                @for (section of group.sections; track section.sectionTitle) {
-                <th [attr.colspan]="section.totalFields" class="header-section color-{{ section.colorIndex }}">{{ section.sectionTitle }}</th>
-                }
-              </tr>
-              <!-- Card groups -->
-              <tr class="header-cards">
-                @for (section of group.sections; track section.sectionTitle) {
-                  @for (card of section.cards; track card.cardTitle) {
-                  <th [attr.colspan]="card.fields.length" class="header-card color-{{ section.colorIndex }}">{{ card.cardTitle }}</th>
-                  }
-                }
-              </tr>
-              <!-- Field names -->
-              <tr class="header-fields">
-                @for (section of group.sections; track section.sectionTitle) {
-                  @for (card of section.cards; track card.cardTitle) {
-                    @for (field of card.fields; track field.column) {
-                    <th class="header-field color-{{ section.colorIndex }}">{{ field.fieldLabel }}</th>
-                    }
-                  }
-                }
-              </tr>
-            </thead>
-            <tbody>
-              @for (measurement of group.measurements; track trackById($index, measurement)) {
-              <tr (click)="goToMeasurement(measurement)" class="measurement-row">
-                <td class="select-column" (click)="$event.stopPropagation()">
-                  <input
-                    type="checkbox"
-                    [checked]="isSelected(measurement.id)"
-                    [disabled]="isLocked() && !isStaff"
-                    (click)="$event.stopPropagation()"
-                    (change)="toggleSelection(measurement.id, $any($event.target).checked)"
-                    />
-                </td>
-                @if (isBaseColumnVisible('Mess-ID')) {
-                <td class="cell-id">#{{ measurement.id }}</td>
-                }
-                @if (isBaseColumnVisible('Erstellt von')) {
-                <td class="cell-author">{{ measurement.createdByUsername }}</td>
-                }
-                @if (isBaseColumnVisible('Erstellt am')) {
-                <td class="cell-date">{{ measurement.createdAt | date: 'dd.MM.yyyy HH:mm' }}</td>
-                }
-                @for (section of group.sections; track section.sectionTitle) {
-                  @for (card of section.cards; track card.cardTitle) {
-                    @for (field of card.fields; track field.column) {
-                <td class="cell-value">
-                  {{ getValueForColumn(measurement, field.column) }}
-                </td>
-                    }
-                  }
-                }
-              </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-      </div>
-      }
+      <app-measurement-series-table
+        [measurements]="filteredMeasurements()"
+        [visibleColumns]="visibleColumns()"
+        [selectable]="true"
+        [selectionDisabled]="isLocked() && !isStaff"
+        [selectedIds]="selectedMeasurementIds()"
+        (measurementClick)="openTableMeasurement($event)"
+        (selectionChange)="updateTableSelection($event)" />
       } @else {
       <div class="empty-state">
         <p class="empty-title">Keine Treffer</p>

@@ -13,6 +13,10 @@ import { Header } from '../../components/header/header';
 import { Footer } from '../../components/footer/footer';
 import { SeriesCharts } from '../../components/series-charts/series-charts';
 import {
+  MeasurementSeriesTable,
+  SeriesTableMeasurement
+} from '../../components/measurement-series-table/measurement-series-table';
+import {
   MeasurementResponseDto,
   MeasurementService
 } from '../../services/measurement.service';
@@ -90,7 +94,7 @@ interface ColumnPickerTemplate {
 
 @Component({
   selector: 'app-measurement-series-detail',
-  imports: [CommonModule, Header, Footer, SeriesCharts],
+  imports: [CommonModule, Header, Footer, SeriesCharts, MeasurementSeriesTable],
   templateUrl: './measurement-series-detail.html',
   styleUrl: './measurement-series-detail.scss'
 })
@@ -217,6 +221,17 @@ export class MeasurementSeriesDetail implements OnInit {
 
   goToMeasurement(measurement: MeasurementResponseDto): void {
     this.router.navigate([`/messungen/serie/${measurement.seriesId}/${measurement.id}`]);
+  }
+
+  openTableMeasurement(measurement: SeriesTableMeasurement): void {
+    const match = this.filteredMeasurements().find((item) => item.id === measurement.id);
+    if (match) {
+      this.goToMeasurement(match);
+    }
+  }
+
+  updateTableSelection(event: { id: number; selected: boolean }): void {
+    this.toggleSelection(event.id, event.selected);
   }
 
 

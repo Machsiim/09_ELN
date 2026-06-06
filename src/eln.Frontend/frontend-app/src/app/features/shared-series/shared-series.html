@@ -38,33 +38,10 @@
             <p class="empty-text">Diese Messserie enthält noch keine Messungen.</p>
           </div>
         } @else {
-          <div class="measurement-list">
-            @for (measurement of shared.measurements; track measurement.id) {
-              <article class="measurement-card">
-                <header class="measurement-header">
-                  <div>
-                    <h2>Messung #{{ measurement.id }}</h2>
-                    <p class="template-name">{{ measurement.templateName }}</p>
-                  </div>
-                  <div class="measurement-meta">
-                    <span>{{ measurement.createdByUsername }}</span>
-                    <span>{{ measurement.createdAt | date: 'dd.MM.yyyy HH:mm' }}</span>
-                  </div>
-                </header>
-                <app-measurement-detail-sections
-                  [sections]="getSections(measurement)"
-                  [isEditing]="false"
-                  [saveInProgress]="false"
-                  [formatValue]="formatValue.bind(this)"
-                  [formatMediaSummary]="formatMediaSummary.bind(this)"
-                  [isMediaField]="isMediaField.bind(this)"
-                  [getMediaAttachments]="getMediaAttachments.bind(this)"
-                  [isMediaExpanded]="isMediaExpanded.bind(this, measurement.id)"
-                  (toggleMediaPreview)="toggleMediaPreview(measurement.id, $event.section, $event.field)">
-                </app-measurement-detail-sections>
-              </article>
-            }
-          </div>
+          <app-series-charts [sharedToken]="token()" />
+          <app-measurement-series-table
+            [measurements]="shared.measurements"
+            (measurementClick)="openMeasurement($event)" />
         }
       }
     </section>
