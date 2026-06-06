@@ -67,7 +67,7 @@ public class VisualizationService
         };
     }
 
-    public async Task<DistributionDto> GetDistributionAsync(int seriesId, string section, string field)
+    public async Task<DistributionDto> GetDistributionAsync(int seriesId, string section, string field, int bins = 10)
     {
         section ??= string.Empty;
         field ??= string.Empty;
@@ -91,7 +91,8 @@ public class VisualizationService
         if (values.Count == 0)
             throw new NotFoundException($"Keine numerischen Werte für Feld '{field}' in Sektion '{section}' gefunden.");
 
-        var buckets = CreateBuckets(values);
+        bins = Math.Clamp(bins, 2, 100);
+        var buckets = CreateBuckets(values, bins);
 
         return new DistributionDto
         {

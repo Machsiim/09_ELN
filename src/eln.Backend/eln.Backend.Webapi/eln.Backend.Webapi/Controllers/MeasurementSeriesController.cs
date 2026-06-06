@@ -27,7 +27,7 @@ public class MeasurementSeriesController : ControllerBase
     }
 
     /// <summary>
-    /// Get all measurement series (paginated)
+    /// Get all measurement series (paginated, RBAC: Students see only their own)
     /// </summary>
     [HttpGet]
     [Authorize]
@@ -44,6 +44,41 @@ public class MeasurementSeriesController : ControllerBase
                 pagination,
                 currentUser.Value.UserId,
                 currentUser.Value.UserRole);
+            return Ok(results);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Get aggregated series groups for the /messungen overview (paginated, filtered).
+    /// Each row represents a series with aggregated info from its measurements.
+    /// </summary>
+    [HttpGet("grouped")]
+    [Authorize]
+    public async Task<ActionResult<PagedResultDto<MeasurementSeriesGroupDto>>> GetSeriesGroups(
+        [FromQuery] PaginationParams pagination,
+        [FromQuery] int? templateId,
+        [FromQuery] DateTime? dateFrom,
+        [FromQuery] DateTime? dateTo,
+        [FromQuery] string? searchText)
+    {
+        try
+        {
+            var currentUser = await GetCurrentUserAsync();
+            if (currentUser is null)
+                return Unauthorized();
+
+            var results = await _seriesService.GetSeriesGroupsAsync(
+                pagination,
+                currentUser.Value.UserId,
+                currentUser.Value.UserRole,
+                templateId,
+                dateFrom,
+                dateTo,
+                searchText);
             return Ok(results);
         }
         catch (Exception ex)

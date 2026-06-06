@@ -29,6 +29,22 @@ public class UpdateMeasurementSeriesDto
 }
 
 /// <summary>
+/// Aggregated overview row for a measurement series.
+/// Used by the /measurements grouped overview.
+/// </summary>
+public class MeasurementSeriesGroupDto
+{
+    public int SeriesId { get; set; }
+    public string SeriesName { get; set; } = string.Empty;
+    public int MeasurementCount { get; set; }
+    public int LatestMeasurementId { get; set; }
+    public string LatestTemplateName { get; set; } = string.Empty;
+    public DateTime LatestCreatedAt { get; set; }
+    public List<string> TemplateNames { get; set; } = new();
+    public List<string> AuthorNames { get; set; } = new();
+}
+
+/// <summary>
 /// Response for measurement series
 /// </summary>
 public class MeasurementSeriesResponseDto

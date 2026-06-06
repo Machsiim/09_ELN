@@ -26,6 +26,35 @@ public class ImportService
         _httpClientFactory = httpClientFactory;
     }
 
+    public async Task<PythonPreviewParseResponse> ParseFilePreviewAsync(Stream fileStream, string fileName, int headerRow)
+    {
+        var ext = Path.GetExtension(fileName).ToLower();
+        var endpoint = ext == ".csv" ? "/parse-csv" : "/parse-excel";
+        var client = _httpClientFactory.CreateClient("PythonService");
+
+        using var formContent = new MultipartFormDataContent();
+        var streamContent = new StreamContent(fileStream);
+        streamContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+        formContent.Add(streamContent, "file", fileName);
+
+        var url = $"{endpoint}?headerRow={headerRow}";
+        var response = await client.PostAsync(url, formContent);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var error = await response.Content.ReadAsStringAsync();
+            throw new Exception($"Datei konnte nicht geparst werden: {error}");
+        }
+
+        var json = await response.Content.ReadAsStringAsync();
+        var result = JsonSerializer.Deserialize<PythonPreviewParseResponse>(json, new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        });
+
+        return result ?? throw new Exception("Leere Antwort vom Python-Service.");
+    }
+
     /// <summary>
     /// Import measurements from an Excel file
     /// </summary>
@@ -528,6 +557,15 @@ public class ImportService
     {
         public Dictionary<string, Dictionary<string, object?>>? Data { get; set; }
         public FieldError? Error { get; set; }
+    }
+
+    public class PythonPreviewParseResponse
+    {
+        public int Rows { get; set; }
+        public List<string> Columns { get; set; } = new();
+        public Dictionary<string, string> Dtypes { get; set; } = new();
+        public List<Dictionary<string, JsonElement>> Preview { get; set; } = new();
+        public List<string>? Warnings { get; set; }
     }
 
     private class PythonFullParseResponse

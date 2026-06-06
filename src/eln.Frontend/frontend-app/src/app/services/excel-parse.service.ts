@@ -15,45 +15,20 @@ export interface ExcelParseResponse {
   providedIn: 'root'
 })
 export class ExcelParseService {
-  private readonly baseUrl = environment.pythonApiUrl.replace(/\/$/, '');
+  private readonly baseUrl = environment.apiUrl.replace(/\/$/, '');
 
   constructor(private readonly http: HttpClient) {}
-
-  parseExcel(
-    file: File,
-    headerRow: number,
-    mapping?: Record<string, string>
-  ): Observable<ExcelParseResponse> {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const url = `${this.baseUrl}/parse-excel`;
-    return this.http.post<ExcelParseResponse>(url, formData, {
-      params: {
-        headerRow: String(headerRow),
-        ...(mapping ? { mapping: JSON.stringify(mapping) } : {})
-      }
-    });
-  }
-
-  parseCsv(
-    file: File,
-    headerRow: number
-  ): Observable<ExcelParseResponse> {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const url = `${this.baseUrl}/parse-csv`;
-    return this.http.post<ExcelParseResponse>(url, formData, {
-      params: { headerRow: String(headerRow) }
-    });
-  }
 
   parseFile(
     file: File,
     headerRow: number
   ): Observable<ExcelParseResponse> {
-    const ext = file.name.toLowerCase().split('.').pop();
-    return ext === 'csv' ? this.parseCsv(file, headerRow) : this.parseExcel(file, headerRow);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const url = `${this.baseUrl}/import/parse-preview`;
+    return this.http.post<ExcelParseResponse>(url, formData, {
+      params: { headerRow: String(headerRow) }
+    });
   }
 }

@@ -24,6 +24,29 @@ public class ImportController : ControllerBase
     }
 
     /// <summary>
+    /// Parse a file and return a preview (proxied to Python service)
+    /// </summary>
+    [HttpPost("parse-preview")]
+    public async Task<ActionResult<ImportService.PythonPreviewParseResponse>> ParsePreview(
+        IFormFile file,
+        [FromQuery] int headerRow = 1)
+    {
+        try
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest(new { error = "Keine Datei hochgeladen." });
+
+            await using var stream = file.OpenReadStream();
+            var result = await _importService.ParseFilePreviewAsync(stream, file.FileName, headerRow);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
     /// Batch import measurements from an Excel file
     /// </summary>
     [HttpPost("excel")]

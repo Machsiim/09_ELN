@@ -114,9 +114,7 @@ public class MeasurementService
             .Where(m => m.SeriesId == seriesId);
 
         if (IsStudent(userRole) && userId.HasValue)
-        {
             query = query.Where(m => m.CreatedBy == userId.Value);
-        }
 
         var measurements = await query
             .OrderByDescending(m => m.CreatedAt)
@@ -159,9 +157,7 @@ public class MeasurementService
             .AsQueryable();
 
         if (IsStudent(userRole))
-        {
             query = query.Where(m => m.CreatedBy == userId);
-        }
 
         // Filter by Template ID
         if (filter.TemplateId.HasValue)

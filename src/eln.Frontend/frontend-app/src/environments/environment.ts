@@ -20,10 +20,7 @@ const defaultApiUrl = (() => {
   return `${window.location.origin}/api`;
 })();
 
-const defaultPythonApiUrl = 'http://localhost:8001';
-
 export const environment = {
   production: false,
   apiUrl: runtimeApiUrl ?? defaultApiUrl,
-  pythonApiUrl: defaultPythonApiUrl
 };
