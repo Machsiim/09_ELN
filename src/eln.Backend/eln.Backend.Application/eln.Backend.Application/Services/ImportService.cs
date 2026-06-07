@@ -178,6 +178,7 @@ public class ImportService
                 // Validate against template schema
                 var dataJson = JsonSerializer.Serialize(buildResult.Data);
                 var dataDocument = JsonDocument.Parse(dataJson);
+                dataDocument = FormulaEvaluator.EvaluateCalculatedFields(template.Schema, dataDocument);
                 var validation = _validationService.ValidateMeasurementDataStrict(template.Schema, dataDocument);
 
                 if (!validation.IsValid)
@@ -344,6 +345,15 @@ public class ImportService
 
         foreach (var entry in catalog)
         {
+            // Calculated fields are evaluated server-side, no import column required
+            if (string.Equals(entry.FieldType, "calculated", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!data.ContainsKey(entry.SectionTitle))
+                    data[entry.SectionTitle] = new Dictionary<string, object?>();
+                data[entry.SectionTitle][entry.FieldKey] = null;
+                continue;
+            }
+
             // Find which column maps to this field
             string? sourceColumn = null;
             foreach (var kvp in columnToFieldKey)

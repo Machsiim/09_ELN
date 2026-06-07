@@ -45,11 +45,14 @@ public class MeasurementService
         var dataJson = JsonSerializer.Serialize(dto.Data);
         var jsonDocument = JsonDocument.Parse(dataJson);
 
+        // Evaluate calculated fields server-side (source of truth)
+        jsonDocument = FormulaEvaluator.EvaluateCalculatedFields(template.Schema, jsonDocument);
+
         // STRICT VALIDATION: All fields must be filled and types must match
         var validationResult = _validationService.ValidateMeasurementDataStrict(template.Schema, jsonDocument);
         if (!validationResult.IsValid)
         {
-            var errorMessages = string.Join("; ", validationResult.Errors.Select(e => 
+            var errorMessages = string.Join("; ", validationResult.Errors.Select(e =>
                 $"{e.Section}.{e.Field}: {e.Error}"));
             throw new Exception($"Validation failed: {errorMessages}");
         }
@@ -229,6 +232,9 @@ public class MeasurementService
         // Convert new data to JSON
         var newDataJson = JsonSerializer.Serialize(dto.Data);
         var newJsonDocument = JsonDocument.Parse(newDataJson);
+
+        // Evaluate calculated fields server-side (source of truth)
+        newJsonDocument = FormulaEvaluator.EvaluateCalculatedFields(template.Schema, newJsonDocument);
 
         // STRICT VALIDATION: All fields must be filled and types must match
         var validationResult = _validationService.ValidateMeasurementDataStrict(template.Schema, newJsonDocument);

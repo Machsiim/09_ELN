@@ -74,6 +74,52 @@
               <span>Pflichtfeld</span>
             </label>
             <input type="text" formControlName="hint" placeholder="Optional: Hilfetext oder Einheit" />
+
+            @if (fieldForm.controls.type.value === 'calculated') {
+            <div class="formula-builder">
+              <p class="formula-label">Formel</p>
+              <div class="formula-tokens">
+                @if (formulaTokens().length === 0) {
+                <span class="formula-placeholder">Noch leer — fügen Sie Felder, Operatoren oder Zahlen hinzu.</span>
+                } @else {
+                @for (token of formulaTokens(); track $index) {
+                <button type="button" class="formula-chip" (click)="removeFormulaToken($index)" title="Entfernen">
+                  {{ getFormulaTokenLabel(token) }} ×
+                </button>
+                }
+                }
+              </div>
+
+              <div class="formula-row">
+                <label class="formula-row-label">Operator:</label>
+                @for (op of operatorOptions; track op.op) {
+                <button type="button" class="btn btn-outline btn-small" (click)="addFormulaOperator(op.op)">{{ op.label }}</button>
+                }
+              </div>
+
+              <div class="formula-row">
+                <label class="formula-row-label">Feld:</label>
+                <select #fieldPicker (change)="addFormulaField(fieldPicker.value); fieldPicker.value = ''">
+                  <option value="">— Feld wählen —</option>
+                  @for (f of getAvailableNumericFields(); track f.id) {
+                  <option [value]="f.id">{{ f.label }}</option>
+                  }
+                </select>
+              </div>
+
+              <div class="formula-row">
+                <label class="formula-row-label">Zahl:</label>
+                <input type="text" [value]="constantInput()" (input)="onConstantInputChange($any($event.target).value)" placeholder="z. B. 273.15" />
+                <button type="button" class="btn btn-outline btn-small" (click)="addFormulaConstant()">Hinzufügen</button>
+                <button type="button" class="btn btn-text btn-small" (click)="clearFormula()">Leeren</button>
+              </div>
+
+              @if (formulaError()) {
+              <p class="formula-error">{{ formulaError() }}</p>
+              }
+            </div>
+            }
+
             <div class="field-form-actions">
               <button class="btn btn-outline" type="submit">
                 {{ editingField() ? 'Feld aktualisieren' : 'Feld hinzufügen' }}

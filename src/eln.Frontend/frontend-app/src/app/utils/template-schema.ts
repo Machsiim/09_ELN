@@ -7,8 +7,14 @@ export const mapUiTypeToBackendType = (type: TemplateFieldType): BackendFieldTyp
   switch (type) {
     case 'number':
       return 'number';
+    case 'integer':
+      return 'integer';
+    case 'calculated':
+      return 'calculated';
     case 'date':
       return 'date';
+    case 'period':
+      return 'period';
     case 'boolean':
       return 'boolean';
     case 'media':
@@ -31,6 +37,9 @@ export const mapBackendTypeToUiType = (
   switch (normalizeType(backendType)) {
     case 'int':
     case 'integer':
+      return 'integer';
+    case 'calculated':
+      return 'calculated';
     case 'float':
     case 'double':
     case 'number':
@@ -41,6 +50,8 @@ export const mapBackendTypeToUiType = (
     case 'date':
     case 'datetime':
       return 'date';
+    case 'period':
+      return 'period';
     case 'text':
     case 'string':
       return 'text';

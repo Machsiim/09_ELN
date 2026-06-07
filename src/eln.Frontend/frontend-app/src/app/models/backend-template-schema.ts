@@ -1,4 +1,4 @@
-import { TemplateFieldType } from './template-schema';
+import { FormulaToken, TemplateFieldType } from './template-schema';
 
 export type BackendFieldType =
   | 'int'
@@ -11,9 +11,13 @@ export type BackendFieldType =
   | 'bool'
   | 'boolean'
   | 'date'
-  | 'datetime';
+  | 'datetime'
+  | 'period'
+  | 'calculated';
 
 export interface BackendTemplateFieldSchema {
+  id?: string;
+  Id?: string;
   name?: string;
   Name?: string;
   type?: BackendFieldType;
@@ -26,6 +30,8 @@ export interface BackendTemplateFieldSchema {
   DefaultValue?: unknown;
   uiType?: TemplateFieldType;
   UiType?: TemplateFieldType;
+  formula?: FormulaToken[];
+  Formula?: FormulaToken[];
 }
 
 export interface BackendTemplateSectionSchema {

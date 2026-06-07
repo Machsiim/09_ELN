@@ -252,9 +252,49 @@
                                   <span class="required-indicator">*</span>
                                   }
                                 </label>
-                                <input type="number" [id]="controlName" [formControlName]="controlName" />
+                                <input type="number" step="any" [id]="controlName" [formControlName]="controlName" />
                                 @if (field.hint) {
                                   <small>{{ field.hint }}</small>
+                                }
+                              }
+                              @case ('integer') {
+                                <label [attr.for]="controlName">
+                                  {{ field.label }}
+                                  @if (isRequired) {
+                                  <span class="required-indicator">*</span>
+                                  }
+                                </label>
+                                <input type="number" step="1" [id]="controlName" [formControlName]="controlName" />
+                                @if (field.hint) {
+                                  <small>{{ field.hint }}</small>
+                                }
+                              }
+                              @case ('period') {
+                                <label>
+                                  {{ field.label }}
+                                  @if (isRequired) {
+                                  <span class="required-indicator">*</span>
+                                  }
+                                </label>
+                                <div [formGroupName]="controlName" class="period-inputs">
+                                  <input type="date" formControlName="start" [attr.aria-label]="field.label + ' Beginn'" />
+                                  <span>bis</span>
+                                  <input type="date" formControlName="end" [attr.aria-label]="field.label + ' Ende'" />
+                                </div>
+                                @if (field.hint) {
+                                  <small>{{ field.hint }}</small>
+                                }
+                              }
+                              @case ('calculated') {
+                                <label [attr.for]="controlName">
+                                  {{ field.label }}
+                                  <span class="calc-badge" title="Wird automatisch berechnet">∑</span>
+                                </label>
+                                <input type="number" readonly [id]="controlName" [formControlName]="controlName" />
+                                @if (field.hint) {
+                                  <small>{{ field.hint }}</small>
+                                } @else {
+                                  <small>Wird aus anderen Feldern berechnet.</small>
                                 }
                               }
                               @default {

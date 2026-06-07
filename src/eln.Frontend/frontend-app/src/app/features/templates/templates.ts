@@ -20,12 +20,14 @@ import { NotificationService } from '../../services/notification.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import {
+  FormulaToken,
   TemplateCardSchema,
   TemplateFieldSchema,
   TemplateFieldType,
   TemplateSchema,
   TemplateSectionSchema
 } from '../../models/template-schema';
+import { validateFormula } from '../../utils/formula';
 import {
   BackendTemplateSchema
 } from '../../models/backend-template-schema';
@@ -114,12 +116,27 @@ export class Templates implements OnInit {
 
   readonly fieldTypeOptions: { value: TemplateFieldType; label: string }[] = [
     { value: 'text', label: 'Kurztext' },
-    { value: 'number', label: 'Zahl' },
+    { value: 'integer', label: 'Zahl (Ganzzahl)' },
+    { value: 'number', label: 'Kommazahl' },
+    { value: 'calculated', label: 'Berechnetes Feld' },
     { value: 'multiline', label: 'Langtext' },
     { value: 'table', label: 'Tabelle' },
     { value: 'media', label: 'Bilder / Medien' },
     { value: 'date', label: 'Datum' },
+    { value: 'period', label: 'Zeitraum' },
     { value: 'boolean', label: 'Ja/Nein' }
+  ];
+
+  readonly formulaTokens = signal<FormulaToken[]>([]);
+  readonly constantInput = signal<string>('');
+  readonly formulaError = signal<string | null>(null);
+  readonly operatorOptions: { op: '+' | '-' | '*' | '/' | '(' | ')'; label: string }[] = [
+    { op: '+', label: '+' },
+    { op: '-', label: '−' },
+    { op: '*', label: '×' },
+    { op: '/', label: '÷' },
+    { op: '(', label: '(' },
+    { op: ')', label: ')' }
   ];
 
   readonly templateForm = this.fb.nonNullable.group({
@@ -227,12 +244,26 @@ export class Templates implements OnInit {
       return;
     }
 
+    const fieldType = this.fieldForm.controls.type.value;
+    let formula: FormulaToken[] | undefined;
+
+    if (fieldType === 'calculated') {
+      const tokens = this.formulaTokens();
+      const error = validateFormula(tokens);
+      if (error) {
+        this.formulaError.set(error);
+        return;
+      }
+      formula = tokens;
+    }
+
     const nextField: BuilderField = {
       id: this.editingField()?.fieldId ?? this.createId('field'),
       label: this.fieldForm.controls.label.value.trim(),
-      type: this.fieldForm.controls.type.value,
+      type: fieldType,
       required: this.fieldForm.controls.required.value,
-      hint: this.fieldForm.controls.hint.value?.trim() ?? ''
+      hint: this.fieldForm.controls.hint.value?.trim() ?? '',
+      ...(formula ? { formula } : {})
     };
 
     const editingField = this.editingField();
@@ -300,6 +331,8 @@ export class Templates implements OnInit {
       required: field.required ?? false,
       hint: field.hint ?? ''
     });
+    this.formulaTokens.set(field.formula ? [...field.formula] : []);
+    this.formulaError.set(null);
   }
 
   cancelFieldEdit(): void {
@@ -480,16 +513,82 @@ export class Templates implements OnInit {
         Name: section.title,
         Fields: section.cards.flatMap((card) =>
           card.fields.map((field) => ({
+            Id: field.id,
             Name: this.buildFieldName(card.title, field.label),
             Type: mapUiTypeToBackendType(field.type),
             Required: field.required ?? false,
             Description: field.hint,
             DefaultValue: null,
-            UiType: field.type
+            UiType: field.type,
+            ...(field.formula ? { Formula: field.formula } : {})
           }))
         )
       }))
     };
+  }
+
+  getAvailableNumericFields(): { id: string; label: string }[] {
+    const editingFieldId = this.editingField()?.fieldId;
+    const result: { id: string; label: string }[] = [];
+    for (const section of this.sections()) {
+      for (const card of section.cards) {
+        for (const field of card.fields) {
+          if (field.id === editingFieldId) continue;
+          if (field.type === 'integer' || field.type === 'number' || field.type === 'calculated') {
+            result.push({ id: field.id, label: `${card.title} – ${field.label}` });
+          }
+        }
+      }
+    }
+    return result;
+  }
+
+  addFormulaField(fieldId: string): void {
+    if (!fieldId) return;
+    this.formulaTokens.update((tokens) => [...tokens, { kind: 'field', fieldId }]);
+    this.formulaError.set(null);
+  }
+
+  addFormulaOperator(op: '+' | '-' | '*' | '/' | '(' | ')'): void {
+    this.formulaTokens.update((tokens) => [...tokens, { kind: 'operator', op }]);
+    this.formulaError.set(null);
+  }
+
+  addFormulaConstant(): void {
+    const raw = this.constantInput().trim().replace(',', '.');
+    if (!raw) return;
+    const num = Number(raw);
+    if (Number.isNaN(num) || !Number.isFinite(num)) {
+      this.formulaError.set('Ungültige Zahl.');
+      return;
+    }
+    this.formulaTokens.update((tokens) => [...tokens, { kind: 'number', value: num }]);
+    this.constantInput.set('');
+    this.formulaError.set(null);
+  }
+
+  onConstantInputChange(value: string): void {
+    this.constantInput.set(value);
+  }
+
+  removeFormulaToken(index: number): void {
+    this.formulaTokens.update((tokens) => tokens.filter((_, i) => i !== index));
+    this.formulaError.set(null);
+  }
+
+  clearFormula(): void {
+    this.formulaTokens.set([]);
+    this.formulaError.set(null);
+  }
+
+  getFormulaTokenLabel(token: FormulaToken): string {
+    if (token.kind === 'number') return String(token.value);
+    if (token.kind === 'operator') {
+      const map: Record<string, string> = { '+': '+', '-': '−', '*': '×', '/': '÷', '(': '(', ')': ')' };
+      return map[token.op] ?? token.op;
+    }
+    const fieldLabel = this.getAvailableNumericFields().find((f) => f.id === token.fieldId)?.label;
+    return fieldLabel ?? '?';
   }
 
   private decodeSchema(schema: string): TemplateSchema {
@@ -525,12 +624,15 @@ export class Templates implements OnInit {
             });
           }
 
+          const formula = field.formula ?? field.Formula;
+          const originalId = field.id ?? field.Id;
           cardMap.get(cardTitle)!.fields.push({
-            id: this.createId('field'),
+            id: originalId ?? this.createId('field'),
             label: fieldLabel,
             type: mapBackendTypeToUiType(fieldType, uiType),
             required,
-            hint: description ?? ''
+            hint: description ?? '',
+            ...(formula ? { formula } : {})
           });
         });
 
@@ -559,7 +661,8 @@ export class Templates implements OnInit {
                 label: field.label ?? 'Feld',
                 type: field.type ?? 'text',
                 required: field.required ?? false,
-                hint: field.hint ?? ''
+                hint: field.hint ?? '',
+                ...(field.formula ? { formula: field.formula } : {})
               })) ?? []
           })) ?? []
       })) ?? [];
@@ -657,5 +760,8 @@ export class Templates implements OnInit {
       required: false,
       hint: ''
     });
+    this.formulaTokens.set([]);
+    this.constantInput.set('');
+    this.formulaError.set(null);
   }
 }

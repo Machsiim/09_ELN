@@ -1,11 +1,19 @@
 export type TemplateFieldType =
   | 'text'
   | 'number'
+  | 'integer'
+  | 'calculated'
   | 'multiline'
   | 'table'
   | 'media'
   | 'date'
+  | 'period'
   | 'boolean';
+
+export type FormulaToken =
+  | { kind: 'field'; fieldId: string }
+  | { kind: 'operator'; op: '+' | '-' | '*' | '/' | '(' | ')' }
+  | { kind: 'number'; value: number };
 
 export interface TemplateFieldSchema {
   id: string;
@@ -13,6 +21,7 @@ export interface TemplateFieldSchema {
   type: TemplateFieldType;
   required?: boolean;
   hint?: string;
+  formula?: FormulaToken[];
 }
 
 export interface TemplateCardSchema {
