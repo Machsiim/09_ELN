@@ -275,6 +275,8 @@
 .dialog-actions {
   display: flex;
   justify-content: flex-end;
+  gap: $spacing-md;
+  flex-wrap: wrap;
   margin-top: $spacing-xl;
 }
 
@@ -286,6 +288,81 @@
   color: $color-bg-white;
   font-weight: 700;
   cursor: pointer;
+  transition: background-color $transition-base, opacity $transition-base;
+
+  &.warning {
+    background: $color-warning;
+  }
+
+  &.success {
+    background: $color-success;
+  }
+
+  &.danger {
+    background: $color-danger;
+
+    &:hover:not(:disabled) {
+      background: $color-danger-dark;
+    }
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.actions-col {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.row-actions {
+  display: inline-flex;
+  gap: $spacing-sm;
+  justify-content: flex-end;
+
+  .material-icons {
+    font-size: 1.2rem;
+  }
+
+  .btn-icon:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+.deactivate-btn {
+  color: $color-warning;
+  background: rgba(245, 158, 11, 0.1);
+  transition: all $transition-base;
+
+  &:hover:not(:disabled) {
+    background: $color-warning;
+    color: white;
+  }
+}
+
+.activate-btn {
+  color: $color-success;
+  background: $color-success-bg;
+  transition: all $transition-base;
+
+  &:hover:not(:disabled) {
+    background: $color-success;
+    color: white;
+  }
+}
+
+.delete-btn {
+  color: $color-danger;
+  background: $color-error-bg;
+  transition: all $transition-base;
+
+  &:hover:not(:disabled) {
+    background: $color-danger;
+    color: white;
+  }
 }
 
 @media (max-width: 640px) {

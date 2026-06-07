@@ -396,6 +396,35 @@ public class MeasurementSeriesController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Reactivate a previously deactivated share link
+    /// PUT /api/measurementseries/{seriesId}/share/{shareId}/reactivate
+    /// </summary>
+    [HttpPut("{seriesId:int}/share/{shareId:int}/reactivate")]
+    [Authorize]
+    public async Task<ActionResult> ReactivateShareLink(int seriesId, int shareId)
+    {
+        try
+        {
+            // Extract username from JWT
+            var username = User.FindFirst(ClaimTypes.Name)?.Value;
+            if (string.IsNullOrEmpty(username))
+                return Unauthorized();
+
+            // Get user ID from database
+            var user = await _context.Users.SingleOrDefaultAsync(u => u.Username == username);
+            if (user == null)
+                return Unauthorized();
+
+            await _shareLinkService.ReactivateShareLinkAsync(seriesId, shareId, user.Id);
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
     private async Task<(int UserId, string UserRole)?> GetCurrentUserAsync()
     {
         var username = User.FindFirst(ClaimTypes.Name)?.Value;

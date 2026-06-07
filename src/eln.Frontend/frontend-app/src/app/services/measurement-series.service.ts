@@ -142,4 +142,8 @@ export class MeasurementSeriesService {
   deactivateShareLink(seriesId: number, shareId: number): Observable<void> {
     return this.http.put<void>(`${this.baseUrl}/${seriesId}/share/${shareId}/deactivate`, {});
   }
+
+  reactivateShareLink(seriesId: number, shareId: number): Observable<void> {
+    return this.http.put<void>(`${this.baseUrl}/${seriesId}/share/${shareId}/reactivate`, {});
+  }
 }

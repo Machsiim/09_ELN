@@ -8,6 +8,7 @@ import {
   MyShareLinksParams,
   ShareLinkResponseDto
 } from '../../services/measurement-series.service';
+import { NotificationService } from '../../services/notification.service';
 
 @Component({
   selector: 'app-shared-links',
@@ -19,6 +20,7 @@ import {
 export class SharedLinks implements OnInit {
   private readonly seriesService = inject(MeasurementSeriesService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly notification = inject(NotificationService);
 
   readonly links = signal<ShareLinkResponseDto[]>([]);
   readonly loading = signal(false);
@@ -28,6 +30,11 @@ export class SharedLinks implements OnInit {
   readonly statusFilter = signal('');
   readonly visibilityFilter = signal('');
   readonly filtersApplied = signal(false);
+
+  // Confirmation modal for delete (mirrors the template/measurement delete flow)
+  readonly confirmModalVisible = signal(false);
+  readonly linkForAction = signal<ShareLinkResponseDto | null>(null);
+  readonly actionInProgress = signal(false);
 
   ngOnInit(): void {
     this.loadLinks();
@@ -106,5 +113,99 @@ export class SharedLinks implements OnInit {
 
   closeDetails(): void {
     this.selectedLink.set(null);
+  }
+
+  deactivateLink(link: ShareLinkResponseDto): void {
+    if (!link.isActive) {
+      return;
+    }
+    this.setLinkActive(link, false);
+  }
+
+  reactivateLink(link: ShareLinkResponseDto): void {
+    if (link.isActive) {
+      return;
+    }
+    this.setLinkActive(link, true);
+  }
+
+  private setLinkActive(link: ShareLinkResponseDto, active: boolean): void {
+    if (this.actionInProgress()) {
+      return;
+    }
+
+    const request$ = active
+      ? this.seriesService.reactivateShareLink(link.seriesId, link.id)
+      : this.seriesService.deactivateShareLink(link.seriesId, link.id);
+
+    this.actionInProgress.set(true);
+    request$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.actionInProgress.set(false);
+          this.links.update((current) =>
+            current.map((l) => (l.id === link.id ? { ...l, isActive: active } : l))
+          );
+          if (this.selectedLink()?.id === link.id) {
+            this.selectedLink.update((l) => (l ? { ...l, isActive: active } : l));
+          }
+          this.notification.show(active ? 'Der Link wurde aktiviert.' : 'Der Link wurde deaktiviert.');
+        },
+        error: (err) => {
+          this.actionInProgress.set(false);
+          this.notification.showError(
+            err?.error?.error ||
+              (active
+                ? 'Der Link konnte nicht aktiviert werden.'
+                : 'Der Link konnte nicht deaktiviert werden.')
+          );
+        }
+      });
+  }
+
+  requestDelete(link: ShareLinkResponseDto): void {
+    this.linkForAction.set(link);
+    this.confirmModalVisible.set(true);
+  }
+
+  closeConfirmModal(): void {
+    if (this.actionInProgress()) {
+      return;
+    }
+    this.confirmModalVisible.set(false);
+    this.linkForAction.set(null);
+  }
+
+  confirmDelete(): void {
+    const link = this.linkForAction();
+    if (!link) {
+      return;
+    }
+
+    this.actionInProgress.set(true);
+    this.seriesService
+      .deleteShareLink(link.seriesId, link.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.actionInProgress.set(false);
+          this.links.update((current) => current.filter((l) => l.id !== link.id));
+          if (this.selectedLink()?.id === link.id) {
+            this.selectedLink.set(null);
+          }
+          this.confirmModalVisible.set(false);
+          this.linkForAction.set(null);
+          this.notification.show('Der Link wurde gelöscht.');
+        },
+        error: (err) => {
+          this.actionInProgress.set(false);
+          this.confirmModalVisible.set(false);
+          this.linkForAction.set(null);
+          this.notification.showError(
+            err?.error?.error || 'Der Link konnte nicht gelöscht werden.'
+          );
+        }
+      });
   }
 }

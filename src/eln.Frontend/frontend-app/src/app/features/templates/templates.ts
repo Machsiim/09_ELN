@@ -176,6 +176,13 @@ export class Templates implements OnInit {
 
     this.sections.update((current) => [...current, section]);
     this.sectionForm.reset();
+
+    // Auto-select the new section in the card and field forms so the user
+    // can immediately add a card/field to it. The new section has no cards
+    // yet, so clear the field form's card selection.
+    this.cardForm.controls.sectionId.setValue(section.id);
+    this.fieldForm.controls.sectionId.setValue(section.id);
+    this.fieldForm.controls.cardId.setValue('');
   }
 
   addCard(): void {
@@ -199,7 +206,15 @@ export class Templates implements OnInit {
 
     section.cards = [...section.cards, card];
     this.sections.update((current) => current.map((s) => (s.id === section.id ? section : s)));
-    this.cardForm.reset({ sectionId: '', title: '', subtitle: '' });
+
+    // Keep the section selected so the user can directly add the next card,
+    // only clear the per-card inputs.
+    this.cardForm.reset({ sectionId: section.id, title: '', subtitle: '' });
+
+    // Auto-select the new card (and its section) in the field form so the
+    // user can immediately add a field to it.
+    this.fieldForm.controls.sectionId.setValue(section.id);
+    this.fieldForm.controls.cardId.setValue(card.id);
   }
 
   addField(): void {
@@ -232,7 +247,22 @@ export class Templates implements OnInit {
       : [...card.fields, nextField];
     section.cards = section.cards.map((c) => (c.id === card.id ? card : c));
     this.sections.update((current) => current.map((s) => (s.id === section.id ? section : s)));
-    this.resetFieldForm();
+
+    if (editingField) {
+      this.resetFieldForm();
+      return;
+    }
+
+    // Keep section, card and field type selected so the user can directly add
+    // the next field; only clear the label and hint inputs.
+    this.fieldForm.reset({
+      sectionId: section.id,
+      cardId: card.id,
+      label: '',
+      type: nextField.type,
+      required: false,
+      hint: ''
+    });
   }
 
   removeSection(sectionId: string): void {

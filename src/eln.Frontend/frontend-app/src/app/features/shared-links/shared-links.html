@@ -85,6 +85,7 @@
                   <th>Sichtbarkeit</th>
                   <th>Status</th>
                   <th>Gültig bis</th>
+                  <th class="actions-col">Aktionen</th>
                 </tr>
               </thead>
               <tbody>
@@ -118,6 +119,37 @@
                       }
                     </td>
                     <td>{{ link.expiresAt | date: 'dd.MM.yyyy HH:mm' }}</td>
+                    <td class="actions-col">
+                      <div class="row-actions">
+                        @if (link.isActive) {
+                          <button
+                            type="button"
+                            class="btn btn-icon deactivate-btn"
+                            (click)="deactivateLink(link); $event.stopPropagation()"
+                            [disabled]="actionInProgress()"
+                            title="Link deaktivieren">
+                            <span class="material-icons">block</span>
+                          </button>
+                        } @else {
+                          <button
+                            type="button"
+                            class="btn btn-icon activate-btn"
+                            (click)="reactivateLink(link); $event.stopPropagation()"
+                            [disabled]="actionInProgress()"
+                            title="Link aktivieren">
+                            <span class="material-icons">check_circle</span>
+                          </button>
+                        }
+                        <button
+                          type="button"
+                          class="btn btn-icon delete-btn"
+                          (click)="requestDelete(link); $event.stopPropagation()"
+                          [disabled]="actionInProgress()"
+                          title="Link löschen">
+                          <span class="material-icons">delete</span>
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 }
               </tbody>
@@ -198,7 +230,59 @@
 
       <footer class="dialog-actions">
         <button type="button" class="dialog-button" (click)="closeDetails()">Schließen</button>
+        @if (link.isActive) {
+          <button
+            type="button"
+            class="dialog-button warning"
+            (click)="deactivateLink(link)"
+            [disabled]="actionInProgress()">
+            Deaktivieren
+          </button>
+        } @else {
+          <button
+            type="button"
+            class="dialog-button success"
+            (click)="reactivateLink(link)"
+            [disabled]="actionInProgress()">
+            Aktivieren
+          </button>
+        }
+        <button
+          type="button"
+          class="dialog-button danger"
+          (click)="requestDelete(link)"
+          [disabled]="actionInProgress()">
+          Löschen
+        </button>
       </footer>
     </section>
+  </div>
+}
+
+@if (confirmModalVisible()) {
+  <div class="modal-backdrop" (click)="closeConfirmModal()">
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
+      <h2>Aktion bestätigen</h2>
+      <p>
+        Möchten Sie den Link zur Messserie "{{ linkForAction()?.seriesName }}" wirklich löschen?
+        Diese Aktion kann nicht rückgängig gemacht werden.
+      </p>
+      <div class="modal-actions">
+        <button
+          class="modal-button"
+          type="button"
+          (click)="closeConfirmModal()"
+          [disabled]="actionInProgress()">
+          Abbrechen
+        </button>
+        <button
+          class="modal-button danger"
+          type="button"
+          (click)="confirmDelete()"
+          [disabled]="actionInProgress()">
+          {{ actionInProgress() ? 'Löschen ...' : 'Löschen' }}
+        </button>
+      </div>
+    </div>
   </div>
 }

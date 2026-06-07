@@ -284,6 +284,25 @@ public class ShareLinkService
         await _context.SaveChangesAsync();
     }
 
+    /// <summary>
+    /// Reactivate a previously deactivated share link
+    /// </summary>
+    public async Task ReactivateShareLinkAsync(int seriesId, int shareId, int userId)
+    {
+        var shareLink = await _context.SeriesShareLinks.FindAsync(shareId);
+        if (shareLink == null)
+            throw new NotFoundException($"Share link with ID {shareId} not found");
+
+        if (shareLink.SeriesId != seriesId)
+            throw new NotFoundException($"Share link {shareId} does not belong to series {seriesId}");
+
+        if (shareLink.CreatedBy != userId)
+            throw new ForbiddenException("You can only reactivate your own share links");
+
+        shareLink.IsActive = true;
+        await _context.SaveChangesAsync();
+    }
+
     // ── Private helpers ──────────────────────────────────────────────────────
 
     private async Task EnsureShareAccessAsync(
