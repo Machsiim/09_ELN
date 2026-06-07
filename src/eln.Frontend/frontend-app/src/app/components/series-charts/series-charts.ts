@@ -78,6 +78,12 @@ export class SeriesCharts {
   readonly distSection = signal<string>(ALL_TEMPLATES);
   readonly distCard = signal<string>(ALL_TEMPLATES);
 
+  // Histogram bin count (Backend erlaubt 2–100, Default 10)
+  readonly binCount = signal<number>(10);
+  readonly minBins = 2;
+  readonly maxBins = 100;
+  readonly showEmptyBins = signal<boolean>(true);
+
   readonly allTemplatesValue = ALL_TEMPLATES;
 
   constructor() {
@@ -102,7 +108,11 @@ export class SeriesCharts {
         }
       }
     });
+
   }
+
+  /** True solange der initiale Default noch nicht angewendet wurde. */
+  private templateDefaultApplied = false;
 
   setMode(m: ChartMode): void {
     this.mode.set(m);
@@ -141,6 +151,23 @@ export class SeriesCharts {
     this.ensureValidFieldSelection();
   }
 
+  setShowEmptyBins(value: boolean): void {
+    this.showEmptyBins.set(value);
+  }
+
+  setBinCount(value: number | string): void {
+    const raw = typeof value === 'number' ? value : parseInt(value, 10);
+    if (!Number.isFinite(raw)) return;
+    const clamped = Math.min(this.maxBins, Math.max(this.minBins, Math.round(raw)));
+    if (clamped === this.binCount()) return;
+    this.binCount.set(clamped);
+    const id = this.seriesId();
+    const key = this.selectedFieldKey();
+    if (this.mode() === 'distribution' && id != null && key) {
+      this.loadDistributionForKey(id, key);
+    }
+  }
+
   private ensureValidFieldSelection(): void {
     const matching = this.filteredFields();
     const current = this.selectedFieldKey();
@@ -167,6 +194,16 @@ export class SeriesCharts {
           this.fields.set(fields ?? []);
           if (!this.selectedFieldKey() && fields && fields.length > 0) {
             this.selectedFieldKey.set(this.fieldKey(fields[0]));
+          }
+          // Standardmäßig erstes Template für Timeline auswählen — aber nur
+          // einmal beim ersten Laden. Spätere User-Auswahl ("Alle Templates")
+          // soll erhalten bleiben.
+          if (!this.templateDefaultApplied) {
+            const templates = this.availableTemplates();
+            if (templates.length > 0) {
+              this.selectedTemplate.set(templates[0]);
+              this.templateDefaultApplied = true;
+            }
           }
         },
         error: () => {
@@ -220,7 +257,7 @@ export class SeriesCharts {
     if (!field) return;
     this.loading.set(true);
     this.error.set(null);
-    this.visualization.getDistribution(seriesId, field.key, field.section)
+    this.visualization.getDistribution(seriesId, field.key, field.section, this.binCount())
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (data) => {
@@ -403,60 +440,78 @@ export class SeriesCharts {
       return null;
     }
 
+    const buckets = this.showEmptyBins()
+      ? data.buckets
+      : data.buckets.filter((b) => b.count > 0);
+    if (buckets.length === 0) {
+      return null;
+    }
+
+    const n = buckets.length;
+    // Bei vielen Bins: schmalere Balken, fast keine Lücke dazwischen.
+    // Bei wenigen Bins: breitere Balken mit etwas Atem.
+    const categoryPercentage = n > 40 ? 1.0 : n > 20 ? 0.95 : 0.9;
+    const barPercentage = n > 40 ? 1.0 : n > 20 ? 0.95 : 0.85;
+    const borderRadius = n > 40 ? 0 : n > 20 ? 2 : 4;
+
     return {
-      labels: data.buckets.map(
+      labels: buckets.map(
         (b) => `${this.formatNumber(b.min)} – ${this.formatNumber(b.max)}`
       ),
       datasets: [
         {
           label: data.section ? `${data.section} – ${data.field}` : data.field,
-          data: data.buckets.map((b) => b.count),
+          data: buckets.map((b) => b.count),
           backgroundColor: '#2563eb',
           hoverBackgroundColor: '#1d4ed8',
-          borderRadius: 4,
-          maxBarThickness: 60
+          borderRadius,
+          categoryPercentage,
+          barPercentage
         }
       ]
     };
   });
 
-  readonly barOptions: ChartOptions<'bar'> = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        backgroundColor: '#0f172a',
-        titleColor: '#f8fafc',
-        bodyColor: '#f8fafc',
-        padding: 10,
-        cornerRadius: 6,
-        callbacks: {
-          title: (items) => `Bereich: ${items[0].label}`,
-          label: (item) => `Anzahl: ${item.parsed.y}`
-        }
-      }
-    },
-    scales: {
-      x: {
-        grid: { display: false },
-        ticks: {
-          color: '#64748b',
-          maxRotation: 30,
-          minRotation: 0,
-          autoSkipPadding: 8
+  readonly barOptions = computed<ChartOptions<'bar'>>(() => {
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#0f172a',
+          titleColor: '#f8fafc',
+          bodyColor: '#f8fafc',
+          padding: 10,
+          cornerRadius: 6,
+          callbacks: {
+            title: (items) => `Bereich: ${items[0].label}`,
+            label: (item) => `Anzahl: ${item.parsed.y}`
+          }
         }
       },
-      y: {
-        beginAtZero: true,
-        grid: { color: '#e2e8f0' },
-        ticks: {
-          color: '#64748b',
-          precision: 0
+      scales: {
+        x: {
+          grid: { display: false },
+          offset: true,
+          ticks: {
+            color: '#64748b',
+            maxRotation: 60,
+            minRotation: 0,
+            autoSkip: false
+          }
+        },
+        y: {
+          beginAtZero: true,
+          grid: { color: '#e2e8f0' },
+          ticks: {
+            color: '#64748b',
+            precision: 0
+          }
         }
       }
-    }
-  };
+    };
+  });
 
   readonly distributionStats = computed(() => {
     const data = this.distribution();

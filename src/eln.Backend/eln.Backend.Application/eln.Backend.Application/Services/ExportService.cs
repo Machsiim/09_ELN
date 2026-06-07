@@ -9,6 +9,10 @@ namespace eln.Backend.Application.Services;
 /// </summary>
 public class ExportService
 {
+    private static readonly string[] MetaColumns = { "Mess-ID", "Erstellt von", "Erstellt am" };
+    private const int SectionColorCount = 10;
+    private const string MetaSectionName = "Allgemein";
+
     private readonly ElnContext _context;
     private readonly IHttpClientFactory _httpClientFactory;
 
@@ -28,12 +32,18 @@ public class ExportService
             throw new Exception($"Messserie mit ID {seriesId} nicht gefunden.");
 
         var (columns, rows, columnSections) = await GetSeriesData(seriesId);
+        var (columnCards, columnFieldLabels) = BuildCardAndLabelMaps(columns);
+        var columnSectionColors = BuildColumnSectionColors(columnSections);
 
         var payload = JsonSerializer.Serialize(new
         {
             data = rows,
             columns = columns,
             column_sections = columnSections,
+            column_cards = columnCards,
+            column_field_labels = columnFieldLabels,
+            column_section_colors = columnSectionColors,
+            meta_columns = MetaColumns,
             filename = series.Name,
             sheet_name = series.Name.Length > 31 ? series.Name[..31] : series.Name
         });
@@ -51,12 +61,18 @@ public class ExportService
             throw new Exception($"Messserie mit ID {seriesId} nicht gefunden.");
 
         var (columns, rows, columnSections) = await GetSeriesData(seriesId);
+        var (columnCards, columnFieldLabels) = BuildCardAndLabelMaps(columns);
+        var columnSectionColors = BuildColumnSectionColors(columnSections);
 
         var payload = JsonSerializer.Serialize(new
         {
             data = rows,
             columns = columns,
             column_sections = columnSections,
+            column_cards = columnCards,
+            column_field_labels = columnFieldLabels,
+            column_section_colors = columnSectionColors,
+            meta_columns = MetaColumns,
             filename = series.Name
         });
 
@@ -78,6 +94,8 @@ public class ExportService
 
         var (columns, row, columnSections) = FlattenMeasurement(measurement);
         var rows = new List<Dictionary<string, object?>> { row };
+        var (columnCards, columnFieldLabels) = BuildCardAndLabelMaps(columns);
+        var columnSectionColors = BuildColumnSectionColors(columnSections);
 
         var templateName = measurement.Template?.Name ?? "Messung";
         var payload = JsonSerializer.Serialize(new
@@ -85,6 +103,10 @@ public class ExportService
             data = rows,
             columns = columns,
             column_sections = columnSections,
+            column_cards = columnCards,
+            column_field_labels = columnFieldLabels,
+            column_section_colors = columnSectionColors,
+            meta_columns = MetaColumns,
             filename = $"{templateName}_Messung_{measurementId}"
         });
 
@@ -104,12 +126,12 @@ public class ExportService
             return (new List<string>(), new List<Dictionary<string, object?>>(), new Dictionary<string, string>());
 
         // Collect all columns across all measurements + meta columns
-        var metaColumns = new List<string> { "ID", "Erstellt von", "Erstellt am" };
+        var metaColumns = MetaColumns.ToList();
         var dataColumnSet = new HashSet<string>();
         var flatRows = new List<Dictionary<string, object?>>();
         var allColumnSections = new Dictionary<string, string>
         {
-            ["ID"] = "Allgemein",
+            ["Mess-ID"] = "Allgemein",
             ["Erstellt von"] = "Allgemein",
             ["Erstellt am"] = "Allgemein"
         };
@@ -143,15 +165,15 @@ public class ExportService
     {
         var row = new Dictionary<string, object?>
         {
-            ["ID"] = measurement.Id,
+            ["Mess-ID"] = measurement.Id,
             ["Erstellt von"] = measurement.Creator?.Username ?? "Unknown",
             ["Erstellt am"] = measurement.CreatedAt.ToString("dd.MM.yyyy HH:mm")
         };
 
-        var columns = new List<string> { "ID", "Erstellt von", "Erstellt am" };
+        var columns = new List<string> { "Mess-ID", "Erstellt von", "Erstellt am" };
         var columnSections = new Dictionary<string, string>
         {
-            ["ID"] = "Allgemein",
+            ["Mess-ID"] = "Allgemein",
             ["Erstellt von"] = "Allgemein",
             ["Erstellt am"] = "Allgemein"
         };
@@ -194,6 +216,61 @@ public class ExportService
         catch { }
 
         return (columns, row, columnSections);
+    }
+
+    /// <summary>
+    /// Assigns each non-meta column a colorIndex (0..SectionColorCount-1) based on the
+    /// order in which its section first appears. Mirrors the frontend's
+    /// getSectionColorMap() in measurement-series-detail.ts so exported Excel files
+    /// use the same per-section colors as the on-screen view.
+    /// </summary>
+    private static Dictionary<string, int> BuildColumnSectionColors(Dictionary<string, string> columnSections)
+    {
+        var sectionIndex = new Dictionary<string, int>();
+        var result = new Dictionary<string, int>();
+
+        // columnSections preserves data-traversal insertion order, so iterating it
+        // yields sections in the same first-appearance order the frontend uses.
+        foreach (var kvp in columnSections)
+        {
+            var col = kvp.Key;
+            var section = kvp.Value;
+            if (MetaColumns.Contains(col)) continue;
+            if (section == MetaSectionName) continue;
+
+            if (!sectionIndex.TryGetValue(section, out var idx))
+            {
+                idx = sectionIndex.Count % SectionColorCount;
+                sectionIndex[section] = idx;
+            }
+            result[col] = idx;
+        }
+
+        return result;
+    }
+
+    private static (Dictionary<string, string> cards, Dictionary<string, string> fieldLabels) BuildCardAndLabelMaps(List<string> columns)
+    {
+        var cards = new Dictionary<string, string>();
+        var labels = new Dictionary<string, string>();
+        const string sep = " - ";
+
+        foreach (var col in columns)
+        {
+            var idx = col.IndexOf(sep, StringComparison.Ordinal);
+            if (idx > -1)
+            {
+                cards[col] = col[..idx];
+                labels[col] = col[(idx + sep.Length)..];
+            }
+            else
+            {
+                cards[col] = col;
+                labels[col] = col;
+            }
+        }
+
+        return (cards, labels);
     }
 
     private async Task<byte[]> CallPythonExport(string endpoint, string jsonPayload)

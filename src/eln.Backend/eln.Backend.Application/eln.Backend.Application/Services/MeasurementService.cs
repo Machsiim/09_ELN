@@ -104,8 +104,11 @@ public class MeasurementService
         };
     }
 
-    public async Task<List<MeasurementListDto>> GetMeasurementsBySeriesAsync(
-        int seriesId, int? userId = null, string? role = null)
+    public async Task<List<MeasurementResponseDto>> GetMeasurementsBySeriesAsync(
+        int seriesId,
+        int? userId = null,
+        string? userRole = null,
+        string? searchText = null)
     {
         var query = _context.Measurements
             .Include(m => m.Series)
@@ -113,22 +116,22 @@ public class MeasurementService
             .Include(m => m.Creator)
             .Where(m => m.SeriesId == seriesId);
 
-        if (role != "Staff" && userId.HasValue)
+        if (IsStudent(userRole) && userId.HasValue)
             query = query.Where(m => m.CreatedBy == userId.Value);
 
         var measurements = await query
             .OrderByDescending(m => m.CreatedAt)
             .ToListAsync();
 
-        return measurements.Select(m => new MeasurementListDto
+        if (!string.IsNullOrWhiteSpace(searchText))
         {
-            Id = m.Id,
-            SeriesId = m.SeriesId,
-            SeriesName = m.Series?.Name ?? "Unknown",
-            TemplateName = m.Template?.Name ?? "Unknown",
-            CreatedByUsername = m.Creator?.Username ?? "Unknown",
-            CreatedAt = m.CreatedAt
-        }).ToList();
+            var normalizedSearch = searchText.Trim().ToLowerInvariant();
+            measurements = measurements
+                .Where(m => MeasurementMatchesSearch(m, normalizedSearch))
+                .ToList();
+        }
+
+        return measurements.Select(MapToResponseDto).ToList();
     }
 
     public async Task DeleteMeasurementAsync(int id)
@@ -156,7 +159,7 @@ public class MeasurementService
             .Include(m => m.Creator)
             .AsQueryable();
 
-        if (userRole != "Staff")
+        if (IsStudent(userRole))
             query = query.Where(m => m.CreatedBy == userId);
 
         // Filter by Template ID
@@ -403,4 +406,46 @@ public class MeasurementService
 
         return changes;
     }
+
+    private static MeasurementResponseDto MapToResponseDto(Measurement measurement)
+    {
+        var dataJson = measurement.Data.RootElement.GetRawText();
+        var data = JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, object?>>>(dataJson)
+                   ?? new();
+
+        return new MeasurementResponseDto
+        {
+            Id = measurement.Id,
+            SeriesId = measurement.SeriesId,
+            SeriesName = measurement.Series?.Name ?? "Unknown",
+            TemplateId = measurement.TemplateId,
+            TemplateName = measurement.Template?.Name ?? "Unknown",
+            Data = data,
+            CreatedBy = measurement.CreatedBy,
+            CreatedByUsername = measurement.Creator?.Username ?? "Unknown",
+            CreatedAt = measurement.CreatedAt
+        };
+    }
+
+    private static bool MeasurementMatchesSearch(Measurement measurement, string query)
+    {
+        if (measurement.Id.ToString().Contains(query))
+            return true;
+
+        if ((measurement.Template?.Name ?? string.Empty).ToLowerInvariant().Contains(query))
+            return true;
+
+        if ((measurement.Creator?.Username ?? string.Empty).ToLowerInvariant().Contains(query))
+            return true;
+
+        if (measurement.CreatedAt.ToString("dd.MM.yyyy").Contains(query) ||
+            measurement.CreatedAt.ToString("yyyy-MM-dd").Contains(query))
+            return true;
+
+        var dataJson = measurement.Data.RootElement.GetRawText().ToLowerInvariant();
+        return dataJson.Contains(query);
+    }
+
+    private static bool IsStudent(string? userRole) =>
+        string.Equals(userRole, "Student", StringComparison.OrdinalIgnoreCase);
 }
