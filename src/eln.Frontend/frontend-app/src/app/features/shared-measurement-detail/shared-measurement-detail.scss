@@ -1,0 +1,22 @@
+@use '../../styles/variables' as *;
+
+.page-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.main-content {
+  flex: 1;
+  width: 100%;
+  max-width: $max-width-wide;
+  margin: 0 auto;
+  padding: $spacing-xl $spacing-md;
+}
+
+.detail-card {
+  padding: $spacing-xl;
+  background: $color-bg-white;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-lg;
+}

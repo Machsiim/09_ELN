@@ -1,0 +1,127 @@
+@use '../../styles/variables' as *;
+
+.table-container {
+  overflow-x: auto;
+  margin-top: $spacing-md;
+  width: 100%;
+}
+
+.template-group {
+  margin-top: $spacing-xl;
+}
+
+.template-group-header {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-sm;
+}
+
+.template-group-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: $color-text-heading;
+}
+
+.template-group-badge {
+  margin-left: auto;
+  color: $color-text-gray;
+  font-size: 0.85rem;
+}
+
+$section-colors: (
+  0: (dark: #00649c, mid: #b3d4e8, light: #e3eff6),
+  1: (dark: #6d8c17, mid: #c8dea0, light: #e9f1d6),
+  2: (dark: #8b5e00, mid: #e0c88a, light: #f3ead2),
+  3: (dark: #7b2d5f, mid: #d4a3c4, light: #f0dfe9),
+  4: (dark: #2d6e6e, mid: #a3cece, light: #dceeed),
+  5: (dark: #8b3a3a, mid: #d4a3a3, light: #f0dfdf),
+  6: (dark: #3a4a6e, mid: #aab5cc, light: #dde2ec),
+  7: (dark: #4a2d7b, mid: #bfa3d4, light: #e6dcf0),
+  8: (dark: #a83a7a, mid: #e0a3c9, light: #f5dfec),
+  9: (dark: #1a1a1a, mid: #9a9a9a, light: #e0e0e0)
+);
+
+.measurements-table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border: 1px solid $color-border-dark;
+
+  th {
+    padding: 0.6rem $spacing-md;
+    border: 1px solid $color-border-dark;
+    color: $color-text-heading;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .base-header,
+  .select-column {
+    background: $color-bg-page;
+  }
+
+  .base-header {
+    text-align: left;
+  }
+
+  .header-section {
+    color: #fff;
+  }
+
+  @each $i, $colors in $section-colors {
+    .header-section.color-#{$i} {
+      background: map-get($colors, dark);
+    }
+    .header-card.color-#{$i} {
+      background: map-get($colors, mid);
+      color: map-get($colors, dark);
+    }
+    .header-field.color-#{$i} {
+      background: map-get($colors, light);
+      color: map-get($colors, dark);
+    }
+  }
+
+  tbody tr {
+    border-bottom: 1px solid $color-border-dark;
+    cursor: pointer;
+    transition: background-color $transition-fast;
+
+    &:hover {
+      background: $color-bg-page-alt;
+    }
+  }
+
+  td {
+    padding: 0.875rem $spacing-md;
+    color: #555;
+    font-size: 0.9rem;
+    vertical-align: top;
+  }
+
+  .select-column {
+    width: 40px;
+    text-align: center;
+  }
+
+  .cell-id {
+    color: $color-primary;
+    font-weight: 600;
+  }
+
+  .cell-author,
+  .cell-date {
+    color: $color-text-gray;
+    white-space: nowrap;
+  }
+
+  .cell-value {
+    border-right: 1px solid $color-border-dark;
+    white-space: nowrap;
+  }
+}

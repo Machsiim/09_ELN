@@ -1,0 +1,384 @@
+@use '../../styles/variables' as *;
+
+.page-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: $color-bg-page;
+}
+
+.main-content {
+  flex: 1;
+  width: 100%;
+  max-width: $max-width-wide;
+  margin: 0 auto;
+  padding: $spacing-xl $spacing-md;
+}
+
+.shared-links-card {
+  padding: $spacing-xl;
+  border-radius: $radius-md;
+  background: $color-bg-white;
+  box-shadow: $shadow-md;
+}
+
+.shared-links-header {
+  margin-bottom: $spacing-xl;
+
+  .subtitle {
+    margin: 0 0 $spacing-xs;
+    color: $color-text-muted;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    margin: 0 0 $spacing-sm;
+    color: $color-text-heading;
+  }
+
+  .hint {
+    margin: 0;
+    color: $color-text-secondary;
+  }
+}
+
+.filter-toolbar {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(150px, 190px) minmax(150px, 190px) auto;
+  gap: $spacing-md;
+  align-items: end;
+  margin-bottom: $spacing-lg;
+}
+
+.search-field,
+.filter-field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: $spacing-xs;
+
+  label {
+    color: $color-text-secondary;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+
+  input,
+  select {
+    width: 100%;
+    height: 42px;
+    padding: 0 $spacing-md;
+    border: 1px solid $color-border-light;
+    border-radius: $radius-md;
+    background: $color-bg-white;
+    color: $color-text-primary;
+    font: inherit;
+
+    &:focus {
+      border-color: $color-primary;
+      outline: 2px solid $color-primary-bg;
+    }
+  }
+}
+
+.search-button {
+  height: 42px;
+  padding: 0 $spacing-lg;
+  border-radius: $radius-md;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+}
+
+.search-button {
+  border: 1px solid $color-primary;
+  background: $color-primary;
+  color: $color-bg-white;
+}
+
+.result-count {
+  margin: 0 0 $spacing-sm;
+  color: $color-text-secondary;
+  font-size: 0.9rem;
+}
+
+.links-table-wrapper {
+  overflow-x: auto;
+}
+
+.links-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th,
+  td {
+    padding: 0.85rem $spacing-md;
+    border-bottom: 1px solid $color-border-light;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  th {
+    background: $color-bg-subtle;
+    color: $color-text-secondary;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+  }
+
+  td {
+    color: $color-text-primary;
+    font-size: 0.9rem;
+  }
+}
+
+.link-row {
+  cursor: pointer;
+  transition: background-color $transition-fast;
+
+  &:hover,
+  &:focus-visible {
+    background: $color-bg-page-alt;
+    outline: none;
+  }
+}
+
+.series-id {
+  display: block;
+  margin-top: 0.2rem;
+  color: $color-text-muted;
+  font-size: 0.8rem;
+}
+
+.visibility,
+.link-status {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: $radius-sm;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.visibility {
+  background: $color-primary-bg;
+  color: $color-primary;
+
+  &.private {
+    background: #fef3c7;
+    color: #92400e;
+  }
+}
+
+.link-status {
+  &.active {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  &.expired {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  &.inactive {
+    background: #e5e7eb;
+    color: #4b5563;
+  }
+}
+
+.link-details-dialog {
+  width: min(680px, 92vw);
+  max-height: 86vh;
+  overflow-y: auto;
+  padding: $spacing-xl;
+  border-radius: $radius-lg;
+  background: $color-bg-white;
+  box-shadow: $shadow-xl;
+}
+
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: $spacing-md;
+  margin-bottom: $spacing-xl;
+
+  h2 {
+    margin: 0;
+    color: $color-text-heading;
+  }
+}
+
+.dialog-eyebrow {
+  margin: 0 0 $spacing-xs;
+  color: $color-text-muted;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+}
+
+.close-button {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  border: 0;
+  border-radius: 50%;
+  background: $color-bg-subtle;
+  color: $color-text-primary;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.details-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: $spacing-md;
+  margin: 0;
+
+  > div {
+    min-width: 0;
+    padding: $spacing-md;
+    border: 1px solid $color-border-light;
+    border-radius: $radius-md;
+    background: $color-bg-subtle;
+  }
+
+  .details-wide {
+    grid-column: 1 / -1;
+  }
+
+  dt {
+    margin-bottom: $spacing-xs;
+    color: $color-text-muted;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  dd {
+    margin: 0;
+    color: $color-text-primary;
+    line-height: 1.45;
+    word-break: break-word;
+  }
+
+  a {
+    color: $color-primary;
+    word-break: break-all;
+  }
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: $spacing-md;
+  flex-wrap: wrap;
+  margin-top: $spacing-xl;
+}
+
+.dialog-button {
+  padding: 0.65rem 1.1rem;
+  border: 0;
+  border-radius: $radius-md;
+  background: $color-primary;
+  color: $color-bg-white;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color $transition-base, opacity $transition-base;
+
+  &.warning {
+    background: $color-warning;
+  }
+
+  &.success {
+    background: $color-success;
+  }
+
+  &.danger {
+    background: $color-danger;
+
+    &:hover:not(:disabled) {
+      background: $color-danger-dark;
+    }
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.actions-col {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.row-actions {
+  display: inline-flex;
+  gap: $spacing-sm;
+  justify-content: flex-end;
+
+  .material-icons {
+    font-size: 1.2rem;
+  }
+
+  .btn-icon:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+.deactivate-btn {
+  color: $color-warning;
+  background: rgba(245, 158, 11, 0.1);
+  transition: all $transition-base;
+
+  &:hover:not(:disabled) {
+    background: $color-warning;
+    color: white;
+  }
+}
+
+.activate-btn {
+  color: $color-success;
+  background: $color-success-bg;
+  transition: all $transition-base;
+
+  &:hover:not(:disabled) {
+    background: $color-success;
+    color: white;
+  }
+}
+
+.delete-btn {
+  color: $color-danger;
+  background: $color-error-bg;
+  transition: all $transition-base;
+
+  &:hover:not(:disabled) {
+    background: $color-danger;
+    color: white;
+  }
+}
+
+@media (max-width: 640px) {
+  .filter-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .search-button {
+    width: 100%;
+  }
+
+  .details-list {
+    grid-template-columns: 1fr;
+
+    .details-wide {
+      grid-column: auto;
+    }
+  }
+}

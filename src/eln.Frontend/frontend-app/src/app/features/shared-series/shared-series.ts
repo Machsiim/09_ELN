@@ -1,35 +1,21 @@
 import { CommonModule } from '@angular/common';
-import {
-  Component,
-  DestroyRef,
-  OnInit,
-  inject,
-  signal
-} from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Header } from '../../components/header/header';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Footer } from '../../components/footer/footer';
-import { MeasurementDetailSections } from '../measurement-detail/components/measurement-detail-sections/measurement-detail-sections';
+import { Header } from '../../components/header/header';
 import {
-  SharedMeasurementDto,
-  SharedSeriesDto,
-  SharedSeriesService
-} from '../../services/shared-series.service';
-import { MediaAttachment } from '../../models/media-attachment';
-import { SectionEntry } from '../measurement-detail/measurement-detail.types';
-import {
-  buildSections,
-  extractMediaAttachments,
-  formatMediaSummary,
-  formatValue
-} from '../measurement-detail/measurement-detail.utils';
+  MeasurementSeriesTable,
+  SeriesTableMeasurement
+} from '../../components/measurement-series-table/measurement-series-table';
+import { SeriesCharts } from '../../components/series-charts/series-charts';
 import { AuthService } from '../../services/auth.service';
+import { SharedSeriesDto, SharedSeriesService } from '../../services/shared-series.service';
 
 @Component({
   selector: 'app-shared-series',
   standalone: true,
-  imports: [CommonModule, Header, Footer, MeasurementDetailSections],
+  imports: [CommonModule, Header, Footer, SeriesCharts, MeasurementSeriesTable],
   templateUrl: './shared-series.html',
   styleUrl: './shared-series.scss'
 })
@@ -37,14 +23,14 @@ export class SharedSeries implements OnInit {
   private readonly sharedService = inject(SharedSeriesService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  readonly authService = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
+  readonly authService = inject(AuthService);
 
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
   readonly requiresLogin = signal(false);
   readonly series = signal<SharedSeriesDto | null>(null);
-  readonly expandedMediaFields = signal<Set<string>>(new Set());
+  readonly token = signal('');
 
   ngOnInit(): void {
     this.route.params
@@ -55,8 +41,17 @@ export class SharedSeries implements OnInit {
           this.error.set('Ungültiger Quick-Link.');
           return;
         }
+        this.token.set(token);
         this.fetchSharedSeries(token);
       });
+  }
+
+  goToLogin(): void {
+    this.router.navigate(['/login'], { queryParams: { returnUrl: this.router.url } });
+  }
+
+  openMeasurement(measurement: SeriesTableMeasurement): void {
+    this.router.navigate(['/shared', this.token(), 'measurement', measurement.id]);
   }
 
   private fetchSharedSeries(token: string): void {
@@ -76,57 +71,14 @@ export class SharedSeries implements OnInit {
           const backendMessage = this.getBackendErrorMessage(err);
           if (!this.authService.isAuthenticated() && this.isAccessDeniedMessage(backendMessage)) {
             this.requiresLogin.set(true);
-            this.error.set('Dieser Quick-Link ist nur für bestimmte Personen freigegeben. Bitte melden Sie sich mit dem freigegebenen Konto an.');
+            this.error.set(
+              'Dieser Quick-Link ist nur für bestimmte Personen freigegeben. Bitte melden Sie sich mit dem freigegebenen Konto an.'
+            );
             return;
           }
           this.error.set(backendMessage || 'Quick-Link konnte nicht geladen werden.');
         }
       });
-  }
-
-  goToLogin(): void {
-    this.router.navigate(['/login'], { queryParams: { returnUrl: this.router.url } });
-  }
-
-  getSections(measurement: SharedMeasurementDto): SectionEntry[] {
-    return buildSections(measurement.data);
-  }
-
-  formatValue(value: unknown): string {
-    return formatValue(value);
-  }
-
-  formatMediaSummary(value: unknown): string {
-    return formatMediaSummary(value);
-  }
-
-  getMediaAttachments(value: unknown): MediaAttachment[] | null {
-    return extractMediaAttachments(value);
-  }
-
-  isMediaField(section: string, rawKey: string, rawValue?: unknown): boolean {
-    return extractMediaAttachments(rawValue) !== null;
-  }
-
-  toggleMediaPreview(measurementId: number, section: string, field: string): void {
-    const key = this.buildMediaFieldKey(measurementId, section, field);
-    this.expandedMediaFields.update((current) => {
-      const next = new Set(current);
-      if (next.has(key)) {
-        next.delete(key);
-      } else {
-        next.add(key);
-      }
-      return next;
-    });
-  }
-
-  isMediaExpanded(measurementId: number, section: string, field: string): boolean {
-    return this.expandedMediaFields().has(this.buildMediaFieldKey(measurementId, section, field));
-  }
-
-  private buildMediaFieldKey(measurementId: number, section: string, field: string): string {
-    return `${measurementId}::${section}::${field}`;
   }
 
   private isAccessDeniedMessage(message: string): boolean {
@@ -140,9 +92,7 @@ export class SharedSeries implements OnInit {
 
   private getBackendErrorMessage(err: unknown): string {
     const error = (err as { error?: unknown })?.error;
-    if (typeof error === 'string') {
-      return error;
-    }
+    if (typeof error === 'string') return error;
     if (error && typeof error === 'object' && 'error' in error) {
       return String((error as { error?: unknown }).error ?? '');
     }

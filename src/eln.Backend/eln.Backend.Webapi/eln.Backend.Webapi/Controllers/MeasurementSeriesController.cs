@@ -290,6 +290,36 @@ public class MeasurementSeriesController : ControllerBase
     }
 
     /// <summary>
+    /// Get all share links created by the current user.
+    /// GET /api/measurementseries/shares/mine
+    /// </summary>
+    [HttpGet("shares/mine")]
+    [Authorize]
+    public async Task<ActionResult<List<ShareLinkResponseDto>>> GetMyShareLinks(
+        [FromQuery] string? searchText = null,
+        [FromQuery] string? status = null,
+        [FromQuery] string? visibility = null)
+    {
+        try
+        {
+            var currentUser = await GetCurrentUserAsync();
+            if (currentUser is null)
+                return Unauthorized();
+
+            var result = await _shareLinkService.GetShareLinksByCreatorAsync(
+                currentUser.Value.UserId,
+                searchText,
+                status,
+                visibility);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
     /// Get all share links for a series
     /// GET /api/measurementseries/{id}/shares
     /// </summary>
@@ -358,6 +388,35 @@ public class MeasurementSeriesController : ControllerBase
                 return Unauthorized();
 
             await _shareLinkService.DeactivateShareLinkAsync(seriesId, shareId, user.Id);
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Reactivate a previously deactivated share link
+    /// PUT /api/measurementseries/{seriesId}/share/{shareId}/reactivate
+    /// </summary>
+    [HttpPut("{seriesId:int}/share/{shareId:int}/reactivate")]
+    [Authorize]
+    public async Task<ActionResult> ReactivateShareLink(int seriesId, int shareId)
+    {
+        try
+        {
+            // Extract username from JWT
+            var username = User.FindFirst(ClaimTypes.Name)?.Value;
+            if (string.IsNullOrEmpty(username))
+                return Unauthorized();
+
+            // Get user ID from database
+            var user = await _context.Users.SingleOrDefaultAsync(u => u.Username == username);
+            if (user == null)
+                return Unauthorized();
+
+            await _shareLinkService.ReactivateShareLinkAsync(seriesId, shareId, user.Id);
             return NoContent();
         }
         catch (Exception ex)

@@ -1,7 +1,12 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
+import {
+  DistributionDto,
+  TimelineDto,
+  VisualizableFieldDto
+} from './visualization.service';
 
 export interface SharedSeriesDto {
   seriesId: number;
@@ -30,5 +35,33 @@ export class SharedSeriesService {
 
   getSharedSeries(token: string): Observable<SharedSeriesDto> {
     return this.http.get<SharedSeriesDto>(`${this.baseUrl}/${token}`);
+  }
+
+  getVisualizationFields(token: string): Observable<VisualizableFieldDto[]> {
+    return this.http.get<VisualizableFieldDto[]>(
+      `${this.baseUrl}/${token}/visualization/fields`
+    );
+  }
+
+  getVisualizationTimeline(token: string): Observable<TimelineDto> {
+    return this.http.get<TimelineDto>(
+      `${this.baseUrl}/${token}/visualization/timeline`
+    );
+  }
+
+  getVisualizationDistribution(
+    token: string,
+    field: string,
+    section?: string,
+    bins?: number
+  ): Observable<DistributionDto> {
+    let params = new HttpParams().set('field', field);
+    if (section) params = params.set('section', section);
+    if (bins != null) params = params.set('bins', String(bins));
+
+    return this.http.get<DistributionDto>(
+      `${this.baseUrl}/${token}/visualization/distribution`,
+      { params }
+    );
   }
 }

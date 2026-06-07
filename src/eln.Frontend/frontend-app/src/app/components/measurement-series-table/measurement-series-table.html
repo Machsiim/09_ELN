@@ -1,0 +1,87 @@
+@for (group of groups(); track group.key) {
+  <div class="template-group">
+    @if (hasMultipleTemplates()) {
+      <header class="template-group-header">
+        <h2 class="template-group-title">{{ group.name }}</h2>
+        <span class="template-group-badge">
+          {{ group.measurements.length }} Messung{{ group.measurements.length !== 1 ? 'en' : '' }}
+        </span>
+      </header>
+    }
+
+    <div class="table-container">
+      <table class="measurements-table">
+        <thead>
+          <tr>
+            @if (selectable()) {
+              <th class="select-column" rowspan="3"></th>
+            }
+            @if (isBaseVisible('Mess-ID')) {
+              <th rowspan="3" class="base-header">Mess-ID</th>
+            }
+            @if (isBaseVisible('Erstellt von')) {
+              <th rowspan="3" class="base-header">Erstellt von</th>
+            }
+            @if (isBaseVisible('Erstellt am')) {
+              <th rowspan="3" class="base-header">Erstellt am</th>
+            }
+            @for (section of group.sections; track section.title) {
+              <th [attr.colspan]="section.fieldCount" class="header-section color-{{ section.colorIndex }}">
+                {{ section.title }}
+              </th>
+            }
+          </tr>
+          <tr>
+            @for (section of group.sections; track section.title) {
+              @for (card of section.cards; track card.title) {
+                <th [attr.colspan]="card.fields.length" class="header-card color-{{ section.colorIndex }}">
+                  {{ card.title }}
+                </th>
+              }
+            }
+          </tr>
+          <tr>
+            @for (section of group.sections; track section.title) {
+              @for (card of section.cards; track card.title) {
+                @for (field of card.fields; track field.column) {
+                  <th class="header-field color-{{ section.colorIndex }}">{{ field.label }}</th>
+                }
+              }
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (measurement of group.measurements; track measurement.id) {
+            <tr class="measurement-row" (click)="measurementClick.emit(measurement)">
+              @if (selectable()) {
+                <td class="select-column" (click)="$event.stopPropagation()">
+                  <input
+                    type="checkbox"
+                    [checked]="isSelected(measurement.id)"
+                    [disabled]="selectionDisabled()"
+                    (change)="selectionChange.emit({ id: measurement.id, selected: $any($event.target).checked })" />
+                </td>
+              }
+              @if (isBaseVisible('Mess-ID')) {
+                <td class="cell-id">#{{ measurement.id }}</td>
+              }
+              @if (isBaseVisible('Erstellt von')) {
+                <td class="cell-author">{{ measurement.createdByUsername }}</td>
+              }
+              @if (isBaseVisible('Erstellt am')) {
+                <td class="cell-date">{{ measurement.createdAt | date: 'dd.MM.yyyy HH:mm' }}</td>
+              }
+              @for (section of group.sections; track section.title) {
+                @for (card of section.cards; track card.title) {
+                  @for (field of card.fields; track field.column) {
+                    <td class="cell-value">{{ getValue(measurement, field.column) }}</td>
+                  }
+                }
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+}

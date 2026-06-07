@@ -3,6 +3,7 @@ namespace eln.Backend.Application.DTOs;
 public class TimelineDto
 {
     public List<string> Labels { get; set; } = new();
+    public List<string> Templates { get; set; } = new();
     public List<TimelineDatasetDto> Datasets { get; set; } = new();
 }
 

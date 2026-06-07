@@ -29,6 +29,9 @@ public class VisualizationService
         var labels = measurements
             .Select(m => m.CreatedAt.ToString("o", CultureInfo.InvariantCulture))
             .ToList();
+        var templates = measurements
+            .Select(m => m.Template?.Name ?? string.Empty)
+            .ToList();
 
         // Composite key (Section, Field) -> per-measurement value list aligned to labels
         var allFields = new Dictionary<(string Section, string Field), List<double?>>();
@@ -41,7 +44,7 @@ public class VisualizationService
             {
                 if (!allFields.ContainsKey(key))
                 {
-                    var padded = new List<double?>(i + 1);
+                    var padded = new List<double?>(i);
                     for (var p = 0; p < i; p++) padded.Add(null);
                     allFields[key] = padded;
                 }
@@ -63,6 +66,7 @@ public class VisualizationService
         return new TimelineDto
         {
             Labels = labels,
+            Templates = templates,
             Datasets = datasets
         };
     }

@@ -1,0 +1,35 @@
+<div class="page-container">
+  <app-header [publicMode]="!authService.isAuthenticated()" />
+
+  <main class="main-content">
+    <section class="detail-card">
+      <app-measurement-detail-header
+        [measurement]="headerMeasurement()"
+        [readOnly]="true"
+        (back)="goBack()" />
+
+      @if (error(); as message) {
+        <div class="status error">{{ message }}</div>
+      }
+
+      @if (loading()) {
+        <div class="status info">Messung wird geladen ...</div>
+      }
+
+      @if (!loading() && measurement()) {
+        <app-measurement-detail-sections
+          [sections]="getSections()"
+          [isEditing]="false"
+          [saveInProgress]="false"
+          [formatValue]="formatValue.bind(this)"
+          [formatMediaSummary]="formatMediaSummary.bind(this)"
+          [isMediaField]="isMediaField.bind(this)"
+          [getMediaAttachments]="getMediaAttachments.bind(this)"
+          [isMediaExpanded]="isMediaExpanded.bind(this)"
+          (toggleMediaPreview)="toggleMediaPreview($event.section, $event.field)" />
+      }
+    </section>
+  </main>
+
+  <app-footer />
+</div>

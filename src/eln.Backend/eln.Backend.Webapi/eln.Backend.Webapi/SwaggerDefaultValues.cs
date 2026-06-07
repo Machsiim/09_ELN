@@ -18,11 +18,27 @@ public class SwaggerDefaultValuesFilter : IOperationFilter
         // VisualizationController
         ["GetTimeline"] = new() { ["seriesId"] = "1" },
         ["GetDistribution"] = new() { ["seriesId"] = "1", ["field"] = "temperatur" },
+        ["GetSharedFields"] = new() { ["token"] = "share-token" },
+        ["GetSharedTimeline"] = new() { ["token"] = "share-token" },
+        ["GetSharedDistribution"] = new()
+        {
+            ["token"] = "share-token",
+            ["field"] = "temperatur",
+            ["bins"] = "10"
+        },
         ["GetFields"] = new() { ["seriesId"] = "1" },
 
         // MeasurementsController
         ["GetMeasurementsBySeries"] = new() { ["seriesId"] = "1", ["searchText"] = "temperatur" },
         ["SearchMeasurements"] = new() { ["seriesId"] = "1", ["searchText"] = "Labor" },
+
+        // MeasurementSeriesController
+        ["GetMyShareLinks"] = new()
+        {
+            ["searchText"] = "Temperatur",
+            ["status"] = "active",
+            ["visibility"] = "public"
+        },
 
         // TemplatesController
         ["GetTemplates"] = new() { ["page"] = "1", ["pageSize"] = "5", ["searchText"] = "Temperatur", ["archiveFilter"] = "active" },
@@ -32,6 +48,8 @@ public class SwaggerDefaultValuesFilter : IOperationFilter
     {
         ["searchText"] = "Optionaler Suchbegriff. Wird serverseitig angewendet.",
         ["archiveFilter"] = "Optionaler Template-Statusfilter: all, active oder archived.",
+        ["status"] = "Optionaler Statusfilter: active, inactive oder expired.",
+        ["visibility"] = "Optionaler Sichtbarkeitsfilter: public oder private.",
         ["page"] = "Seitennummer fuer paginierte Ergebnisse.",
         ["pageSize"] = "Anzahl der Ergebnisse pro Seite.",
         ["seriesId"] = "ID der Messserie."

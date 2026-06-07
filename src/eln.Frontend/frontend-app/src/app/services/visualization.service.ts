@@ -19,6 +19,7 @@ export interface TimelineDatasetDto {
 
 export interface TimelineDto {
   labels: string[];
+  templates: string[];
   datasets: TimelineDatasetDto[];
 }
 

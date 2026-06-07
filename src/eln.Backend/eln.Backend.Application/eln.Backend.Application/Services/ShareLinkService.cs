@@ -110,7 +110,7 @@ public class ShareLinkService
         // Get creator username
         var creator = await _context.Users.FindAsync(userId);
 
-        return MapToResponseDto(shareLink, creator?.Username ?? "Unknown");
+        return MapToResponseDto(shareLink, creator?.Username ?? "Unknown", series.Name);
     }
 
     /// <summary>
@@ -129,28 +129,7 @@ public class ShareLinkService
                 .ThenInclude(s => s!.Creator)
             .FirstOrDefaultAsync(ssl => ssl.Token == token);
 
-        if (shareLink == null)
-            throw new NotFoundException("Share link not found");
-
-        if (!shareLink.IsActive)
-            throw new ValidationException("Share link has been disabled");
-
-        if (shareLink.ExpiresAt < DateTime.UtcNow)
-            throw new ValidationException("Share link has expired");
-
-        // Access control for non-public links
-        if (!shareLink.IsPublic)
-        {
-            var accessIdentifiers = string.IsNullOrWhiteSpace(requestingUserEmail)
-                ? new List<string>()
-                : GetAccessIdentifiers(requestingUserEmail);
-
-            if (accessIdentifiers.Count == 0 ||
-                !accessIdentifiers.Any(identifier => shareLink.AllowedUserEmails.Contains(identifier)))
-            {
-                throw new ForbiddenException("Sie sind nicht berechtigt, diese geteile Messserie zu sehen.");
-            }
-        }
+        await EnsureShareAccessAsync(shareLink, requestingUserEmail);
 
         var series = shareLink.Series!;
 
@@ -184,17 +163,87 @@ public class ShareLinkService
     }
 
     /// <summary>
+    /// Resolve the series ID after validating a public or private share link.
+    /// </summary>
+    public async Task<int> GetAuthorizedSeriesIdAsync(
+        string token,
+        string? requestingUserEmail = null)
+    {
+        var shareLink = await _context.SeriesShareLinks
+            .FirstOrDefaultAsync(ssl => ssl.Token == token);
+
+        await EnsureShareAccessAsync(shareLink, requestingUserEmail);
+        return shareLink!.SeriesId;
+    }
+
+    /// <summary>
     /// Get all share links for a series
     /// </summary>
     public async Task<List<ShareLinkResponseDto>> GetShareLinksForSeriesAsync(int seriesId)
     {
         var shareLinks = await _context.SeriesShareLinks
             .Include(ssl => ssl.Creator)
+            .Include(ssl => ssl.Series)
             .Where(ssl => ssl.SeriesId == seriesId)
             .OrderByDescending(ssl => ssl.CreatedAt)
             .ToListAsync();
 
-        return shareLinks.Select(ssl => MapToResponseDto(ssl, ssl.Creator?.Username ?? "Unknown")).ToList();
+        return shareLinks
+            .Select(ssl => MapToResponseDto(
+                ssl,
+                ssl.Creator?.Username ?? "Unknown",
+                ssl.Series?.Name ?? "Unknown"))
+            .ToList();
+    }
+
+    /// <summary>
+    /// Get all share links created by a user across all measurement series.
+    /// </summary>
+    public async Task<List<ShareLinkResponseDto>> GetShareLinksByCreatorAsync(
+        int userId,
+        string? searchText = null,
+        string? status = null,
+        string? visibility = null)
+    {
+        var now = DateTime.UtcNow;
+        var query = _context.SeriesShareLinks
+            .Include(ssl => ssl.Creator)
+            .Include(ssl => ssl.Series)
+            .Where(ssl => ssl.CreatedBy == userId);
+
+        if (!string.IsNullOrWhiteSpace(searchText))
+        {
+            var normalizedSearch = searchText.Trim().ToLower();
+            query = query.Where(ssl =>
+                ssl.Token.ToLower().Contains(normalizedSearch) ||
+                (ssl.Series != null && ssl.Series.Name.ToLower().Contains(normalizedSearch)));
+        }
+
+        query = status?.ToLower() switch
+        {
+            "active" => query.Where(ssl => ssl.IsActive && ssl.ExpiresAt > now),
+            "inactive" => query.Where(ssl => !ssl.IsActive),
+            "expired" => query.Where(ssl => ssl.IsActive && ssl.ExpiresAt <= now),
+            _ => query
+        };
+
+        query = visibility?.ToLower() switch
+        {
+            "public" => query.Where(ssl => ssl.IsPublic),
+            "private" => query.Where(ssl => !ssl.IsPublic),
+            _ => query
+        };
+
+        var shareLinks = await query
+            .OrderByDescending(ssl => ssl.CreatedAt)
+            .ToListAsync();
+
+        return shareLinks
+            .Select(ssl => MapToResponseDto(
+                ssl,
+                ssl.Creator?.Username ?? "Unknown",
+                ssl.Series?.Name ?? "Unknown"))
+            .ToList();
     }
 
     /// <summary>
@@ -235,12 +284,71 @@ public class ShareLinkService
         await _context.SaveChangesAsync();
     }
 
+    /// <summary>
+    /// Reactivate a previously deactivated share link
+    /// </summary>
+    public async Task ReactivateShareLinkAsync(int seriesId, int shareId, int userId)
+    {
+        var shareLink = await _context.SeriesShareLinks.FindAsync(shareId);
+        if (shareLink == null)
+            throw new NotFoundException($"Share link with ID {shareId} not found");
+
+        if (shareLink.SeriesId != seriesId)
+            throw new NotFoundException($"Share link {shareId} does not belong to series {seriesId}");
+
+        if (shareLink.CreatedBy != userId)
+            throw new ForbiddenException("You can only reactivate your own share links");
+
+        shareLink.IsActive = true;
+        await _context.SaveChangesAsync();
+    }
+
     // ── Private helpers ──────────────────────────────────────────────────────
 
-    private static ShareLinkResponseDto MapToResponseDto(SeriesShareLink ssl, string createdByUsername) =>
+    private async Task EnsureShareAccessAsync(
+        SeriesShareLink? shareLink,
+        string? requestingUserEmail)
+    {
+        if (shareLink == null)
+            throw new NotFoundException("Share link not found");
+        if (!shareLink.IsActive)
+            throw new ValidationException("Share link has been disabled");
+        if (shareLink.ExpiresAt < DateTime.UtcNow)
+            throw new ValidationException("Share link has expired");
+        if (shareLink.IsPublic)
+            return;
+
+        var accessIdentifiers = string.IsNullOrWhiteSpace(requestingUserEmail)
+            ? new List<string>()
+            : GetAccessIdentifiers(requestingUserEmail);
+
+        if (accessIdentifiers.Count == 0)
+            throw new ForbiddenException("Sie sind nicht berechtigt, diese geteilte Messserie zu sehen.");
+
+        var creatorUsername = await _context.Users
+            .Where(user => user.Id == shareLink.CreatedBy)
+            .Select(user => user.Username.ToLower())
+            .FirstOrDefaultAsync();
+
+        var isCreator = creatorUsername != null && accessIdentifiers.Contains(creatorUsername);
+        var isAllowedUser = accessIdentifiers.Any(
+            identifier => shareLink.AllowedUserEmails.Contains(identifier));
+
+        if (!isCreator && !isAllowedUser)
+        {
+            throw new ForbiddenException("Sie sind nicht berechtigt, diese geteilte Messserie zu sehen.");
+        }
+    }
+
+    private static ShareLinkResponseDto MapToResponseDto(
+        SeriesShareLink ssl,
+        string createdByUsername,
+        string seriesName) =>
         new ShareLinkResponseDto
         {
             Id = ssl.Id,
+            SeriesId = ssl.SeriesId,
+            SeriesName = seriesName,
             Token = ssl.Token,
             ShareUrl = $"/shared/{ssl.Token}",
             IsPublic = ssl.IsPublic,
