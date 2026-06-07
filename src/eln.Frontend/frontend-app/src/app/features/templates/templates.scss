@@ -504,3 +504,73 @@
   line-height: 1.5;
   padding-bottom: 16px;
 }
+
+.formula-builder {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px dashed rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.formula-label {
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.formula-tokens {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  min-height: 2rem;
+  padding: 0.4rem;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 6px;
+  background: white;
+}
+
+.formula-placeholder {
+  font-size: 0.85rem;
+  color: $color-text-muted;
+  font-style: italic;
+}
+
+.formula-chip {
+  padding: 0.25rem 0.55rem;
+  border-radius: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  background: #eef2ff;
+  font-size: 0.85rem;
+  cursor: pointer;
+
+  &:hover {
+    background: #fee2e2;
+  }
+}
+
+.formula-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.formula-row-label {
+  min-width: 4rem;
+  font-size: 0.85rem;
+  color: $color-text-muted;
+}
+
+.btn-small {
+  padding: 0.25rem 0.6rem;
+  font-size: 0.85rem;
+}
+
+.formula-error {
+  margin: 0;
+  color: #b91c1c;
+  font-size: 0.85rem;
+}

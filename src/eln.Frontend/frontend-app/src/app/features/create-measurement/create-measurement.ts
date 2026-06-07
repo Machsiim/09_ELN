@@ -20,12 +20,14 @@ import { Header } from '../../components/header/header';
 import { Footer } from '../../components/footer/footer';
 import { TemplateDto, TemplateService } from '../../services/template.service';
 import {
+  FormulaToken,
   TemplateCardSchema,
   TemplateFieldSchema,
   TemplateFieldType,
   TemplateSchema,
   TemplateSectionSchema
 } from '../../models/template-schema';
+import { evaluateFormula, getReferencedFieldIds } from '../../utils/formula';
 import {
   BackendFieldType,
   BackendTemplateSchema
@@ -50,6 +52,7 @@ import { NotificationService } from '../../services/notification.service';
 interface MeasurementFieldSchema extends TemplateFieldSchema {
   backendName: string;
   backendType: BackendFieldType;
+  formula?: FormulaToken[];
 }
 
 interface MeasurementCardSchema extends TemplateCardSchema {
@@ -377,6 +380,8 @@ export class CreateMeasurement implements OnInit {
   private buildForm(schema: MeasurementTemplateSchema): void {
     const controls: Record<string, unknown> = {};
     this.controlMap.clear();
+    const fieldIdToControl = new Map<string, string>();
+    const calculatedFields: { controlName: string; formula: FormulaToken[] }[] = [];
 
     schema.sections?.forEach((section) => {
       section.cards?.forEach((card) => {
@@ -385,6 +390,7 @@ export class CreateMeasurement implements OnInit {
           const validators = this.getValidators(field.backendType, field.type, field.required ?? false);
           const control = this.buildControl(field.type, validators);
           controls[controlName] = control;
+          fieldIdToControl.set(field.id, controlName);
           const sectionKey = section.title || 'Sektion';
           this.controlMap.set(controlName, {
             section: sectionKey,
@@ -393,12 +399,44 @@ export class CreateMeasurement implements OnInit {
             uiType: field.type,
             required: field.required ?? false
           });
+          if (field.type === 'calculated' && field.formula) {
+            calculatedFields.push({ controlName, formula: field.formula });
+          }
         });
       });
     });
 
     const controlKeys = Object.keys(controls);
     this.measurementForm = controlKeys.length > 0 ? this.fb.group(controls) : null;
+
+    if (this.measurementForm) {
+      const form = this.measurementForm;
+      for (const calc of calculatedFields) {
+        const refIds = getReferencedFieldIds(calc.formula);
+        const recompute = () => {
+          const result = evaluateFormula(calc.formula, (fieldId) => {
+            const refControlName = fieldIdToControl.get(fieldId);
+            if (!refControlName) return null;
+            const raw = form.get(refControlName)?.value;
+            if (raw === null || raw === undefined || raw === '') return null;
+            const num = Number(typeof raw === 'string' ? raw.replace(',', '.') : raw);
+            return Number.isFinite(num) ? num : null;
+          });
+          const target = form.get(calc.controlName);
+          if (target) {
+            target.setValue(result, { emitEvent: false });
+          }
+        };
+        for (const refId of refIds) {
+          const refControlName = fieldIdToControl.get(refId);
+          if (!refControlName) continue;
+          const refControl = form.get(refControlName);
+          if (!refControl) continue;
+          refControl.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => recompute());
+        }
+        recompute();
+      }
+    }
   }
 
   private buildMeasurementData(): Record<string, Record<string, unknown>> {
@@ -452,7 +490,8 @@ export class CreateMeasurement implements OnInit {
             required: field.required ?? false,
             hint: field.hint,
             backendName: this.buildFieldName(card.title, field.label),
-            backendType: mapUiTypeToBackendType(field.type)
+            backendType: mapUiTypeToBackendType(field.type),
+            ...(field.formula ? { formula: field.formula } : {})
           }))
         }))
       }))
@@ -481,14 +520,17 @@ export class CreateMeasurement implements OnInit {
             });
           }
 
+          const formula = field.formula ?? field.Formula;
+          const originalId = field.id ?? field.Id;
           cardMap.get(cardTitle)!.fields.push({
-            id: this.createId('field'),
+            id: originalId ?? this.createId('field'),
             label: fieldLabel,
             type: mapBackendTypeToUiType(fieldType, uiType),
             required,
             hint: description ?? '',
             backendName: fieldName,
-            backendType: fieldType
+            backendType: fieldType,
+            ...(formula ? { formula } : {})
           });
         });
 
@@ -514,15 +556,21 @@ export class CreateMeasurement implements OnInit {
   ): ValidatorFn[] {
     const validators: ValidatorFn[] = [];
 
+    if (uiType === 'calculated') {
+      return validators;
+    }
+
     if (required && uiType === 'boolean') {
       validators.push(Validators.requiredTrue);
     } else if (required) {
       validators.push(Validators.required);
     }
 
-    if (uiType === 'number') {
+    if (uiType === 'integer') {
+      validators.push(Validators.pattern(/^-?\d+$/));
+    } else if (uiType === 'number') {
       const integerOnly = this.isIntegerType(backendType);
-      validators.push(Validators.pattern(integerOnly ? /^-?\d+$/ : /^-?\d+(\.\d+)?$/));
+      validators.push(Validators.pattern(integerOnly ? /^-?\d+$/ : /^-?\d+([.,]\d+)?$/));
     }
 
     return validators;
@@ -542,6 +590,14 @@ export class CreateMeasurement implements OnInit {
       return 'Dieses Feld ist erforderlich.';
     }
 
+    if (errors['pattern'] && uiType === 'integer') {
+      return 'Bitte eine Ganzzahl eingeben.';
+    }
+
+    if (errors['pattern'] && uiType === 'number') {
+      return 'Bitte eine Zahl eingeben.';
+    }
+
     return 'Bitte prüfen Sie dieses Feld.';
   }
 
@@ -551,6 +607,15 @@ export class CreateMeasurement implements OnInit {
     }
     if (type === 'boolean') {
       return this.fb.control(false);
+    }
+    if (type === 'calculated') {
+      return this.fb.control<number | null>({ value: null, disabled: false });
+    }
+    if (type === 'period') {
+      return this.fb.group({
+        start: this.fb.control(''),
+        end: this.fb.control('')
+      });
     }
     return this.fb.control('', validators);
   }
@@ -565,6 +630,14 @@ export class CreateMeasurement implements OnInit {
     }
 
     const normalizedType = backendType.toLowerCase();
+    if (uiType === 'calculated') {
+      if (typeof value === 'number') return value;
+      if (typeof value === 'string' && value.trim() !== '') {
+        const parsed = Number(value.replace(',', '.'));
+        return Number.isFinite(parsed) ? parsed : null;
+      }
+      return null;
+    }
     if (normalizedType === 'int' || normalizedType === 'integer') {
       const parsed = Number(value);
       return Number.isNaN(parsed) ? value : Math.trunc(parsed);
@@ -585,6 +658,13 @@ export class CreateMeasurement implements OnInit {
     }
     if (normalizedType === 'date' || normalizedType === 'datetime') {
       return typeof value === 'string' ? value : String(value);
+    }
+    if (uiType === 'period' || normalizedType === 'period') {
+      if (value && typeof value === 'object' && 'start' in (value as object)) {
+        const v = value as { start?: string; end?: string };
+        return { start: v.start ?? '', end: v.end ?? '' };
+      }
+      return value;
     }
 
     if (uiType === 'media') {

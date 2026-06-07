@@ -382,6 +382,18 @@ public class MeasurementValidationService
                         return $"Expected type 'number', got '{value.ValueKind}'";
                     break;
 
+                case "calculated":
+                    if (value.ValueKind != JsonValueKind.Number && value.ValueKind != JsonValueKind.Null)
+                        return $"Expected type 'number' or null for calculated field, got '{value.ValueKind}'";
+                    break;
+
+                case "period":
+                    if (value.ValueKind != JsonValueKind.Object)
+                        return $"Expected type 'object' for period field, got '{value.ValueKind}'";
+                    if (!value.TryGetProperty("start", out _) || !value.TryGetProperty("end", out _))
+                        return "Period field must have 'start' and 'end' properties";
+                    break;
+
                 case "string":
                 case "text":
                 case "multiline":
