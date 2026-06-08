@@ -125,9 +125,14 @@ public class ExportService
         if (measurements.Count == 0)
             return (new List<string>(), new List<Dictionary<string, object?>>(), new Dictionary<string, string>());
 
-        // Collect all columns across all measurements + meta columns
+        // Collect all columns across all measurements + meta columns.
+        // The on-screen table (getTemplateGroups in measurement-series-detail.ts)
+        // renders sections/cards/fields in their stored definition order, so we
+        // mirror that here: data columns are grouped by section in the order each
+        // section first appears, and within a section in the order each column
+        // first appears. This keeps export and view consistent.
         var metaColumns = MetaColumns.ToList();
-        var dataColumnSet = new HashSet<string>();
+        var metaSet = new HashSet<string>(metaColumns);
         var flatRows = new List<Dictionary<string, object?>>();
         var allColumnSections = new Dictionary<string, string>
         {
@@ -136,26 +141,38 @@ public class ExportService
             ["Erstellt am"] = "Allgemein"
         };
 
+        var sectionOrder = new List<string>();
+        var columnsBySection = new Dictionary<string, List<string>>();
+        var seenColumns = new HashSet<string>();
+
         foreach (var m in measurements)
         {
             var (columns, row, colSections) = FlattenMeasurement(m);
             foreach (var col in columns)
-                dataColumnSet.Add(col);
-            foreach (var kvp in colSections)
             {
-                if (!allColumnSections.ContainsKey(kvp.Key))
-                    allColumnSections[kvp.Key] = kvp.Value;
+                if (metaSet.Contains(col)) continue;
+
+                if (!allColumnSections.ContainsKey(col))
+                    allColumnSections[col] = colSections.TryGetValue(col, out var s) ? s : "";
+
+                var section = allColumnSections[col];
+                if (!columnsBySection.TryGetValue(section, out var bucket))
+                {
+                    bucket = new List<string>();
+                    columnsBySection[section] = bucket;
+                    sectionOrder.Add(section);
+                }
+
+                if (seenColumns.Add(col))
+                    bucket.Add(col);
             }
             flatRows.Add(row);
         }
 
-        // Meta columns first, then data columns grouped by section
+        // Meta columns first, then data columns grouped by section in first-appearance order
         var allColumns = new List<string>(metaColumns);
-        var sortedDataCols = dataColumnSet.Except(metaColumns)
-            .OrderBy(c => allColumnSections.TryGetValue(c, out var s) ? s : "")
-            .ThenBy(c => c)
-            .ToList();
-        allColumns.AddRange(sortedDataCols);
+        foreach (var section in sectionOrder)
+            allColumns.AddRange(columnsBySection[section]);
 
         return (allColumns, flatRows, allColumnSections);
     }
@@ -180,34 +197,36 @@ public class ExportService
 
         try
         {
-            var dataJson = measurement.Data.RootElement.GetRawText();
-            var data = JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, object?>>>(dataJson);
-            if (data != null)
+            // Iterate the raw JSON in document order (sections, then fields within a
+            // section) so the exported column order matches the on-screen table.
+            // A Dictionary<,> would not guarantee insertion order.
+            var root = measurement.Data.RootElement;
+            if (root.ValueKind == JsonValueKind.Object)
             {
-                foreach (var section in data)
+                foreach (var section in root.EnumerateObject())
                 {
-                    foreach (var field in section.Value)
+                    if (section.Value.ValueKind != JsonValueKind.Object)
+                        continue;
+
+                    foreach (var field in section.Value.EnumerateObject())
                     {
-                        var colName = field.Key;
+                        var colName = field.Name;
                         if (!columns.Contains(colName))
                             columns.Add(colName);
 
                         if (!columnSections.ContainsKey(colName))
-                            columnSections[colName] = section.Key;
+                            columnSections[colName] = section.Name;
 
                         // Convert JsonElement to native types
-                        row[colName] = field.Value switch
+                        var je = field.Value;
+                        row[colName] = je.ValueKind switch
                         {
-                            JsonElement je => je.ValueKind switch
-                            {
-                                JsonValueKind.String => je.GetString(),
-                                JsonValueKind.Number => je.TryGetInt64(out var l) ? l : je.GetDouble(),
-                                JsonValueKind.True => true,
-                                JsonValueKind.False => false,
-                                JsonValueKind.Null => null,
-                                _ => je.ToString()
-                            },
-                            _ => field.Value
+                            JsonValueKind.String => je.GetString(),
+                            JsonValueKind.Number => je.TryGetInt64(out var l) ? l : je.GetDouble(),
+                            JsonValueKind.True => true,
+                            JsonValueKind.False => false,
+                            JsonValueKind.Null => null,
+                            _ => je.ToString()
                         };
                     }
                 }
